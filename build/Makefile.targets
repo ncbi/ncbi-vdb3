@@ -1,0 +1,73 @@
+# ===========================================================================
+#
+#                            PUBLIC DOMAIN NOTICE
+#               National Center for Biotechnology Information
+#
+#  This software/database is a "United States Government Work" under the
+#  terms of the United States Copyright Act.  It was written as part of
+#  the author's official duties as a United States Government employee and
+#  thus cannot be copyrighted.  This software/database is freely available
+#  to the public for use. The National Library of Medicine and the U.S.
+#  Government have not placed any restriction on its use or reproduction.
+#
+#  Although all reasonable efforts have been taken to ensure the accuracy
+#  and reliability of the software and data, the NLM and the U.S.
+#  Government do not and cannot warrant the performance or results that
+#  may be obtained by using this software or data. The NLM and the U.S.
+#  Government disclaim all warranties, express or implied, including
+#  warranties of performance, merchantability or fitness for any particular
+#  purpose.
+#
+#  Please cite the author in any work or product based on this material.
+#
+# ===========================================================================
+
+# defines make targets commonly used in non-leaf directories:
+#   build
+#   clean
+#   test
+#
+# requires $(SUBDIRS) to be defined
+#
+# to control which subdirectories are affected by a specific target, define
+# SUBDIRS_CLEAN, SUBDIRS_RUNTESTS, etc., like this:
+#   SUBDIRS_CLEAN = $(addsuffix _clean, dir1 dir2 dir3)
+#
+
+default: $(SUBDIRS)
+
+#-------------------------------------------------------------------------------
+# build
+#
+SUBDIRS_BUILD ?= $(addsuffix _build,$(SUBDIRS))
+
+build: $(SUBDIRS_BUILD)
+
+$(SUBDIRS_BUILD):
+	@ $(MAKE) -C $(subst _build,,$@) build
+
+.PHONY: all $(SUBDIRS_BUILD)
+
+#-------------------------------------------------------------------------------
+# clean
+#
+SUBDIRS_CLEAN ?= $(addsuffix _clean,$(SUBDIRS))
+
+clean: $(SUBDIRS_CLEAN)
+
+$(SUBDIRS_CLEAN):
+	@ $(MAKE) -s -C $(subst _clean,,$@) clean
+
+.PHONY: clean $(SUBDIRS_CLEAN)
+
+#-------------------------------------------------------------------------------
+# test
+#
+SUBDIRS_TEST ?= $(addsuffix _test,$(SUBDIRS))
+
+test: build $(SUBDIRS_TEST)
+
+$(SUBDIRS_TEST):
+	@ $(MAKE) -s -C $(subst _test,,$@) test
+
+.PHONY: test $(SUBDIRS_TEST)

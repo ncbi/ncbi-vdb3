@@ -1,0 +1,4 @@
+# test output directories
+actual/
+# don't want checkouts to overwrite the current build config
+/Makefile.config
