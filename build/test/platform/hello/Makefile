@@ -30,8 +30,10 @@ default: build
 
 TOP ?= $(abspath ../..)
 MODULE = platform/hello
+override SUBDIRS =
 
 include $(TOP)/build/Makefile.env
+
 build: makedirs
 	$(MAKE_CMD) compile
 

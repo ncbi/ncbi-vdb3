@@ -23,33 +23,17 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of platform/
+#	Build/test pass-through for the build system
 #
 
+#-------------------------------------------------------------------------------
+# default
+#
 default: build
 
-TOP ?= $(abspath ../..)
-MODULE = platform/goodbye
-override SUBDIRS =
+SUBDIRS = test
+
+TOP ?= $(abspath ..)
+MODULE = build
 
 include $(TOP)/build/Makefile.env
-build: makedirs
-	$(MAKE_CMD) compile
-
-test: build
-	@ $(MAKE) -C test
-
-#
-# subdirectory-specific part
-#
-
-SRC = goodbye
-
-#
-# boilerplate dependent on the subdirectory-specific part
-#
-
-OBJ = $(addsuffix .$(LOBX),$(SRC))
-
-compile: $(OBJ)
-

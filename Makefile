@@ -43,47 +43,17 @@ default: build
 # environment
 #
 TOP ?= $(CURDIR)
-SUBDIRS =
+SUBDIRS ?= build
 
-include $(TOP)/build/Makefile.shell
+include $(TOP)/build/Makefile.env
 
 #-------------------------------------------------------------------------------
 # help
 #
-help:
-	@echo "Supported targets:"
-	@echo "    help     - list targets"
-	@echo "    build    - build (default)"
-	@echo "    config   - change/display configuration"
-	@echo "    clean    - remove build outputs"
-	@echo "    test     - run tests"
+help: stdhelp
 	@echo "    install  - install on the development system (may require sudo)"
 	@echo "    package  - create a Docker container with a full installation"
 	@echo "    docs     - generate Doxygen"
-
-#-------------------------------------------------------------------------------
-# config
-#
-config:
-	@echo "TBD"
-
-#-------------------------------------------------------------------------------
-# clean
-#
-clean:
-	@echo "TBD"
-
-#-------------------------------------------------------------------------------
-# build
-#
-build:
-	@echo "TBD"
-
-#-------------------------------------------------------------------------------
-# test
-#
-test:
-	make -C build/test
 
 #-------------------------------------------------------------------------------
 # install
@@ -104,4 +74,4 @@ docs:
 	@echo "TBD"
 
 
-.PHONY: help config clean build test install package docs
+.PHONY: install package docs

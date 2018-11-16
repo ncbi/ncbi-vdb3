@@ -31,17 +31,9 @@ default: test
 TOP ?= $(abspath ../../..)
 MODULE = platform/goodbye/test
 
-include $(TOP)/build/Makefile.env
-
 TESTS = test-goodbye
 
-ALL_TESTS = $(addprefix $(TEST_BINDIR)/,$(TESTS))
-
-$(TESTS): makedirs
-	$(MAKE_CMD) $(ALL_TESTS)
-
-clean:
-	rm -rf $(ALL_TESTS)
+include $(TOP)/build/Makefile.test
 
 #
 # subdirectory-specific part

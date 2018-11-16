@@ -22,19 +22,20 @@
 #
 # ===========================================================================
 
-# defines make targets commonly used in non-leaf directories:
+# defines globally available make targets:
+#   makedirs
 #   build
 #   clean
 #   test
 #
-# requires $(SUBDIRS) to be defined
-#
-# to control which subdirectories are affected by a specific target, define
-# SUBDIRS_CLEAN, SUBDIRS_RUNTESTS, etc., like this:
-#   SUBDIRS_CLEAN = $(addsuffix _clean, dir1 dir2 dir3)
-#
 
-default: $(SUBDIRS)
+#-------------------------------------------------------------------------------
+# makedirs - create all required output directories
+#
+makedirs:
+	@ mkdir -p $(addprefix $(TARGDIR)/, obj/$(MODULE)) $(LIBDIR) $(TEST_BINDIR)
+
+.PHONY: makedirs
 
 #-------------------------------------------------------------------------------
 # build
@@ -46,28 +47,69 @@ build: $(SUBDIRS_BUILD)
 $(SUBDIRS_BUILD):
 	@ $(MAKE) -C $(subst _build,,$@) build
 
-.PHONY: all $(SUBDIRS_BUILD)
+.PHONY: build $(SUBDIRS_BUILD)
 
 #-------------------------------------------------------------------------------
 # clean
 #
-SUBDIRS_CLEAN ?= $(addsuffix _clean,$(SUBDIRS))
+stdclean:
+	@ -rm -rf $(OBJDIR)
 
-clean: $(SUBDIRS_CLEAN)
+clean: stdclean $(SUBDIRS_CLEAN)
+
+SUBDIRS_CLEAN ?= $(addsuffix _clean,$(SUBDIRS))
 
 $(SUBDIRS_CLEAN):
 	@ $(MAKE) -s -C $(subst _clean,,$@) clean
 
-.PHONY: clean $(SUBDIRS_CLEAN)
+.PHONY: clean stdclean $(SUBDIRS_CLEAN)
 
 #-------------------------------------------------------------------------------
 # test
 #
 SUBDIRS_TEST ?= $(addsuffix _test,$(SUBDIRS))
 
-test: build $(SUBDIRS_TEST)
+test: $(SUBDIRS_TEST)
 
 $(SUBDIRS_TEST):
 	@ $(MAKE) -s -C $(subst _test,,$@) test
 
 .PHONY: test $(SUBDIRS_TEST)
+
+#-------------------------------------------------------------------------------
+# help
+#
+stdhelp:
+	@echo "Supported targets:"
+	@echo "    help     - list targets"
+	@echo "    build    - build"
+	@echo "    config   - display configuration"
+	@echo "    clean    - remove build outputs"
+	@echo "    test     - run tests"
+
+help: stdhelp
+
+.phony: help stdhelp
+
+#-------------------------------------------------------------------------------
+# config
+#
+config:
+	@ echo "  current build is $(BUILD)"
+	@ echo "  output target directory is '$(TARGDIR)'"
+	@ echo
+
+.phony: config
+
+#-------------------------------------------------------------------------------
+# guts: build system developer's target: show popular variables
+guts:
+	@echo "OUTDIR=$(OUTDIR)"
+	@echo "TARGDIR=$(TARGDIR)"
+	@echo "BINDIR=$(BINDIR)"
+	@echo "TEST_BINDIR=$(TEST_BINDIR)"
+	@echo "LIBDIR=$(LIBDIR)"
+	@echo "SRCDIR=$(SRCDIR)"
+	@echo "OBJDIR=$(OBJDIR)"
+
+.phony: guts

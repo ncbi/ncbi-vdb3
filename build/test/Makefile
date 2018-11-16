@@ -29,13 +29,17 @@
 #-------------------------------------------------------------------------------
 # default
 #
-default: run
+default: test
+
+TOP = $(abspath ../..)
 
 MAKE = make --no-print-directory
 WORKDIR = .
 ACTUAL = $(WORKDIR)/actual
 
 LIBPLATFORM = libncbi-vdb3-platform.a
+
+build:
 
 define Setup
     cp Makefile.config.test-default Makefile.config
@@ -53,65 +57,112 @@ define ExpectFail
     ! $(MAKE) $(2) 1>$(ACTUAL)/$(1).stdout 2>$(ACTUAL)/$(1).stderr && echo "$(1) passed"
 endef
 
-run:
+TEST_PLATFORM = -C platform SUBDIRS=hello\ goodbye -f $(TOP)/platform/Makefile
+
+test:
+	@ ln -f -s $(abspath ..) # in order to use the real files from $(TOP)/build
 	@ mkdir -p $(ACTUAL)
 	@ cp Makefile.config.test-default Makefile.config
+	@ #
 	@ echo "Testing build system"
-	@ # 1. bad target
-	@ $(call ExpectFail,1,-f ../../Makefile h)
-	@ # 2. help
-	@ $(call ExpectPass,2,-f ../../Makefile help)
 	@ #
-	@ # 3: platform/ sub-project
+	@ # 1: platform/sub-project
 	@ #
-	@ # 3.1 help
-	@ $(call ExpectPass,3.1,-C platform/hello help)
+	@ # help
+	@ $(call ExpectPass,1.1,-C platform/hello help)
 	@ #
-	@ # 3.2 build
+	@ # build
 	@ $(call Setup); \
-	  $(call ExpectPass,3.2,-C platform/hello, \
+	  $(call ExpectPass,1.2,-C platform/hello build, \
 	  						test -f $(ACTUAL)/outdir/dbg/obj/platform/hello/hello.pic.o)
-	@ # 3.3 clean
-	@ $(call Setup); \
-	  $(call ExpectPass,3.3,-C platform/hello build clean, \
-	  						! test -f $(ACTUAL)/outdir/dbg/obj/platform/hello/hello.pic.o)
-	@ # 3.4 run all unit tests
-	@ $(call Setup); \
-	  $(call ExpectPass,3.4,-C platform/hello test, \
-	  						[ 2 -eq $$(grep --count Passed $(ACTUAL)/3.4.stdout) ] )
-	@ # 3.5  run a single unit test
-	@ $(call Setup); \
-	  $(call ExpectPass,3.5,-C platform/hello/test hello1, \
-	  						[ 1 -eq $$(grep --count Passed $(ACTUAL)/3.5.stdout) ] )
-	@ # 4. the platform library
 	@ #
-	@ # 4.1 build; $(LIBPLATFORM) created
-	@ $(call Setup);\
-	  $(call ExpectPass,4.1,-C platform build,\
-	  						test -f $(ACTUAL)/outdir/dbg/lib/$(LIBPLATFORM))
-	@ # 4.2 clean;
+	@ # config
+	@ $(call ExpectPass,1.3,-C platform/hello config)
+	@ #
+	@ # clean
 	@ $(call Setup); \
-	  $(call ExpectPass,4.2,-C platform build clean,\
+	  $(call ExpectPass,1.4,-C platform/hello build clean, \
+	  						! test -f $(ACTUAL)/outdir/dbg/obj/platform/hello/hello.pic.o)
+	@ #
+	@ # test (run all unit tests)
+	@ $(call Setup); \
+	  $(call ExpectPass,1.5,-C platform/hello test, \
+	  						[ 2 -eq $$(grep --count Passed $(ACTUAL)/1.5.stdout) ] )
+	@ #
+	@ # 2: platform/sub-project/test
+	@ #
+	@ # help
+	@ $(call ExpectPass,2.1,-C platform/hello/test help)
+	@ #
+	@ # build
+	@ $(call Setup); \
+	  $(call ExpectPass,2.2,-C platform/hello/test build, \
+	  						test -f $(ACTUAL)/outdir/dbg/test-bin/test-hello1 )
+	@ #
+	@ # config
+	@ $(call ExpectPass,2.3,-C platform/hello/test config)
+	@ #
+	@ # clean
+	@ $(call Setup); \
+	  $(call ExpectPass,2.4,-C platform/hello/test build clean, \
+	  						! test -f $(ACTUAL)/outdir/dbg/test-bin/test-hello1 )
+	@ #
+	@ # run a single unit test
+	@ $(call Setup); \
+	  $(call ExpectPass,2.5,-C platform/hello/test hello1, \
+	  						[ 1 -eq $$(grep --count Passed $(ACTUAL)/2.5.stdout) ] )
+	@ #
+	@ #
+	@ # 5. the platform library
+	@ #
+	@ # help/
+	@ $(call ExpectPass,3.1, $(TEST_PLATFORM) help)
+	@ #
+	@ # build; $(LIBPLATFORM) created
+	@ $(call Setup);\
+	  $(call ExpectPass,3.2, $(TEST_PLATFORM) build,\
+	  						test -f $(ACTUAL)/outdir/dbg/lib/$(LIBPLATFORM))
+	@ #
+	@ # config
+	@ $(call ExpectPass,3.3, $(TEST_PLATFORM) config)
+	@ #
+	@ # clean
+	@ $(call Setup); \
+	  $(call ExpectPass,3.4, $(TEST_PLATFORM) build clean,\
 							! test -f $(ACTUAL)/outdir/dbg/lib/$(LIBPLATFORM))
 	@ #
-	@ # 4.3 test; expect 3 unit tests to be run
+	@ # test; expect 3 unit tests to be run
 	@ $(call Setup); \
-	  $(call ExpectPass,4.3,-C platform test, \
-	  						[ 3 -eq $$(grep --count Passed $(ACTUAL)/4.3.stdout) ] )
+	  $(call ExpectPass,3.5, $(TEST_PLATFORM) test, \
+	  						[ 3 -eq $$(grep --count Passed $(ACTUAL)/3.5.stdout) ] )
 	@ #
-	@ #TODO: versioned binaries
+	@ #
+	@ # 5. the db library
+	@ #
+	@ # help
+	@ # $(call ExpectPass,5.1,-C db help)
+	@ #
+	@ #TODO: 5 services/
+	@ #TODO: 6 tools/
+	@ #TODO: 7 test/
+	@ #
+	@ # 8. Top directory
+	@ #
+	@ # bad target
+	@ $(call ExpectFail,8.1,-f $(TOP)/Makefile h)
+	@ #
+	@ # help
+	@ $(call ExpectPass,8.2,-f $(TOP)/Makefile help)
+	@ #
+	@ #TODO: build
 	@ #TODO: config
-	@ #TODO: default
+	@ #		TODO: switch between Release/Debug
+	@ #		TODO: switch between OUTDIRs
+	@ #TODO: clean
 	@ #TODO: test
-	@ #TODO: install
+	@ #TODO: install (?)
 	@ #TODO: package
 	@ #TODO: docs
-	@ #TODO: default (build) from a subdirectory
-	@ #TODO: test from a subdirectory
-	@ #TODO: default (test) from test/
-	@ #TODO: clean from a subdirectory
-	@ #TODO: config (read only) from a subdirectory
-	@ #TODO: Release build
-
-.phony: default run
+	@ #
+	@ #TODO: versioned binaries
 

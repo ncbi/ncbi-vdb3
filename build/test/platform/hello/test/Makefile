@@ -31,17 +31,9 @@ default: test
 TOP ?= $(abspath ../../..)
 MODULE = platform/hello/test
 
-include $(TOP)/build/Makefile.env
-
 TESTS = test-hello1 test-hello2
 
-ALL_TESTS = $(addprefix $(TEST_BINDIR)/,$(TESTS))
-
-$(TESTS): makedirs
-	$(MAKE_CMD) $(ALL_TESTS)
-
-clean:
-	rm -rf $(ALL_TESTS)
+include $(TOP)/build/Makefile.test
 
 #
 # subdirectory-specific part
@@ -76,6 +68,6 @@ hello2: test-hello2
 #
 
 # build/run all test projects
-test: $(TESTS)
+test: build
 	$(foreach Test,$(ALL_TESTS), $(Test); )
 
