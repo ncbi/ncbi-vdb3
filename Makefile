@@ -29,7 +29,7 @@
 # build		- build (default)
 # config 	- display(/set?) configuration
 # clean 	- remove build outputs
-# test 		- run tests
+# test,check- run tests
 # install 	- install on the development system (may require sudo)
 # package 	- create a Docker container with a full installation
 # docs 		- generate Doxygen
@@ -43,7 +43,7 @@ default: build
 # environment
 #
 TOP ?= $(CURDIR)
-SUBDIRS ?= build
+SUBDIRS = build platform db services tools
 
 include $(TOP)/build/Makefile.env
 

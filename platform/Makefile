@@ -23,7 +23,7 @@
 # ===========================================================================
 
 #
-#	Tests for the VDB3 build system, platform subsystem
+#	Makefile for the VDB3, platform subsystem
 #
 
 #-------------------------------------------------------------------------------
@@ -31,18 +31,21 @@
 #
 default: build
 
-SUBDIRS =
-
 TOP ?= $(abspath ..)
 MODULE = platform
+SUBDIRS ?=
 
-include $(TOP)/build/Makefile.env
+include $(TOP)/$(MODULE)/Makefile.env
 
 LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
 
-SUBDIRS_OBJ   ?= $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
+SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
 
-$(LIBRARY):
-	$(AR) $@ $(SUBDIRS_OBJ)
+build:
+	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
+
+clean:
+	@ rm -rf $(LIBRARY)
+
 
 

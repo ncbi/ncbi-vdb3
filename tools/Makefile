@@ -23,31 +23,16 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of platform/
+#	Tests for the VDB3 build system, tools subsystem
 #
 
-# need this line to be able run tests on the build system itself
-override SUBDIRS =
-
+#-------------------------------------------------------------------------------
+# default
+#
 default: build
 
-TOP ?= $(abspath ../..)
-MODULE = platform/goodbye
+TOP ?= $(abspath ..)
+MODULE = tools
+SUBDIRS ?=
 
-include $(TOP)/build/Makefile.env
-
-OBJ = $(addsuffix .$(LOBX),$(SRC))
-
-build: makedirs
-	$(MAKE_CMD) $(OBJ)
-
-test: build
-	@ $(MAKE) -C test
-
-#
-# subdirectory-specific part
-#
-
-SRC = goodbye
-
-
+include $(TOP)/$(MODULE)/Makefile.env

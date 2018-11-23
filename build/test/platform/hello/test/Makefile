@@ -25,6 +25,7 @@
 #
 #	Test for the VDB3 build system, unit test project for a subdirectory of platform/
 #
+# to build/run all test projects, use target 'test' or 'check'
 
 default: test
 
@@ -33,7 +34,7 @@ MODULE = platform/hello/test
 
 TESTS = test-hello1 test-hello2
 
-include $(TOP)/build/Makefile.test
+include $(TOP)/platform/Makefile.test
 
 #
 # subdirectory-specific part
@@ -62,12 +63,3 @@ $(TEST_BINDIR)/test-hello2: $(OBJ_2)
 # build/run a single project
 hello2: test-hello2
 	$(TEST_BINDIR)/test-hello2 2
-
-#
-# boilerplate dependent on the subdirectory-specific part
-#
-
-# build/run all test projects
-test: build
-	$(foreach Test,$(ALL_TESTS), $(Test); )
-

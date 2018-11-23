@@ -23,31 +23,27 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of platform/
+#	Makefile for the VDB3, db subsystem
 #
 
-# need this line to be able run tests on the build system itself
-override SUBDIRS =
-
+#-------------------------------------------------------------------------------
+# default
+#
 default: build
 
-TOP ?= $(abspath ../..)
-MODULE = platform/goodbye
+TOP ?= $(abspath ..)
+MODULE = db
+SUBDIRS ?=
 
-include $(TOP)/build/Makefile.env
+include $(TOP)/$(MODULE)/Makefile.env
 
-OBJ = $(addsuffix .$(LOBX),$(SRC))
+LIBRARY = $(LIBDIR)/libncbi-vdb3-db.a
+
+SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
 
 build: makedirs
-	$(MAKE_CMD) $(OBJ)
+	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
 
-test: build
-	@ $(MAKE) -C test
-
-#
-# subdirectory-specific part
-#
-
-SRC = goodbye
-
+clean:
+	@ rm -rf $(LIBRARY)
 

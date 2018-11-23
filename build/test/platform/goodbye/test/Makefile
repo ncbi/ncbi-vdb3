@@ -33,7 +33,7 @@ MODULE = platform/goodbye/test
 
 TESTS = test-goodbye
 
-include $(TOP)/build/Makefile.test
+include $(TOP)/platform/Makefile.test
 
 #
 # subdirectory-specific part
@@ -45,11 +45,3 @@ OBJ = $(addsuffix .$(OBJX),$(SRC))
 
 $(TEST_BINDIR)/test-goodbye: $(OBJ)
 	$(LP) $(OBJ) -o $@
-
-#
-# boilerplate dependent on the subdirectory-specific part
-#
-
-test: $(TESTS)
-	$(ALL_TESTS)
-

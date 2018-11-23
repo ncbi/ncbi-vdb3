@@ -37,7 +37,6 @@ MAKE = make --no-print-directory
 WORKDIR = .
 ACTUAL = $(WORKDIR)/actual
 
-LIBPLATFORM = libncbi-vdb3-platform.a
 
 build:
 
@@ -50,14 +49,19 @@ define ExpectPass
     ( $(MAKE) $(2) 1>$(ACTUAL)/$(1).stdout 2>$(ACTUAL)/$(1).stderr || \
 		( echo "$(1) failed with $$? ($(MAKE) $(2))" && false ) ) && \
 	( ( eval "$(3)" && echo "$(1) passed" ) || \
-		echo "$(1) failed: $(3) " )
+		echo "$(1) ($(MAKE) $(2)) failed: $(3) " )
 endef
 
 define ExpectFail
     ! $(MAKE) $(2) 1>$(ACTUAL)/$(1).stdout 2>$(ACTUAL)/$(1).stderr && echo "$(1) passed"
 endef
 
-TEST_PLATFORM = -C platform SUBDIRS=hello\ goodbye -f $(TOP)/platform/Makefile
+LIBPLATFORM = libncbi-vdb3-platform.a
+LIBDB 		= libncbi-vdb3-db.a
+
+#TODO: make sure tests use real Makefiles (from $(TOP)/, not $(TOP)/build/test/), wherever possible
+TEST_PLATFORM 	= -C platform
+TEST_DB 		= -C db
 
 test:
 	@ ln -f -s $(abspath ..) # in order to use the real files from $(TOP)/build
@@ -71,13 +75,13 @@ test:
 	@ # help
 	@ $(call ExpectPass,1.1,-C platform/hello help)
 	@ #
+	@ # config
+	@ $(call ExpectPass,1.2,-C platform/hello config)
+	@ #
 	@ # build
 	@ $(call Setup); \
-	  $(call ExpectPass,1.2,-C platform/hello build, \
+	  $(call ExpectPass,1.3,-C platform/hello build, \
 	  						test -f $(ACTUAL)/outdir/dbg/obj/platform/hello/hello.pic.o)
-	@ #
-	@ # config
-	@ $(call ExpectPass,1.3,-C platform/hello config)
 	@ #
 	@ # clean
 	@ $(call Setup); \
@@ -89,18 +93,23 @@ test:
 	  $(call ExpectPass,1.5,-C platform/hello test, \
 	  						[ 2 -eq $$(grep --count Passed $(ACTUAL)/1.5.stdout) ] )
 	@ #
+	@ # check (same as test)
+	@ $(call Setup); \
+	  $(call ExpectPass,1.6,-C platform/hello check, \
+	  						[ 2 -eq $$(grep --count Passed $(ACTUAL)/1.6.stdout) ] )
+	@ #
 	@ # 2: platform/sub-project/test
 	@ #
 	@ # help
 	@ $(call ExpectPass,2.1,-C platform/hello/test help)
 	@ #
+	@ # config
+	@ $(call ExpectPass,2.2,-C platform/hello/test config)
+	@ #
 	@ # build
 	@ $(call Setup); \
-	  $(call ExpectPass,2.2,-C platform/hello/test build, \
+	  $(call ExpectPass,2.3,-C platform/hello/test build, \
 	  						test -f $(ACTUAL)/outdir/dbg/test-bin/test-hello1 )
-	@ #
-	@ # config
-	@ $(call ExpectPass,2.3,-C platform/hello/test config)
 	@ #
 	@ # clean
 	@ $(call Setup); \
@@ -113,38 +122,111 @@ test:
 	  						[ 1 -eq $$(grep --count Passed $(ACTUAL)/2.5.stdout) ] )
 	@ #
 	@ #
-	@ # 5. the platform library
+	@ # 3. the platform library
 	@ #
 	@ # help/
-	@ $(call ExpectPass,3.1, $(TEST_PLATFORM) help)
+	@ $(call ExpectPass,3.1, -C platform help)
+	@ #
+	@ # config
+	@ $(call ExpectPass,3.2, -C platform config)
 	@ #
 	@ # build; $(LIBPLATFORM) created
 	@ $(call Setup);\
-	  $(call ExpectPass,3.2, $(TEST_PLATFORM) build,\
+	  $(call ExpectPass,3.3, $(TEST_PLATFORM) build,\
 	  						test -f $(ACTUAL)/outdir/dbg/lib/$(LIBPLATFORM))
-	@ #
-	@ # config
-	@ $(call ExpectPass,3.3, $(TEST_PLATFORM) config)
 	@ #
 	@ # clean
 	@ $(call Setup); \
-	  $(call ExpectPass,3.4, $(TEST_PLATFORM) build clean,\
+	  $(call ExpectPass,3.4, -C platform build clean,\
 							! test -f $(ACTUAL)/outdir/dbg/lib/$(LIBPLATFORM))
 	@ #
 	@ # test; expect 3 unit tests to be run
 	@ $(call Setup); \
-	  $(call ExpectPass,3.5, $(TEST_PLATFORM) test, \
+	  $(call ExpectPass,3.5, -C platform test, \
 	  						[ 3 -eq $$(grep --count Passed $(ACTUAL)/3.5.stdout) ] )
 	@ #
 	@ #
-	@ # 5. the db library
+	@ # 4. the db library
 	@ #
 	@ # help
-	@ # $(call ExpectPass,5.1,-C db help)
+	@ $(call ExpectPass,4.1, -C db help)
+	@ #
+	@ # config
+	@ $(call ExpectPass,4.2, -C db config)
+	@ #
+	@ # build; $(LIBDB) created
+	@ $(call Setup);\
+	  $(call ExpectPass,4.3, -C db build,\
+	  						test -f $(ACTUAL)/outdir/dbg/lib/$(LIBDB))
+	@ #
+	@ # clean
+	@ $(call Setup); \
+	  $(call ExpectPass,4.4, -C db build clean,\
+							! test -f $(ACTUAL)/outdir/dbg/lib/$(LIBDB))
+	@ #
+	@ # test; expect 2 unit tests to be run (build the platform first)
+	@
+	@ $(call Setup); \
+	  $(MAKE) --quiet -C platform; \
+	  $(call ExpectPass,4.5, -C db test, \
+	  						[ 2 -eq $$(grep --count Passed $(ACTUAL)/4.5.stdout) ] )
+	@ #
 	@ #
 	@ #TODO: 5 services/
+	@ #
+	@ # help
+	@ $(call ExpectPass,5.1, -C services help)
+	@ #
+	@ # config
+	@ $(call ExpectPass,5.2, -C services config)
+	@ #
+	@ # build; bin/servica and bin/serviceb created (build platform and db first)
+	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
+	  $(call ExpectPass,5.3, -C services build,\
+	  						test -f $(ACTUAL)/outdir/dbg/bin/servicea && \
+							test -f $(ACTUAL)/outdir/dbg/bin/serviceb)
+	@ #
+	@ # clean  (build platform and db first)
+	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
+	  $(call ExpectPass,5.4, -C services build clean,\
+	  						! test -f $(ACTUAL)/outdir/dbg/bin/servicea && \
+							! test -f $(ACTUAL)/outdir/dbg/bin/serviceb)
+	@ #
+	@ # test; expect 2 unit tests to be run (build the platform first)
+	@
+	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
+	  $(call ExpectPass,5.5, -C services test, \
+	  						[ 2 -eq $$(grep --count Passed $(ACTUAL)/5.5.stdout) ] )
+	@ #
+	@ #
 	@ #TODO: 6 tools/
-	@ #TODO: 7 test/
+	@ #
+	@ # help
+	@ $(call ExpectPass,6.1, -C tools help)
+	@ #
+	@ # config
+	@ $(call ExpectPass,6.2, -C tools config)
+	@ #
+	@ # build; bin/toola and bin/toolb created (build platform and db first)
+	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
+	  $(call ExpectPass,6.3, -C tools build,\
+	  						test -f $(ACTUAL)/outdir/dbg/bin/toola && \
+							test -f $(ACTUAL)/outdir/dbg/bin/toolb)
+	@ #
+	@ # clean  (build platform and db first)
+	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
+	  $(call ExpectPass,6.4, -C tools build clean,\
+	  						! test -f $(ACTUAL)/outdir/dbg/bin/toola && \
+							! test -f $(ACTUAL)/outdir/dbg/bin/toolb)
+	@ #
+	@ # test; expect 2 unit tests to be run (build the platform first)
+	@
+	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
+	  $(call ExpectPass,6.5, -C tools test, \
+	  						[ 2 -eq $$(grep --count Passed $(ACTUAL)/6.5.stdout) ] )
+	@ #
+	@ #
+	@ #TODO: 7 tests/
 	@ #
 	@ # 8. Top directory
 	@ #

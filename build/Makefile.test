@@ -28,15 +28,19 @@
 # before including, define TESTS to a list of test executables in the project, e.g.
 # TESTS = test1 test2
 
-override SUBDIRS =
-
 include $(TOP)/build/Makefile.env
 
+# build/run all test projects
 ALL_TESTS = $(addprefix $(TEST_BINDIR)/,$(TESTS))
 
-$(TESTS) build: makedirs
-	$(MAKE_CMD) $(ALL_TESTS)
+$(TESTS): makedirs
+	@ $(MAKE_CMD) $(TEST_BINDIR)/$@
+
+build: makedirs
+	@ $(MAKE_CMD) $(ALL_TESTS)
 
 clean:
 	rm -rf $(ALL_TESTS)
 
+test: build
+	$(foreach Exe,$(ALL_TESTS), $(Exe); )

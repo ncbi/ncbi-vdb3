@@ -23,31 +23,25 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of platform/
+#	Test for the VDB3 build system, unit test project for a subdirectory of db/
 #
 
-# need this line to be able run tests on the build system itself
-override SUBDIRS =
+default: test
 
-default: build
+TOP ?= $(abspath ../../..)
+MODULE = db/bdb/test
 
-TOP ?= $(abspath ../..)
-MODULE = platform/goodbye
+TESTS = test-bdb
 
-include $(TOP)/build/Makefile.env
-
-OBJ = $(addsuffix .$(LOBX),$(SRC))
-
-build: makedirs
-	$(MAKE_CMD) $(OBJ)
-
-test: build
-	@ $(MAKE) -C test
+include $(TOP)/db/Makefile.test
 
 #
 # subdirectory-specific part
 #
 
-SRC = goodbye
+SRC = test-bdb
 
+OBJ = $(addsuffix .$(OBJX),$(SRC))
 
+$(TEST_BINDIR)/test-bdb: $(OBJ)
+	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform

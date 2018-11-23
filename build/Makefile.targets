@@ -26,14 +26,14 @@
 #   makedirs
 #   build
 #   clean
-#   test
+#   test/check
 #
 
 #-------------------------------------------------------------------------------
 # makedirs - create all required output directories
 #
 makedirs:
-	@ mkdir -p $(addprefix $(TARGDIR)/, obj/$(MODULE)) $(LIBDIR) $(TEST_BINDIR)
+	mkdir -p $(TARGDIR)/obj/$(MODULE) $(LIBDIR) $(BINDIR) $(TEST_BINDIR)
 
 .PHONY: makedirs
 
@@ -42,10 +42,10 @@ makedirs:
 #
 SUBDIRS_BUILD ?= $(addsuffix _build,$(SUBDIRS))
 
-build: $(SUBDIRS_BUILD)
-
 $(SUBDIRS_BUILD):
 	@ $(MAKE) -C $(subst _build,,$@) build
+
+build: makedirs $(SUBDIRS_BUILD)
 
 .PHONY: build $(SUBDIRS_BUILD)
 
@@ -55,24 +55,26 @@ $(SUBDIRS_BUILD):
 stdclean:
 	@ -rm -rf $(OBJDIR)
 
-clean: stdclean $(SUBDIRS_CLEAN)
-
 SUBDIRS_CLEAN ?= $(addsuffix _clean,$(SUBDIRS))
 
+clean: stdclean $(SUBDIRS_CLEAN)
+
 $(SUBDIRS_CLEAN):
-	@ $(MAKE) -s -C $(subst _clean,,$@) clean
+	@ $(MAKE) --no-print-directory -s -C $(subst _clean,,$@) clean
 
 .PHONY: clean stdclean $(SUBDIRS_CLEAN)
 
 #-------------------------------------------------------------------------------
-# test
+# test, check
 #
 SUBDIRS_TEST ?= $(addsuffix _test,$(SUBDIRS))
 
-test: $(SUBDIRS_TEST)
-
 $(SUBDIRS_TEST):
 	@ $(MAKE) -s -C $(subst _test,,$@) test
+
+test: build $(SUBDIRS_TEST)
+
+check: test
 
 .PHONY: test $(SUBDIRS_TEST)
 
@@ -85,7 +87,8 @@ stdhelp:
 	@echo "    build    - build"
 	@echo "    config   - display configuration"
 	@echo "    clean    - remove build outputs"
-	@echo "    test     - run tests"
+	@echo "    test     - run tests (same as check)"
+	@echo "    check    - run tests (same as test)"
 
 help: stdhelp
 
@@ -111,5 +114,6 @@ guts:
 	@echo "LIBDIR=$(LIBDIR)"
 	@echo "SRCDIR=$(SRCDIR)"
 	@echo "OBJDIR=$(OBJDIR)"
+	@echo "SUBDIRS=$(SUBDIRS)"
 
 .phony: guts

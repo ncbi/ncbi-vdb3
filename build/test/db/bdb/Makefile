@@ -23,7 +23,7 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of platform/
+#	Test for the VDB3 build system, a multi-project subdirectory of db/
 #
 
 # need this line to be able run tests on the build system itself
@@ -32,9 +32,9 @@ override SUBDIRS =
 default: build
 
 TOP ?= $(abspath ../..)
-MODULE = platform/goodbye
+MODULE = db/bdb
 
-include $(TOP)/build/Makefile.env
+include $(TOP)/db/Makefile.env
 
 OBJ = $(addsuffix .$(LOBX),$(SRC))
 
@@ -48,6 +48,6 @@ test: build
 # subdirectory-specific part
 #
 
-SRC = goodbye
+SRC = bdb
 
 
