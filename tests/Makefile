@@ -23,7 +23,7 @@
 # ===========================================================================
 
 #
-#	Makefile for the db subsystem of VDB3
+#	Makefile for testing of VDB3
 #
 
 #-------------------------------------------------------------------------------
@@ -32,18 +32,7 @@
 default: build
 
 TOP ?= $(abspath ..)
-MODULE = db
+MODULE = tests
 SUBDIRS ?=
 
 include $(TOP)/$(MODULE)/Makefile.env
-
-LIBRARY = $(LIBDIR)/libncbi-vdb3-db.a
-
-SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
-
-build: makedirs
-	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
-
-clean:
-	@ rm -rf $(LIBRARY)
-

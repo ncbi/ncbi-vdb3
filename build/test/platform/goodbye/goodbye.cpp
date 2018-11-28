@@ -3,8 +3,8 @@
 
 using namespace NCBI::VDB3;
 
-TestMessage
-NCBI::VDB3::GoodbyeTest()
+PlatformMessage
+NCBI::VDB3::GoodbyeMsg()
 {
-    return "GoodbyeTest";
+    return "Goodbye";
 }

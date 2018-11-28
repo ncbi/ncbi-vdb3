@@ -43,7 +43,19 @@ default: build
 # environment
 #
 TOP ?= $(CURDIR)
-SUBDIRS = build platform db services tools
+SUBDIRS = build platform db services tools tests
+
+ifeq (no, $(shell test -f $(TOP)/Makefile.config && echo yes || echo no))
+# handle missing Makefile.config
+# by default, create a Debug build, output to ~/ncbi-outdir/vdb3
+DEFAULT_BUILD=dbg
+DEFAULT_OUTDIR=$(wildcard ~)/ncbi-outdir/vdb3
+$(info $(TOP)/Makefile.config is not found, creating...)
+$(info   current build is $(DEFAULT_BUILD))
+$(info   output target directory is $(DEFAULT_OUTDIR))
+$(file >$(TOP)/Makefile.config,BUILD=$(DEFAULT_BUILD))
+$(file >>$(TOP)/Makefile.config,OUTDIR=$(DEFAULT_OUTDIR))
+endif
 
 include $(TOP)/build/Makefile.env
 
@@ -51,9 +63,41 @@ include $(TOP)/build/Makefile.env
 # help
 #
 help: stdhelp
+	@echo "    release  - switch to a release build"
+	@echo "    debug    - switch to a debug build"
+	@echo "    out OUTDIR=<path> - switch to a different build output directory"
+	@echo "    docs     - generate Doxygen documentation"
 	@echo "    install  - install on the development system (may require sudo)"
-	@echo "    package  - create a Docker container with a full installation"
-	@echo "    docs     - generate Doxygen"
+	@echo "    package  - create a Docker container with the full installation"
+
+#-------------------------------------------------------------------------------
+# clean
+#
+clean:
+	@ rm -rf $(OUTDIR)/$(BUILD)
+
+#-------------------------------------------------------------------------------
+# configuration change
+#
+release:
+	@ sed -i -e 's/BUILD.*dbg/BUILD=rel/' $(CONFIG_FILE)
+	@ $(MAKE) --no-print-directory config
+
+debug:
+	@ sed -i -e 's/BUILD.*rel/BUILD=dbg/' $(CONFIG_FILE)
+	@ $(MAKE) --no-print-directory config
+
+out:
+	@ sed -i -e '/OUTDIR.*=/d' $(CONFIG_FILE)
+	echo OUTDIR=$(abspath $(OUTDIR)) >>$(CONFIG_FILE)
+	$(MAKE) --no-print-directory OUTDIR=$(abspath $(OUTDIR)) config
+
+#-------------------------------------------------------------------------------
+# docs
+#
+docs:
+	@ ( which doxygen >/dev/null && doxygen $(TOP)/docs/doxygen.config && echo "Documentation has been generated in $(TOP)/docs/html" ) || \
+      ( echo "This target requires doxygen to be in the PATH." )
 
 #-------------------------------------------------------------------------------
 # install
@@ -67,11 +111,4 @@ install:
 package:
 	@echo "TBD"
 
-#-------------------------------------------------------------------------------
-# docs
-#
-docs:
-	@echo "TBD"
-
-
-.PHONY: install package docs
+.PHONY: release debug out install package docs

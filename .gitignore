@@ -2,3 +2,5 @@
 actual/
 # don't want checkouts to overwrite the current build config
 /Makefile.config
+html/
+.vscode

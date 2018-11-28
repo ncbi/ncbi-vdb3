@@ -37,24 +37,46 @@ MAKE = make --no-print-directory
 WORKDIR = .
 ACTUAL = $(WORKDIR)/actual
 
+config:
 
 build:
 
+clean:
+	rm -rf $(ACTUAL)/*
+
 define Setup
     cp Makefile.config.test-default Makefile.config
-	rm -rf $(ACTUAL)/outdir
+    cp $(TOP)/docs/doxygen.config ./docs/
+	rm -rf $(ACTUAL)/outdir docs/html
 endef
 
-define ExpectPass
-    ( $(MAKE) $(2) 1>$(ACTUAL)/$(1).stdout 2>$(ACTUAL)/$(1).stderr || \
-		( echo "$(1) failed with $$? ($(MAKE) $(2))" && false ) ) && \
-	( ( eval "$(3)" && echo "$(1) passed" ) || \
-		echo "$(1) ($(MAKE) $(2)) failed: $(3) " )
-endef
-
-define ExpectFail
-    ! $(MAKE) $(2) 1>$(ACTUAL)/$(1).stdout 2>$(ACTUAL)/$(1).stderr && echo "$(1) passed"
-endef
+#
+# ExpectPass/ExpectFail
+# call like this:
+#    $(call ExpectPass, <testId>, ParametersToMakeCommandUnderTest, optionalCommandToVerifyResult)
+# set TESTCASE fromcommand line to only run 1 test case, e.g.
+#    make TESTCASE=1.1 test
+#
+RunToPass = ( $(MAKE) $(2) 1>$(ACTUAL)/$(1).stdout 2>$(ACTUAL)/$(1).stderr || \
+           ( echo "$(1) failed with $$? ($(MAKE) $(2))" && false ) ) && \
+        ( ( eval "$(3)" && echo "$(1) passed" ) || \
+           echo "$(1) ($(MAKE) $(2)) failed: $(3) " )
+RunToFail = ! $(MAKE) $(2) 1>$(ACTUAL)/$(1).stdout 2>$(ACTUAL)/$(1).stderr && echo "$(1) passed"
+ifneq (,$(TESTCASE))
+    define ExpectPass
+    	if [ "$(TESTCASE)" = "$(1)" ]; then echo "Running $(1)"; $(RunToPass); fi
+    endef
+    define ExpectFail
+    	if [ "$(TESTCASE)" = "$(1)" ]; then echo "Running $(1)"; $(RunToFail); fi
+    endef
+else
+    define ExpectPass
+        $(RunToPass)
+    endef
+    define ExpectFail
+        $(RunToFail)
+    endef
+endif
 
 LIBPLATFORM = libncbi-vdb3-platform.a
 LIBDB 		= libncbi-vdb3-db.a
@@ -63,6 +85,10 @@ LIBDB 		= libncbi-vdb3-db.a
 TEST_PLATFORM 	= -C platform
 TEST_DB 		= -C db
 
+ifeq (1,$(BUILD_TESTING))
+# prevent recursive execution
+test:
+else
 test:
 	@ ln -f -s $(abspath ..) # in order to use the real files from $(TOP)/build
 	@ mkdir -p $(ACTUAL)
@@ -228,6 +254,28 @@ test:
 	@ #
 	@ #TODO: 7 tests/
 	@ #
+	@ # help
+	@ $(call ExpectPass,7.1, -C tests help)
+	@ #
+	@ # config
+	@ $(call ExpectPass,7.2, -C tests config)
+	@ #
+	@ # build; do not expect any binaries here
+	@ $(call Setup); \
+	  $(call ExpectPass,7.3, -C tests build)
+	@ #
+	@ # clean
+	@ $(call Setup); \
+	  $(call ExpectPass,7.4, -C tests clean)
+	@ #
+	@ # test; expect 2 tests to be run
+	@
+	@ $(call Setup); \
+	  $(call ExpectPass,7.5, -C tests test, \
+	  						grep --quiet Suite1 $(ACTUAL)/7.5.stdout && \
+							grep --quiet Suite2 $(ACTUAL)/7.5.stdout)
+	@ #
+	@ #
 	@ # 8. Top directory
 	@ #
 	@ # bad target
@@ -236,15 +284,59 @@ test:
 	@ # help
 	@ $(call ExpectPass,8.2,-f $(TOP)/Makefile help)
 	@ #
-	@ #TODO: build
-	@ #TODO: config
-	@ #		TODO: switch between Release/Debug
-	@ #		TODO: switch between OUTDIRs
-	@ #TODO: clean
-	@ #TODO: test
-	@ #TODO: install (?)
-	@ #TODO: package
-	@ #TODO: docs
+	@ # config
+	@ $(call ExpectPass,8.3, -C tests config)
 	@ #
+	@ # switch from debug to release
+	@ $(call Setup); \
+	  $(call ExpectPass,8.4,-f $(TOP)/Makefile release,\
+							grep BUILD Makefile.config | grep --quiet rel)
+	@ #
+	@ # switch from release to debug
+	@ $(call Setup); \
+	  $(call ExpectPass,8.5,-f $(TOP)/Makefile release debug,\
+							grep BUILD Makefile.config | grep --quiet dbg)
+	@ #
+	@ # switch between OUTDIRs
+	@ $(call Setup); \
+	  $(call ExpectPass,8.6,-f $(TOP)/Makefile out OUTDIR=$(ACTUAL)/other_out,\
+							grep OUTDIR Makefile.config | grep --quiet other_out)
+	@ #
+	@ # build
+	@ $(call Setup); \
+	  $(call ExpectPass,8.7,-f $(TOP)/Makefile build, \
+	  						test -f $(ACTUAL)/outdir/dbg/bin/toola && \
+							test -f $(ACTUAL)/outdir/dbg/bin/servicea)
+	@ #
+	@ # clean
+	@ $(call Setup); \
+	  $(call ExpectPass,8.8,-f $(TOP)/Makefile clean,\
+	  						! test -f $(ACTUAL)/outdir/dbg)
+	@ #
+	@ # test
+	@ $(call Setup); \
+	  $(call ExpectPass,8.9,-f $(TOP)/Makefile BUILD_TESTING=1 test, \
+	  						grep --quiet Hello $(ACTUAL)/8.9.stdout && \
+							grep --quiet BDB $(ACTUAL)/8.9.stdout && \
+							grep --quiet ServiceA $(ACTUAL)/8.9.stdout && \
+							grep --quiet ToolB $(ACTUAL)/8.9.stdout && \
+							grep --quiet Suite1 $(ACTUAL)/8.9.stdout)
+	@ #
+	@ # missing Makefile.config
+	@ $(call Setup); rm Makefile.config; \
+	  $(call ExpectPass,8.10,-f $(TOP)/Makefile config)
+	@ #
+	@ # docs (Doxygen)
+	@ $(call Setup); \
+	  $(call ExpectPass,8.11,-f $(TOP)/Makefile docs, test -d $(TOP)/docs/html)
+	@ #
+	@ #TODO: install
+	@ #
+	@ #TODO: package (Docker)
+	@ #
+	@ #TODO: googletest
 	@ #TODO: versioned binaries
+endif
+
+.phony: config build clean test
 

@@ -6,7 +6,7 @@ namespace NCBI
     {
         namespace BDB
         {
-            NCBI::VDB3::TestMessage HelloBdb();
+            NCBI::VDB3::PlatformMessage HelloBdb();
         }
     }
 }

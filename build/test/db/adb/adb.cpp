@@ -5,8 +5,8 @@
 
 using namespace NCBI::VDB3;
 
-TestMessage
+PlatformMessage
 NCBI::VDB3::ADB::HelloAdb()
 {
-    return HelloTest() + " from ADB";
+    return HelloMsg() + " from ADB";
 }

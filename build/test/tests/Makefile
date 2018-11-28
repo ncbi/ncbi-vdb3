@@ -26,6 +26,6 @@
 #	Tests for the VDB3 build system, tests/ subdirectory
 #
 
-SUBDIRS =
+SUBDIRS = suite1 suite2
 
 include $(abspath ../../..)/tests/Makefile

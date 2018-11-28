@@ -3,8 +3,8 @@
 
 using namespace NCBI::VDB3;
 
-TestMessage
+PlatformMessage
 NCBI::VDB3::BDB::HelloBdb()
 {
-    return HelloTest() + " from BDB";
+    return HelloMsg() + " from BDB";
 }

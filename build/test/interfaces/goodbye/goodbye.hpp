@@ -4,8 +4,14 @@ namespace NCBI
 {
     namespace VDB3
     {
-        typedef std::string TestMessage;
+        ///
+        /// TestMessage: a Doxygen description in the C++ style
+        ///
+        typedef std::string PlatformMessage;
 
-        TestMessage GoodbyeTest();
+        //!
+        //! GoodbyeMsg: a Doxygen description in the other C++ style
+        //!
+        PlatformMessage GoodbyeMsg();
     }
 }

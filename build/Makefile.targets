@@ -85,10 +85,10 @@ stdhelp:
 	@echo "Supported targets:"
 	@echo "    help     - list targets"
 	@echo "    build    - build"
-	@echo "    config   - display configuration"
 	@echo "    clean    - remove build outputs"
 	@echo "    test     - run tests (same as check)"
 	@echo "    check    - run tests (same as test)"
+	@echo "    config   - display configuration"
 
 help: stdhelp
 

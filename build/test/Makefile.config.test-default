@@ -1,2 +1,2 @@
-OUTDIR = $(TOP)/actual/outdir
-BUILD = dbg
+OUTDIR=$(TOP)/actual/outdir
+BUILD=dbg

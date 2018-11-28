@@ -6,7 +6,7 @@ using namespace std;
 
 int main()
 {
-    if ( NCBI::VDB3::ADB::HelloAdb() == "HelloTest from ADB" )
+    if ( NCBI::VDB3::ADB::HelloAdb() == "Hello from ADB" )
     {
         cout << "ADB test Passed" << endl;
         return 0;

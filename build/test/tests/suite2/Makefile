@@ -23,27 +23,22 @@
 # ===========================================================================
 
 #
-#	Makefile for the db subsystem of VDB3
+#	Test for the VDB3 build system, subdirectory of tests/
 #
 
-#-------------------------------------------------------------------------------
-# default
-#
-default: build
+# need this line to be able run tests on the build system itself
+override SUBDIRS =
 
-TOP ?= $(abspath ..)
-MODULE = db
-SUBDIRS ?=
+default: test
 
-include $(TOP)/$(MODULE)/Makefile.env
+TOP ?= $(abspath ../..)
+MODULE = tests/suite2
 
-LIBRARY = $(LIBDIR)/libncbi-vdb3-db.a
-
-SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
-
-build: makedirs
-	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
+include $(TOP)/tools/Makefile.env
 
 clean:
-	@ rm -rf $(LIBRARY)
 
+build:
+
+test:
+	@ echo "Suite2 passed"

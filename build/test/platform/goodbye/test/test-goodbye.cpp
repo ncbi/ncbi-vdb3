@@ -6,7 +6,7 @@ using namespace std;
 
 int main()
 {
-    if ( NCBI::VDB3::GoodbyeTest() == "GoodbyeTest" )
+    if ( NCBI::VDB3::GoodbyeMsg() == "Goodbye" )
     {
         cout << "Goodbye test Passed" << endl;
         return 0;

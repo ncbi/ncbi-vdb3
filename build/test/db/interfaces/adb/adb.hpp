@@ -6,7 +6,7 @@ namespace NCBI
     {
         namespace ADB
         {
-            NCBI::VDB3::TestMessage HelloAdb();
+            NCBI::VDB3::PlatformMessage HelloAdb();
         }
     }
 }
