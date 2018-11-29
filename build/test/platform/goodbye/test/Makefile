@@ -44,4 +44,4 @@ SRC = test-goodbye
 OBJ = $(addsuffix .$(OBJX),$(SRC))
 
 $(TEST_BINDIR)/test-goodbye: $(OBJ)
-	$(LP) $(OBJ) -o $@
+	$(LP) $(OBJ) -o $@ -lgtest -lpthread

@@ -22,6 +22,10 @@
 #
 # ===========================================================================
 
+#
+# Makefile for VDB3
+#
+
 #-------------------------------------------------------------------------------
 # targets
 #
@@ -29,8 +33,11 @@
 # build		- build (default)
 # config 	- display(/set?) configuration
 # clean 	- remove build outputs
-# test,check- run tests
+# test, check	- run tests
+# release, debug	- switch between builds
+# out 		- change output directory
 # install 	- install on the development system (may require sudo)
+# uninstall - uninstall from the development system (may require sudo)
 # package 	- create a Docker container with a full installation
 # docs 		- generate Doxygen
 
@@ -103,6 +110,12 @@ docs:
 # install
 #
 install:
+	@echo "TBD"
+
+#-------------------------------------------------------------------------------
+# uninstall
+#
+uninstall:
 	@echo "TBD"
 
 #-------------------------------------------------------------------------------

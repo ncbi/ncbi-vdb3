@@ -37,6 +37,12 @@ MAKE = make --no-print-directory
 WORKDIR = .
 ACTUAL = $(WORKDIR)/actual
 
+include $(TOP)/build/Makefile.vers
+empty :=
+space := $(empty) $(empty)
+MAJMIN  = $(subst $(space),.,$(wordlist 1,2,$(subst .,$(space),$(VERSION))))
+MAJVERS = $(firstword $(subst .,$(space),$(VERSION)))
+
 config:
 
 build:
@@ -145,7 +151,7 @@ test:
 	@ # run a single unit test
 	@ $(call Setup); \
 	  $(call ExpectPass,2.5,-C platform/hello/test hello1, \
-	  						[ 1 -eq $$(grep --count Passed $(ACTUAL)/2.5.stdout) ] )
+	  						[ 1 -eq $$(grep -i --count Passed $(ACTUAL)/2.5.stdout) ] )
 	@ #
 	@ #
 	@ # 3. the platform library
@@ -169,7 +175,7 @@ test:
 	@ # test; expect 3 unit tests to be run
 	@ $(call Setup); \
 	  $(call ExpectPass,3.5, -C platform test, \
-	  						[ 3 -eq $$(grep --count Passed $(ACTUAL)/3.5.stdout) ] )
+	  						[ 3 -eq $$(grep -i --count Passed $(ACTUAL)/3.5.stdout) ] )
 	@ #
 	@ #
 	@ # 4. the db library
@@ -209,8 +215,13 @@ test:
 	@ # build; bin/servica and bin/serviceb created (build platform and db first)
 	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
 	  $(call ExpectPass,5.3, -C services build,\
-	  						test -f $(ACTUAL)/outdir/dbg/bin/servicea && \
-							test -f $(ACTUAL)/outdir/dbg/bin/serviceb)
+	  						test -f $(ACTUAL)/outdir/dbg/bin/servicea.$(VERSION) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/servicea.$(MAJMIN) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/servicea.$(MAJVERS) && \
+	  						test -f $(ACTUAL)/outdir/dbg/bin/serviceb.$(VERSION) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/serviceb.$(MAJMIN) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/serviceb.$(MAJVERS) \
+							)
 	@ #
 	@ # clean  (build platform and db first)
 	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
@@ -236,8 +247,13 @@ test:
 	@ # build; bin/toola and bin/toolb created (build platform and db first)
 	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
 	  $(call ExpectPass,6.3, -C tools build,\
-	  						test -f $(ACTUAL)/outdir/dbg/bin/toola && \
-							test -f $(ACTUAL)/outdir/dbg/bin/toolb)
+	  						test -f $(ACTUAL)/outdir/dbg/bin/toola.$(VERSION) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/toola.$(MAJMIN) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/toola.$(MAJVERS) && \
+	  						test -f $(ACTUAL)/outdir/dbg/bin/toolb.$(VERSION) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/toolb.$(MAJMIN) && \
+	  						test -L $(ACTUAL)/outdir/dbg/bin/toolb.$(MAJVERS) \
+							)
 	@ #
 	@ # clean  (build platform and db first)
 	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
@@ -334,8 +350,7 @@ test:
 	@ #
 	@ #TODO: package (Docker)
 	@ #
-	@ #TODO: googletest
-	@ #TODO: versioned binaries
+	@ #TODO: test on iebdev
 endif
 
 .phony: config build clean test

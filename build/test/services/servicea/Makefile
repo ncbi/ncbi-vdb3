@@ -55,3 +55,4 @@ SRC = main servicea
 
 $(BINDIR)/servicea: $(OBJ)
 	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform -lncbi-vdb3-db
+	$(call MakeLinks,$@)

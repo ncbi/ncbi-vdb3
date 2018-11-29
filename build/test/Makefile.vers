@@ -22,37 +22,5 @@
 #
 # ===========================================================================
 
-#
-#	Test for the VDB3 build system, subdirectory of tools/
-#
-
-# need this line to be able run tests on the build system itself
-override SUBDIRS =
-
-default: build
-
-TOP ?= $(abspath ../..)
-MODULE = tools/toola
-
-include $(TOP)/tools/Makefile.env
-
-OBJ = $(addsuffix .$(OBJX),$(SRC))
-
-clean:
-	rm -f $(BINDIR)/toola
-
-build: makedirs
-	$(MAKE_CMD) $(BINDIR)/toola
-
-test: build
-	@ $(MAKE) -C test
-
-#
-# subdirectory-specific part
-#
-
-SRC = main toola
-
-$(BINDIR)/toola: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform -lncbi-vdb3-db
-	$(call MakeLinks,$@)
+# VDB3 version
+VERSION = 1.2.3
