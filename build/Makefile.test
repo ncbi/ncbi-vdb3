@@ -37,7 +37,7 @@ $(TESTS): makedirs
 	@ $(MAKE_CMD) $(TEST_BINDIR)/$@
 
 build: makedirs
-	@ $(MAKE_CMD) $(ALL_TESTS)
+	$(MAKE_CMD) $(ALL_TESTS)
 
 clean:
 	rm -rf $(ALL_TESTS)

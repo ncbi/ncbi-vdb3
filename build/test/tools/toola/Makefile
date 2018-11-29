@@ -41,10 +41,10 @@ OBJ = $(addsuffix .$(OBJX),$(SRC))
 clean:
 	rm -f $(BINDIR)/toola
 
-build: makedirs
-	$(MAKE_CMD) $(BINDIR)/toola
+build:
+	@ $(MAKE_CMD) $(BINDIR)/toola
 
-test: build
+test:
 	@ $(MAKE) -C test
 
 #
@@ -55,4 +55,6 @@ SRC = main toola
 
 $(BINDIR)/toola: $(OBJ)
 	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform -lncbi-vdb3-db
-	$(call MakeLinks,$@)
+
+subinstall:
+	$(MAKE_CMD) $(INSTDIR)/toola

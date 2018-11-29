@@ -80,6 +80,26 @@ LOC_INFO = -D__mod_name__=$(MODULE) -D__file_name__=$*
 %.nopt.pic.s: %.cpp
 	$(CP) -S -o $@ -fPIC $(NOPT) $<
 
-# version include generation
-%.vers.h: %.vers
-	$(TOP)/build/make-vers-inc.sh $^ > $@
+#-------------------------------------------------------------------------------
+# install an executable
+#
+
+include $(TOP)/build/Makefile.vers
+
+empty :=
+space := $(empty) $(empty)
+MAJMIN  = $(subst $(space),.,$(wordlist 1,2,$(subst .,$(space),$(VERSION))))
+MAJVERS = $(firstword $(subst .,$(space),$(VERSION)))
+
+$(INSTDIR)/%: $(BINDIR)/%
+	@ echo -n "installing '$(@F)'... "
+	@ if cp $^ $@.$(VERSION) && chmod 755 $@.$(VERSION);    \
+    then                          \
+        ln -v -f -s $(@F).$(VERSION) $@.$(MAJMIN); \
+        ln -v -f -s $(@F).$(MAJMIN)  $@.$(MAJVERS); \
+        ln -v -f -s $(@F).$(MAJVERS) $@; \
+        echo success;             \
+    else                          \
+        echo failure;             \
+        false;                    \
+	fi

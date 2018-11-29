@@ -33,7 +33,7 @@
 # makedirs - create all required output directories
 #
 makedirs:
-	mkdir -p $(TARGDIR)/obj/$(MODULE) $(LIBDIR) $(BINDIR) $(TEST_BINDIR)
+	@ mkdir -p $(TARGDIR)/obj/$(MODULE) $(LIBDIR) $(BINDIR) $(TEST_BINDIR)
 
 .PHONY: makedirs
 
@@ -105,6 +105,20 @@ config:
 .phony: config
 
 #-------------------------------------------------------------------------------
+# install
+#
+install: build
+
+SUBDIRS_INST ?= $(addsuffix _inst,$(SUBDIRS))
+
+$(SUBDIRS_INST):
+	@ $(MAKE) -s -C $(subst _inst,,$@) subinstall
+
+subinstall: $(SUBDIRS_INST)
+
+.PHONY: install subinstall $(SUBDIRS_INST)
+
+#-------------------------------------------------------------------------------
 # guts: build system developer's target: show popular variables
 guts:
 	@echo "OUTDIR=$(OUTDIR)"
@@ -117,3 +131,4 @@ guts:
 	@echo "SUBDIRS=$(SUBDIRS)"
 
 .phony: guts
+

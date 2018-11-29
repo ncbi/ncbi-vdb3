@@ -39,9 +39,9 @@ include $(TOP)/build/Makefile.env
 OBJ = $(addsuffix .$(LOBX),$(SRC))
 
 build:
-	$(MAKE_CMD) $(OBJ)
+	@ $(MAKE_CMD) $(OBJ)
 
-test: build
+test:
 	@ $(MAKE) -C test
 
 #

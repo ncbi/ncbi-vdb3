@@ -215,12 +215,8 @@ test:
 	@ # build; bin/servica and bin/serviceb created (build platform and db first)
 	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
 	  $(call ExpectPass,5.3, -C services build,\
-	  						test -f $(ACTUAL)/outdir/dbg/bin/servicea.$(VERSION) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/servicea.$(MAJMIN) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/servicea.$(MAJVERS) && \
-	  						test -f $(ACTUAL)/outdir/dbg/bin/serviceb.$(VERSION) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/serviceb.$(MAJMIN) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/serviceb.$(MAJVERS) \
+	  						test -f $(ACTUAL)/outdir/dbg/bin/servicea && \
+	  						test -f $(ACTUAL)/outdir/dbg/bin/serviceb \
 							)
 	@ #
 	@ # clean  (build platform and db first)
@@ -247,12 +243,8 @@ test:
 	@ # build; bin/toola and bin/toolb created (build platform and db first)
 	@ $(call Setup); $(MAKE) --quiet -C platform; $(MAKE) --quiet -C db; \
 	  $(call ExpectPass,6.3, -C tools build,\
-	  						test -f $(ACTUAL)/outdir/dbg/bin/toola.$(VERSION) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/toola.$(MAJMIN) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/toola.$(MAJVERS) && \
-	  						test -f $(ACTUAL)/outdir/dbg/bin/toolb.$(VERSION) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/toolb.$(MAJMIN) && \
-	  						test -L $(ACTUAL)/outdir/dbg/bin/toolb.$(MAJVERS) \
+	  						test -f $(ACTUAL)/outdir/dbg/bin/toola && \
+	  						test -f $(ACTUAL)/outdir/dbg/bin/toolb \
 							)
 	@ #
 	@ # clean  (build platform and db first)
@@ -336,7 +328,8 @@ test:
 							grep --quiet BDB $(ACTUAL)/8.9.stdout && \
 							grep --quiet ServiceA $(ACTUAL)/8.9.stdout && \
 							grep --quiet ToolB $(ACTUAL)/8.9.stdout && \
-							grep --quiet Suite1 $(ACTUAL)/8.9.stdout)
+							grep --quiet Suite1 $(ACTUAL)/8.9.stdout \
+		)
 	@ #
 	@ # missing Makefile.config
 	@ $(call Setup); rm Makefile.config; \
@@ -346,11 +339,36 @@ test:
 	@ $(call Setup); \
 	  $(call ExpectPass,8.11,-f $(TOP)/Makefile docs, test -d $(TOP)/docs/html)
 	@ #
-	@ #TODO: install
+	@ # install
+	@ $(call Setup); \
+	  $(call ExpectPass,9.1,-f $(TOP)/Makefile install INSTDIR=$(abspath $(ACTUAL)/install), \
+			test -f $(ACTUAL)/install/toola.$(VERSION) && \
+			test -L $(ACTUAL)/install/toola.$(MAJMIN) && \
+			test -L $(ACTUAL)/install/toola.$(MAJVERS) && \
+			test -L $(ACTUAL)/install/toola && \
+			test -L $(ACTUAL)/install/toolb && \
+			test -L $(ACTUAL)/install/servicea && \
+			test -L $(ACTUAL)/install/serviceb \
+		)
+	@ #
+	@ # uninstall
+	@ $(call Setup); \
+	  $(MAKE) -f $(TOP)/Makefile install INSTDIR=$(abspath $(ACTUAL)/install) >/dev/null; \
+	  $(call ExpectPass,10.1,-f $(TOP)/Makefile uninstall, \
+			! test -e $(ACTUAL)/install/toola.$(VERSION) && \
+			! test -e $(ACTUAL)/install/toola.$(MAJMIN) && \
+			! test -e $(ACTUAL)/install/toola.$(MAJVERS) && \
+			! test -e $(ACTUAL)/install/toola && \
+			! test -e $(ACTUAL)/install/toolb && \
+			! test -e $(ACTUAL)/install/servicea && \
+			! test -e $(ACTUAL)/install/serviceb \
+	  )
 	@ #
 	@ #TODO: package (Docker)
 	@ #
-	@ #TODO: test on iebdev
+	@ #TODO: test on iebdev (when googletest is installed)
+	@ #TODO: add "this is a test/template" comments throughout the test makefiles
+
 endif
 
 .phony: config build clean test

@@ -38,10 +38,10 @@ include $(TOP)/db/Makefile.env
 
 OBJ = $(addsuffix .$(LOBX),$(SRC))
 
-build: makedirs
-	$(MAKE_CMD) $(OBJ)
+build:
+	@ $(MAKE_CMD) $(OBJ)
 
-test: build
+test:
 	@ $(MAKE) -C test
 
 #

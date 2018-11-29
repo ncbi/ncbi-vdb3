@@ -34,11 +34,8 @@ default: test
 TOP ?= $(abspath ../..)
 MODULE = tests/suite1
 
-include $(TOP)/tools/Makefile.env
-
-clean:
-
-build:
+include $(TOP)/build/Makefile.env
 
 test:
 	@ echo "Suite1 passed"
+

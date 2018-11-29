@@ -41,10 +41,10 @@ OBJ = $(addsuffix .$(OBJX),$(SRC))
 clean:
 	rm -f $(BINDIR)/toolb
 
-build: makedirs
-	$(MAKE_CMD) $(BINDIR)/toolb
+build:
+	@ $(MAKE_CMD) $(BINDIR)/toolb
 
-test: build
+test:
 	@ $(MAKE) -C test
 
 #
@@ -55,4 +55,6 @@ SRC = main toolb
 
 $(BINDIR)/toolb: $(OBJ)
 	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform -lncbi-vdb3-db
-	$(call MakeLinks,$@)
+
+subinstall:
+	$(MAKE_CMD) $(INSTDIR)/toolb

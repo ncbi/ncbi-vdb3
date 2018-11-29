@@ -75,6 +75,7 @@ help: stdhelp
 	@echo "    out OUTDIR=<path> - switch to a different build output directory"
 	@echo "    docs     - generate Doxygen documentation"
 	@echo "    install  - install on the development system (may require sudo)"
+	@echo "    uninstall - uninstall from the development system (may require sudo)"
 	@echo "    package  - create a Docker container with the full installation"
 
 #-------------------------------------------------------------------------------
@@ -94,6 +95,7 @@ debug:
 	@ sed -i -e 's/BUILD.*rel/BUILD=dbg/' $(CONFIG_FILE)
 	@ $(MAKE) --no-print-directory config
 
+# requires OUTDIR to be specified on the command line
 out:
 	@ sed -i -e '/OUTDIR.*=/d' $(CONFIG_FILE)
 	echo OUTDIR=$(abspath $(OUTDIR)) >>$(CONFIG_FILE)
@@ -109,14 +111,21 @@ docs:
 #-------------------------------------------------------------------------------
 # install
 #
+# if not already in Makefile.config, expects INSTDIR to be specified on the command line
+# NB: INSTDIR is expected  to be an absolute path
+
 install:
-	@echo "TBD"
+	sed -i -e '/INSTDIR.*=/d' $(CONFIG_FILE)
+	echo INSTDIR=$(INSTDIR) >>$(CONFIG_FILE)
+	mkdir -p $(INSTDIR)
+	$(MAKE) --no-print-directory -C services subinstall
+	$(MAKE) --no-print-directory -C tools subinstall
 
 #-------------------------------------------------------------------------------
 # uninstall
 #
 uninstall:
-	@echo "TBD"
+	@ rm -f $(INSTDIR)/*
 
 #-------------------------------------------------------------------------------
 # package

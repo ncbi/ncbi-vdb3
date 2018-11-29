@@ -24,9 +24,11 @@
 
 #
 #	Test for the VDB3 build system, subdirectory of services/
+#   Can be used as a template for produciton Makefiles under services/
 #
 
-# need this line to be able run tests on the build system itself
+# need this line to be able run tests on the build system itself;
+# not needed in the production Makefile
 override SUBDIRS =
 
 default: build
@@ -41,11 +43,14 @@ OBJ = $(addsuffix .$(OBJX),$(SRC))
 clean:
 	rm -f $(BINDIR)/servicea
 
-build: makedirs
-	$(MAKE_CMD) $(BINDIR)/servicea
+build:
+	@ $(MAKE_CMD) $(BINDIR)/servicea
 
-test: build
+test:
 	@ $(MAKE) -C test
+
+subinstall:
+	$(MAKE_CMD) $(INSTDIR)/servicea
 
 #
 # subdirectory-specific part
@@ -55,4 +60,4 @@ SRC = main servicea
 
 $(BINDIR)/servicea: $(OBJ)
 	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform -lncbi-vdb3-db
-	$(call MakeLinks,$@)
+

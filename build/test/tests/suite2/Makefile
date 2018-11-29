@@ -36,9 +36,5 @@ MODULE = tests/suite2
 
 include $(TOP)/tools/Makefile.env
 
-clean:
-
-build:
-
 test:
 	@ echo "Suite2 passed"
