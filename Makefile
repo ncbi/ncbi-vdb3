@@ -49,14 +49,16 @@ default: build
 #-------------------------------------------------------------------------------
 # environment
 #
-TOP ?= $(CURDIR)
+TOP ?= $(abspath .)
 SUBDIRS = build platform db services tools tests
+
+$(info $(shell test -f $(TOP)/Makefile.config && echo yes || echo no) )
 
 ifeq (no, $(shell test -f $(TOP)/Makefile.config && echo yes || echo no))
 # handle missing Makefile.config
 # by default, create a Debug build, output to ~/ncbi-outdir/vdb3
-DEFAULT_BUILD=dbg
-DEFAULT_OUTDIR=$(wildcard ~)/ncbi-outdir/vdb3
+DEFAULT_BUILD  = dbg
+DEFAULT_OUTDIR = $(wildcard ~)/ncbi-outdir/vdb3
 $(info $(TOP)/Makefile.config is not found, creating...)
 $(info   current build is $(DEFAULT_BUILD))
 $(info   output target directory is $(DEFAULT_OUTDIR))
