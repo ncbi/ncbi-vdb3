@@ -1,5 +1,5 @@
 pipeline {
-    agent { docker { image 'gcc:5' } }
+    agent { docker { image 'vdb3' } }
     stages {
         stage('build') {
             steps {
