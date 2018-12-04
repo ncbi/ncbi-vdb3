@@ -28,10 +28,15 @@ namespace NCBI
 {
     namespace VDB3
     {
+        ///
+        /// class ToolA
+        ///
         class ToolA
         {
         public:
+            //! Constructor
             ToolA();
+            //! run
             int run();
         };
     }

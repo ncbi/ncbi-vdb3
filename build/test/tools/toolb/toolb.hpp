@@ -28,6 +28,9 @@ namespace NCBI
 {
     namespace VDB3
     {
+        ///
+        /// class ToolA
+        ///
         class ToolB
         {
         public:

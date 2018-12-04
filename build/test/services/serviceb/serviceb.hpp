@@ -28,6 +28,9 @@ namespace NCBI
 {
     namespace VDB3
     {
+        ///
+        /// class ServiceB
+        ///
         class ServiceB
         {
         public:

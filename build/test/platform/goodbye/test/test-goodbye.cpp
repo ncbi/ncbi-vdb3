@@ -48,18 +48,24 @@ TEST(Goodbye, nonFatal)
 
 // Tests with fixtures
 
+///
+/// Googletest fixture classes are derived from ::testing::Test
+///
 class Fixture : public ::testing::Test
 {
  protected:
+    //! constructor
     Fixture()
     : m_value ( 0 )
     {
     }
 
+    //! SetUp
     void SetUp() override
     {
         m_value = 1;
     }
+    //! TearDown
     void TearDown() override
     {
         m_value = 2;

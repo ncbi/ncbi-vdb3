@@ -24,7 +24,7 @@
 *
 */
 
-/*! \file structcmd.h
+/*! \file doxygen.hpp
     \brief Doxygen examples.
 
     This file containes examples of Doxygen for C++, copied from http://www.doxygen.nl/manual/docblocks.html

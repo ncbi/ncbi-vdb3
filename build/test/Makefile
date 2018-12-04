@@ -337,7 +337,7 @@ test:
 	@ #
 	@ # docs (Doxygen)
 	@ $(call Setup); \
-	  $(call ExpectPass,8.11,-f $(TOP)/Makefile docs, test -d $(TOP)/docs/html)
+	  $(call ExpectPass,8.11,-f $(TOP)/Makefile docs, test -d $(WORKDIR)/docs/html)
 	@ #
 	@ # install
 	@ $(call Setup); \

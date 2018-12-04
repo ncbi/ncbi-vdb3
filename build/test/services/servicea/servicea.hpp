@@ -28,10 +28,15 @@ namespace NCBI
 {
     namespace VDB3
     {
+        ///
+        /// class ServiceA
+        ///
         class ServiceA
         {
         public:
+            //! Constructor
             ServiceA();
+            //! start
             int start();
         };
     }
