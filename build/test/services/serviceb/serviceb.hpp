@@ -34,8 +34,11 @@ namespace NCBI
         class ServiceB
         {
         public:
+            ///
+            /// Constructor
+            ///
             ServiceB();
-            int start();
+            int start(); //!< start the service
         };
     }
 }

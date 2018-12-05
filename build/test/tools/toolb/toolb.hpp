@@ -34,8 +34,8 @@ namespace NCBI
         class ToolB
         {
         public:
-            ToolB();
-            int run();
+            ToolB(); //! constructor
+            int run();//! start the tool
         };
     }
 }

@@ -49,7 +49,7 @@ TEST(Goodbye, nonFatal)
 // Tests with fixtures
 
 ///
-/// Googletest fixture classes are derived from ::testing::Test
+/// Googletest fixture classes are derived from \::testing\::Test
 ///
 class Fixture : public ::testing::Test
 {
@@ -71,7 +71,7 @@ class Fixture : public ::testing::Test
         m_value = 2;
     }
 
-    int m_value;
+    int m_value; //!< fixture member
 };
 
 TEST_F(Fixture, Simple)
