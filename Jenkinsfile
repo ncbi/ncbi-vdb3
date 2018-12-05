@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('build') {
             steps {
-                shell 'rm Makefile.config;make DEFAULT_OUTDIR=outdir DEFAULT_BUILD=rel test'
+                shell 'rm -f Makefile.config;make DEFAULT_OUTDIR=outdir DEFAULT_BUILD=rel test'
             }
         }
     }
