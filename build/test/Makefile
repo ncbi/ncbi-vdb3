@@ -364,7 +364,10 @@ test:
 			! test -e $(ACTUAL)/install/serviceb \
 	  )
 	@ #
-	@ #TODO: package (Docker)
+	@ # package (Docker)
+	@ $(call Setup); \
+	  $(call ExpectPass,11.1,-f $(TOP)/Makefile PACKAGE=vdb3-test package, \
+	  						docker image inspect vdb3-test >/dev/null)
 	@ #
 	@ #TODO: test on iebdev (when googletest is installed)
 	@ #TODO: add "this is a test/template" comments throughout the test makefiles

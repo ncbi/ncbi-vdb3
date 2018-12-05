@@ -1,5 +1,5 @@
 pipeline {
-    agent { docker { image 'vdb3' } }
+    agent { docker { image 'ncbi-vdb3:jenkins' } }
     stages {
         stage('build') {
             steps {

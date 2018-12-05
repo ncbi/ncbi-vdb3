@@ -132,7 +132,9 @@ uninstall:
 #-------------------------------------------------------------------------------
 # package
 #
-package:
-	@echo "TBD"
+PACKAGE ?= ncbi-vdb3
+
+package: build
+	docker image build -f $(TOP)/build/Dockerfile.package -t $(PACKAGE):latest $(BINDIR)
 
 .PHONY: release debug out install package docs
