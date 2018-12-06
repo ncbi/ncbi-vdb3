@@ -10,9 +10,14 @@ RUN apt-get update && \
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && \
     apt-get -y install docker-ce && \
     \
-    groupadd -g 1000 jenkins && \
-    useradd jenkins -g 1000 -u 1000 && \
-    \
     make -v && \
     echo "Doxygen $(doxygen -v)" && \
     docker -v
+
+# bake and install googletest
+RUN apt-get -y install cmake &&\
+    git clone https://github.com/abseil/googletest.git home/googletest &&\
+    mkdir home/googletest/build &&\
+    cd home/googletest/build &&\
+    cmake .. &&\
+    make install
