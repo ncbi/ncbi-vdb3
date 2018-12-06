@@ -1,5 +1,13 @@
-pipeline {
-    agent { docker { image 'ncbi-vdb3:jenkins' } }
+pipeline
+{
+    agent
+    {
+        docker
+        {
+            image 'ncbi-vdb3.ubuntu.ci'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
     stages {
         stage('build') {
             steps {

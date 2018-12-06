@@ -52,8 +52,6 @@ default: build
 TOP ?= $(abspath .)
 SUBDIRS = build platform db services tools tests
 
-$(info $(shell test -f $(TOP)/Makefile.config && echo yes || echo no) )
-
 ifeq (no, $(shell test -f $(TOP)/Makefile.config && echo yes || echo no))
 # handle missing Makefile.config
 # by default, create a Debug build, output to ~/ncbi-outdir/vdb3
