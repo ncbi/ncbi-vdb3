@@ -60,8 +60,8 @@ DEFAULT_OUTDIR = $(wildcard ~)/ncbi-outdir/vdb3
 $(info $(TOP)/Makefile.config is not found, creating...)
 $(info   current build is $(DEFAULT_BUILD))
 $(info   output target directory is $(DEFAULT_OUTDIR))
-$(file >$(TOP)/Makefile.config,BUILD=$(DEFAULT_BUILD))
-$(file >>$(TOP)/Makefile.config,OUTDIR=$(DEFAULT_OUTDIR))
+$(shell echo "BUILD=$(DEFAULT_BUILD)" >$(TOP)/Makefile.config)
+$(shell echo "OUTDIR=$(DEFAULT_OUTDIR)" >>$(TOP)/Makefile.config)
 endif
 
 include $(TOP)/build/Makefile.env
