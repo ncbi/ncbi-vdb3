@@ -43,4 +43,4 @@ clean:
 	rm -rf $(ALL_TESTS)
 
 test: build
-	$(foreach Exe,$(ALL_TESTS), $(Exe); )
+	$(foreach Exe,$(ALL_TESTS), $(Exe) --gtest_output=xml; )

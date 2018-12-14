@@ -4,3 +4,4 @@ actual/
 /Makefile.config
 html/
 .vscode
+test_detail.xml

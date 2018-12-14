@@ -14,5 +14,15 @@ pipeline
                 sh 'rm -f Makefile.config;make DEFAULT_OUTDIR=outdir DEFAULT_BUILD=dbg test'
             }
         }
+        stage('docs') {
+            steps {
+                sh 'make docs'
+            }
+        }
+        stage('package') {
+            steps {
+                sh 'make package'
+            }
+        }
     }
 }
