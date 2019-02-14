@@ -23,43 +23,32 @@
 # ===========================================================================
 
 #
-#	Makefile for the platform subsystem of VDB3
+#	Tests for the VDB3 platform library
 #
+# to build/run all test projects, use target 'test' or 'check'
 
-#-------------------------------------------------------------------------------
-# default
-#
-default: build
+default: test
 
-TOP ?= $(abspath ..)
-MODULE = platform
-SUBDIRS ?=
+TOP ?= $(abspath ../..)
+MODULE = platform/test
 
-include $(TOP)/$(MODULE)/Makefile.env
+TESTS = test-memory
 
-LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
-
-#SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
-
-clean:
-	@ rm -rf $(LIBRARY)
-
-OBJ = $(addsuffix .$(LOBX),$(SRC))
-
-#-------------------------------------------------------------------------------
-# default
-#
-
-build:
-	@ $(MAKE_CMD) $(OBJ)
-	$(AR) $(LIBRARY) $(addprefix $(OBJDIR)/, $(OBJ) )
-
-test:
-	@ $(MAKE) -C test
+include $(TOP)/platform/Makefile.test
 
 #
 # subdirectory-specific part
 #
 
-SRC = memory
+# project memory
+SRC_MEMORY = test-memory
+
+OBJ_MEMORY = $(addsuffix .$(OBJX),$(SRC_MEMORY))
+
+$(TEST_BINDIR)/test-memory: $(OBJ_MEMORY)
+	$(LP) $(OBJ_MEMORY) -o $@ -lgtest -lpthread
+
+# build/run a single project
+memory: test-memory
+	$(TEST_BINDIR)/test-memory
 
