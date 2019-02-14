@@ -51,8 +51,8 @@ clean:
 	rm -rf $(ACTUAL)/*
 
 define Setup
-    cp Makefile.config.test-default Makefile.config
-    cp $(TOP)/docs/doxygen.config ./docs/
+    cp Makefile.config.test-default Makefile.config && \
+    cp $(TOP)/docs/doxygen.config ./docs/ && \
 	rm -rf $(ACTUAL)/outdir docs/html
 endef
 
@@ -365,13 +365,17 @@ test:
 	  )
 	@ #
 	@ # package (Docker)
+ifeq (0,$(shell id -u))
 	@ $(call Setup); \
-	  $(call ExpectPass,11.1,-f $(TOP)/Makefile PACKAGE=vdb3-test package, \
-	  						docker image inspect vdb3-test >/dev/null)
+	$(call ExpectPass,11.1,-f $(TOP)/Makefile PACKAGE=vdb3-test package, docker image inspect vdb3-test >/dev/null)
+else
+	@ echo "You need to be root to run 'make package'. Test 11.1 is skipped"
+endif
 	@ #
 	@ #TODO: test on iebdev (when googletest is installed)
 	@ #TODO: add "this is a test/template" comments throughout the test makefiles
-
+	@ #
+	@ rm -rf Makefile.config actual
 endif
 
 .phony: config build clean test
