@@ -5,3 +5,6 @@ actual/
 html/
 .vscode
 test_detail.xml
+vgcore.*
+core
+.gdb_history

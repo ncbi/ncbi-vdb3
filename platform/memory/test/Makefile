@@ -23,24 +23,28 @@
 # ===========================================================================
 
 #
-# gmake include to be used in a test project's Makefile
+#	Tests for the VDB3 platform library
 #
-# before including, define TESTS to a list of test executables in the project, e.g.
-# TESTS = test1 test2
+# to build/run all test projects, use target 'test' or 'check'
 
-include $(TOP)/build/Makefile.env
+default: test
 
-# build/run all test projects
-ALL_TESTS = $(addprefix $(TEST_BINDIR)/,$(TESTS))
+TOP ?= $(abspath ../../..)
+MODULE = platform/memory/test
 
-$(TESTS): makedirs
-	@ $(MAKE_CMD) $(TEST_BINDIR)/$@
+TESTS = test-memory
 
-build: makedirs
-	$(MAKE_CMD) $(ALL_TESTS)
+include $(TOP)/platform/Makefile.test
 
-clean:
-	rm -rf $(ALL_TESTS)
+#
+# subdirectory-specific part
+#
 
-test: build
-	$(foreach Exe,$(ALL_TESTS), echo "Running $(Exe)"; $(Exe) --gtest_output=xml; )
+# project memory
+SRC = test-memory
+
+OBJ = $(addsuffix .$(OBJX),$(SRC))
+
+$(TEST_BINDIR)/test-memory: $(OBJ)
+	$(LP) $(OBJ) -o $@ -lgtest -lpthread
+
