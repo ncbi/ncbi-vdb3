@@ -226,6 +226,12 @@ public:
         new ( m_ptr.get() ) T ( p_args ...);
     }
 
+    TypedMemoryBlock( const TypedMemoryBlock & that )
+    :   MemoryBlockItf ( that . getMgr() ),
+        m_ptr ( that . m_ptr )
+    {
+    }
+
     virtual ~TypedMemoryBlock()
     {
     }
