@@ -247,13 +247,7 @@ public:
 
     TypedMemoryBlock clone() const
     {
-        // requires operator= from T
-        TypedMemoryBlock ret ( *this );
-        ret . m_ptr . reset( ( T * ) getMgr() . allocate ( sizeof ( T ) ), Deleter<T> ( getMgr() ) );
-        ret . data () = data ();
-        return ret;
-        // TypedMemoryBlock ret ( getMgr(), data() );
-        // return ret;
+        return TypedMemoryBlock ( getMgr(), std::forward<const T>( data() ) ); // requires copy ctor from T
     };
 
 protected:

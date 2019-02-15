@@ -39,9 +39,6 @@ OBJ = $(addsuffix .$(LOBX),$(SRC))
 build:
 	@ $(MAKE_CMD) $(OBJ)
 
-test:
-	@ $(MAKE) -C test
-
 #
 # subdirectory-specific part
 #
