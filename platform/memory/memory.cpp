@@ -53,20 +53,8 @@ MemoryManagerItf::pointer PrimordialMemoryMgr::allocate ( size_type size )
     return ( pointer ) malloc ( size );
 }
 
-MemoryManagerItf::pointer PrimordialMemoryMgr::allocate ( size_type size, byte_t fill )
-{
-    auto ret = allocate ( size );
-    memset ( ret, fill, size );
-    return ret;
-}
-
-MemoryManagerItf::pointer PrimordialMemoryMgr::allocate_shared ( size_type, byte_t fill )           { assert(false); return nullptr; }
-MemoryManagerItf::pointer PrimordialMemoryMgr::allocate_shared ( size_type, int fd, off_t offset )  { assert(false); return nullptr; }
-MemoryManagerItf::pointer PrimordialMemoryMgr::allocate_pinned ( size_type )                        { assert(false); return nullptr; }
-MemoryManagerItf::pointer PrimordialMemoryMgr::allocate_pinned ( size_type, byte_t fill )           { assert(false); return nullptr; }
-
 void
-PrimordialMemoryMgr::deallocate ( pointer p )
+PrimordialMemoryMgr::deallocate ( pointer p, size_type bytes ) noexcept
 {
     free ( p );
 }
@@ -77,14 +65,6 @@ PrimordialMemoryMgr:: reallocate ( pointer p, size_type s )
     //TODO: throw if nullptr
     return realloc(p, s);
 }
-
-MemoryManagerItf::size_type PrimordialMemoryMgr::max_size() const noexcept      { assert(false); return 0; }
-
-MemoryManagerItf::size_type PrimordialMemoryMgr::quota() const noexcept         { assert(false); return 0; }
-bool PrimordialMemoryMgr::update_quota( size_type min_extension ) const         { assert(false); return false; }
-MemoryManagerItf::size_type PrimordialMemoryMgr::total_free() const noexcept    { assert(false); return 0; }
-MemoryManagerItf::size_type PrimordialMemoryMgr::total_used() const noexcept    { assert(false); return 0; }
-MemoryManagerItf::size_type PrimordialMemoryMgr::max_free() const noexcept      { assert(false); return 0; }
 
 /////////////// MemoryBlockItf
 
@@ -130,7 +110,7 @@ bytes_t RawMemoryBlock :: size() const
 
 void RawMemoryBlock :: fill(byte_t filler)
 {
-    memset( m_ptr . get(), filler, size() );
+    memset( m_ptr . get(), int ( filler ), size() );
 }
 
 RawMemoryBlock RawMemoryBlock :: clone() const
@@ -160,7 +140,7 @@ bytes_t UniqueRawMemoryBlock :: size() const
 
 void UniqueRawMemoryBlock :: fill(byte_t filler)
 {
-    memset( m_ptr . get(), filler, size() );
+    memset( m_ptr . get(), int ( filler ), size() );
 }
 
 UniqueRawMemoryBlock UniqueRawMemoryBlock :: clone() const
