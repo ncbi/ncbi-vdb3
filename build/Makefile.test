@@ -28,6 +28,12 @@
 # before including, define TESTS to a list of test executables in the project, e.g.
 # TESTS = test1 test2
 
+GTESTDIR = /usr/local/googletest/1.8/src
+INCDIRS += -I$(GTESTDIR)/googletest/include
+INCDIRS += -I$(GTESTDIR)/googlemock/include
+
+LDFLAGS += -L/usr/local/googletest/1.8/bin/lib
+
 include $(TOP)/build/Makefile.env
 
 # build/run all test projects

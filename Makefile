@@ -132,7 +132,12 @@ uninstall:
 #
 PACKAGE ?= ncbi-vdb3
 
+ifneq (,$(shell which docker 2>/dev/null))
 package: build
 	docker image build -f $(TOP)/build/Dockerfile.package -t $(PACKAGE):latest $(BINDIR)
+else
+package:
+	@ echo "docker is not found in PATH. Please install docker to enable packaging"
+endif
 
 .PHONY: release debug out install package docs

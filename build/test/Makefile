@@ -364,10 +364,16 @@ test:
 			! test -e $(ACTUAL)/install/serviceb \
 	  )
 	@ #
+ifneq (,$(shell which docker 2>/dev/null))
 	@ # package (Docker)
 	@ $(call Setup); \
 	  $(call ExpectPass,11.1,-f $(TOP)/Makefile PACKAGE=vdb3-test package, \
 	  						docker image inspect vdb3-test >/dev/null)
+else
+	@ # package (no Docker, exit gracefully)
+	@ $(call Setup); \
+	  $(call ExpectPass,11.1,-f $(TOP)/Makefile PACKAGE=vdb3-test package,)
+endif
 	@ #
 	@ #TODO: test on iebdev (when googletest is installed)
 	@ #TODO: add "this is a test/template" comments throughout the test makefiles
