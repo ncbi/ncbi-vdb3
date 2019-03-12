@@ -131,13 +131,15 @@ uninstall:
 # package
 #
 PACKAGE ?= ncbi-vdb3
-
-ifneq (,$(shell which docker 2>/dev/null))
-package: build
-	docker image build -f $(TOP)/build/Dockerfile.package -t $(PACKAGE):latest $(BINDIR)
-else
+ifeq (,$(shell which docker 2>/dev/null))
 package:
 	@ echo "docker is not found in PATH. Please install docker to enable packaging"
+else ifeq (, $(shell sudo docker -v))
+package:
+	@ echo "Packaging has to be run as root."
+else
+package: build
+	sudo docker image build -f $(TOP)/build/Dockerfile.package -t $(PACKAGE):latest $(BINDIR)
 endif
 
 .PHONY: release debug out install package docs
