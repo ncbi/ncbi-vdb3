@@ -368,7 +368,7 @@ ifneq (,$(shell which docker 2>/dev/null))
 	@ # package (Docker)
 	@ $(call Setup); \
 	  $(call ExpectPass,11.1,-f $(TOP)/Makefile PACKAGE=vdb3-test package, \
-	  						docker image inspect vdb3-test >/dev/null)
+	  						sudo docker image inspect vdb3-test >/dev/null)
 else
 	@ # package (no Docker, exit gracefully)
 	@ $(call Setup); \
