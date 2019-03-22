@@ -41,7 +41,30 @@ include $(TOP)/platform/Makefile.test
 #
 
 # project memory
-SRC = test-memory
+SRC = \
+	test-main \
+	test-MemoryManagerItf \
+	test-MemoryBlockItf \
+	test-TrackingMemoryManager \
+	test-PrimordialMemoryMgr \
+	test-FillingMemoryMgr \
+	test-PinnedMemoryMgr \
+	test-QuotaMemoryMgr \
+	test-SharedMemoryMgr \
+	test-UniqueRawMemoryBlock \
+	test-RawMemoryBlock \
+	test-TypedMemoryBlock \
+	../MemoryManagerItf \
+	../TrackingMemoryManagerItf \
+	../MemoryBlockItf \
+	../FillingMemoryMgr \
+	../PinnedMemoryMgr \
+	../QuotaMemoryMgr \
+	../SharedMemoryMgr \
+	../UniqueRawMemoryBlock \
+	../PrimordialMemoryMgr \
+	../RawMemoryBlock \
+	../TypedMemoryBlock
 
 OBJ = $(addsuffix .$(OBJX),$(SRC))
 

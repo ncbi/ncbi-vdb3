@@ -30,7 +30,7 @@ default: build
 
 TOP ?= $(abspath ../..)
 MODULE = platform/memory
-SUBDIRS = test
+SUBDIRS =
 
 include $(TOP)/build/Makefile.env
 
@@ -43,7 +43,18 @@ build:
 # subdirectory-specific part
 #
 
-SRC = memory
+SRC = \
+	MemoryManagerItf \
+	TrackingMemoryManagerItf \
+	MemoryBlockItf \
+	FillingMemoryMgr \
+	PinnedMemoryMgr \
+	QuotaMemoryMgr \
+	SharedMemoryMgr \
+	UniqueRawMemoryBlock \
+	PrimordialMemoryMgr \
+	RawMemoryBlock \
+	TypedMemoryBlock
 
 
 

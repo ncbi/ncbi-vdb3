@@ -24,99 +24,23 @@
 *
 */
 
-#include "../memory.cpp"
+#include <memory/TypedMemoryBlock.hpp>
+
+#include <memory/PrimordialMemoryMgr.hpp>
 
 #include <gtest/gtest.h>
 
 using namespace std;
-
-// PrimordialMemoryMgr
-
-TEST ( PrimordialMemoryMgr, Allocate_Deallocate )
-{
-    VDB3::PrimordialMemoryMgr pm;
-    auto ptr = pm . allocate ( 1 );
-    ASSERT_NE ( nullptr, ptr );
-    pm . deallocate ( ptr, 1 );
-}
+using namespace VDB3;
 
 /**
  *  Test fixture class encapsulating PrimordialMemoryMgr.
  */
-class PrimMgr : public ::testing::Test
+class TypedMemoryBlock_Fixture : public ::testing::Test
 {
 protected:
-
-    const size_t Size = 13; ///< common block size
-    const byte_t Filler1 = byte_t ( 0x5a ); ///< a filler byte
-    const byte_t Filler2 = byte_t ( 0x25 ); ///< another filler byte
-
     VDB3::PrimordialMemoryMgr pm;   ///< the underlying memory manager
 };
-
-// RawMemoryBlock
-
-TEST_F ( PrimMgr, Raw_Allocate_Deallocate_Size )
-{
-    RawMemoryBlock rmb ( pm, Size );
-    ASSERT_NE ( nullptr, rmb . data() );
-    ASSERT_EQ ( Size, rmb . size() );
-    // dtor will deallocate
-}
-
-TEST_F ( PrimMgr, Raw_Copy_Share_Fill )
-{
-    RawMemoryBlock rmb1 ( pm, Size );
-    auto rmb2 = rmb1;
-    ASSERT_EQ ( Size, rmb2 . size() );
-    rmb1.fill ( Filler1 );
-    ASSERT_EQ ( Filler1, rmb2.data() [ 0 ] );
-    ASSERT_EQ ( Filler1, rmb2.data() [ 1 ] );
-}
-
-TEST_F ( PrimMgr, Raw_Clone )
-{
-    RawMemoryBlock rmb1 ( pm, Size );
-    auto rmb2 = rmb1 . clone();
-    rmb2.fill ( Filler2 );
-    ASSERT_EQ ( Size, rmb2 . size() );
-    rmb1.fill ( Filler1 ); // does not affect rmb2:
-    ASSERT_EQ ( Filler2, rmb2.data() [ 0 ] );
-    ASSERT_EQ ( Filler2, rmb2.data() [ 1 ] );
-}
-
-TEST_F ( PrimMgr, Raw_RefCount )
-{
-    RawMemoryBlock rmb1 ( pm, Size );
-    ASSERT_EQ ( 1, rmb1 . refcount () );
-
-    {
-        auto rmb2 = rmb1;
-        ASSERT_EQ ( 2, rmb1 . refcount () );
-        ASSERT_EQ ( 2, rmb2 . refcount () );
-    }
-    ASSERT_EQ ( 1, rmb1 . refcount () );
-}
-
-// UniqueRawMemoryBlock
-
-TEST_F ( PrimMgr, UniqueRaw_Allocate_Deallocate_Size )
-{
-    UniqueRawMemoryBlock rmb ( pm, Size );
-    ASSERT_NE ( nullptr, rmb . data() );
-    ASSERT_EQ ( Size, rmb . size() );
-}
-
-TEST_F ( PrimMgr, UniqueRaw_Clone_Fill )
-{
-    UniqueRawMemoryBlock rmb1 ( pm, Size );
-    auto rmb2 = rmb1 . clone();
-    rmb2.fill ( Filler2 );
-    ASSERT_EQ ( Size, rmb2 . size() );
-    rmb1.fill ( Filler1 ); // does not affect rmb2:
-    ASSERT_EQ ( Filler2, rmb2.data() [ 0 ] );
-    ASSERT_EQ ( Filler2, rmb2.data() [ 1 ] );
-}
 
 // TypedMemoryBlock
 
@@ -152,7 +76,7 @@ public:
 
 uint32_t C :: dtor_called = 0;
 
-TEST_F ( PrimMgr, Typed_Allocate_Deallocate_Size_Data )
+TEST_F ( TypedMemoryBlock_Fixture, Typed_Allocate_Deallocate_Size_Data )
 {
     C :: dtor_called = 0;
     {
@@ -164,7 +88,7 @@ TEST_F ( PrimMgr, Typed_Allocate_Deallocate_Size_Data )
     ASSERT_EQ ( 1, C :: dtor_called );
 }
 
-TEST_F ( PrimMgr, Typed_Copy )
+TEST_F ( TypedMemoryBlock_Fixture, Typed_Copy )
 {
     C :: dtor_called = 0;
     {
@@ -179,7 +103,7 @@ TEST_F ( PrimMgr, Typed_Copy )
     ASSERT_EQ ( 1, C :: dtor_called ); // only 1 C existed
 }
 
-TEST_F ( PrimMgr, Typed_Share )
+TEST_F ( TypedMemoryBlock_Fixture, Typed_Share )
 {
     TypedMemoryBlock<C> tmb1 ( pm, 1, 2.3f );
     TypedMemoryBlock<C> tmb2 ( tmb1 );
@@ -187,7 +111,7 @@ TEST_F ( PrimMgr, Typed_Share )
     ASSERT_EQ ( tmb1 . data() . mem1, tmb2 . data() . mem1 );
 }
 
-TEST_F ( PrimMgr, Typed_Clone )
+TEST_F ( TypedMemoryBlock_Fixture, Typed_Clone )
 {
     C :: dtor_called = 0;
     {
@@ -197,24 +121,4 @@ TEST_F ( PrimMgr, Typed_Clone )
         ASSERT_EQ ( 1, tmb2 . data() . mem1 ); // did not change
     }
     ASSERT_EQ ( 2, C :: dtor_called ); // 2 Cs existed
-}
-
-// TEST ( FillingMemoryMgr, Allocate_WithFill )
-// {
-//     const byte_t Filler = byte_t ( 0x5a );
-//     VDB3::FillingMemoryMgr pm( Filler ); etc. - add trash byte
-//     auto ptr = pm.allocate ( 2 , Filler );
-//     ASSERT_NE ( nullptr, ptr );
-//     ASSERT_EQ ( Filler, * ( byte_t * ) ptr );
-//     ASSERT_EQ ( Filler, * ( ( byte_t * ) ptr + 1 ) );
-
-//     pm . deallocate ( ptr, 2 );
-// }
-
-//////////////////////////////////////////////////////////
-
-int main ( int argc, char **argv )
-{
-    ::testing::InitGoogleTest ( & argc, argv );
-    return RUN_ALL_TESTS();
 }

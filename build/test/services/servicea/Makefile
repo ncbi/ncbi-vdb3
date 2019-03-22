@@ -46,9 +46,6 @@ clean:
 build:
 	@ $(MAKE_CMD) $(BINDIR)/servicea
 
-test:
-	@ $(MAKE) -C test
-
 subinstall:
 	$(MAKE_CMD) $(INSTDIR)/servicea
 

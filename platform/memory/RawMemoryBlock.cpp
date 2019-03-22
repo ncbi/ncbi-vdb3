@@ -24,63 +24,12 @@
 *
 */
 
-#include <memory.hpp>
+#include <memory/RawMemoryBlock.hpp>
 
+// memset, memmove
 #include <cstring>
-#include <cassert>
 
 using namespace VDB3;
-
-/////////////// MemoryManagerItf
-
-MemoryManagerItf::~MemoryManagerItf()
-{
-}
-
-/////////////// PrimordialMemoryMgr
-
-PrimordialMemoryMgr::PrimordialMemoryMgr()
-{
-}
-
-PrimordialMemoryMgr::~PrimordialMemoryMgr()
-{
-}
-
-MemoryManagerItf::pointer PrimordialMemoryMgr::allocate ( size_type size )
-{
-    //TODO: throw if nullptr
-    return ( pointer ) malloc ( size );
-}
-
-void
-PrimordialMemoryMgr::deallocate ( pointer p, size_type bytes ) noexcept
-{
-    free ( p );
-}
-
-MemoryManagerItf::pointer
-PrimordialMemoryMgr:: reallocate ( pointer p, size_type s )
-{
-    //TODO: throw if nullptr
-    return realloc(p, s);
-}
-
-/////////////// MemoryBlockItf
-
-MemoryBlockItf :: MemoryBlockItf ( MemoryManagerItf & p_mgr )
-: mgr ( & p_mgr )
-{
-}
-
-MemoryBlockItf :: MemoryBlockItf ( const MemoryBlockItf & that )
-: mgr ( that.mgr )
-{
-}
-
-MemoryBlockItf :: ~MemoryBlockItf()
-{
-}
 
 /////////////// RawMemoryBlock
 
@@ -119,34 +68,3 @@ RawMemoryBlock RawMemoryBlock :: clone() const
     memmove ( ret . getPtr() . get(), m_ptr . get(), m_size );
     return ret;
 }
-
-/////////////// UniqueRawMemoryBlock
-
-UniqueRawMemoryBlock :: UniqueRawMemoryBlock ( MemoryManagerItf & p_mgr, size_t p_size )
-:   MemoryBlockItf ( p_mgr ),
-    m_size ( p_size ),
-    m_ptr ( ( byte_t * ) getMgr() . allocate ( m_size ), Deleter<byte_t>( getMgr() ) )
-{
-}
-
-UniqueRawMemoryBlock :: ~UniqueRawMemoryBlock()
-{
-}
-
-bytes_t UniqueRawMemoryBlock :: size() const
-{
-    return m_size;
-}
-
-void UniqueRawMemoryBlock :: fill(byte_t filler)
-{
-    memset( m_ptr . get(), int ( filler ), size() );
-}
-
-UniqueRawMemoryBlock UniqueRawMemoryBlock :: clone() const
-{
-    UniqueRawMemoryBlock ret ( getMgr(), m_size );
-    memmove ( ret . getPtr() . get(), m_ptr . get(), m_size );
-    return ret;
-}
-

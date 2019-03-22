@@ -46,4 +46,4 @@ test: build
 	$(foreach Exe,$(ALL_TESTS), echo "Running $(Exe)"; $(Exe) --gtest_output=xml; )
 
 vg: build
-	$(foreach Exe,$(ALL_TESTS), valgrind $(Exe) --gtest_output=xml; )
+	$(foreach Exe,$(ALL_TESTS), valgrind --leak-check=full $(Exe) --gtest_output=xml; )
