@@ -1,4 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Workspace
    version = "1.0">
+   <Group
+      location = "group:../../../tests/fastq-client"
+      name = "fastq-client">
+      <FileRef
+         location = "group:README.md">
+      </FileRef>
+   </Group>
+   <Group
+      location = "group:../../../tests/fastq-server"
+      name = "fastq-server">
+      <FileRef
+         location = "group:README.md">
+      </FileRef>
+   </Group>
 </Workspace>
