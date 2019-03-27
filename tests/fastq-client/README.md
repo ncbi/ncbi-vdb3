@@ -6,8 +6,8 @@ is to drive the VDB-3 data process for the sake of developing and testing:
 * Protocols.
 * IPC.
 
-This is most basic tool that will try to open a cursor on the SEQUENCE table and print out:
+This is a basic tool that will try to open a cursor on the `SEQUENCE` table and print out:
 1. `NAME`
 2. `READ`
 3. `QUALITY`
-In FASTQ format.
+in FASTQ format.
