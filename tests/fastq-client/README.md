@@ -12,4 +12,5 @@ This is a basic tool that will try to open a cursor on the `SEQUENCE` table and 
 1. `NAME`
 2. `READ`
 3. `QUALITY`
+
 in FASTQ format.
