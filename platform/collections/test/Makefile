@@ -23,27 +23,38 @@
 # ===========================================================================
 
 #
-#	Makefile for the platform subsystem of VDB3
+#	Tests for the VDB3 platform library
+#
+# to build/run all test projects, use target 'test' or 'check'
+
+default: test
+
+TOP ?= $(abspath ../../..)
+MODULE = platform/collections/test
+
+TESTS = test-Hash test-Random test-HashTable
+
+include $(TOP)/platform/Makefile.test
+
+#
+# subdirectory-specific part
 #
 
-#-------------------------------------------------------------------------------
-# default
-#
-default: build
+# project collections
+SRC = \
+	test-main \
+	test-Random \
+	test-Hash \
+	test-HashTable
 
-TOP ?= $(abspath ..)
-MODULE = platform
-SUBDIRS ?= memory collections
+OBJ = $(addsuffix .$(OBJX),$(SRC))
 
-include $(TOP)/$(MODULE)/Makefile.env
+$(TEST_BINDIR)/test-Hash: $(OBJ)
+	$(LP) $(OBJ) -o $@ -lgtest -lpthread
 
-LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
+$(TEST_BINDIR)/test-Random: $(OBJ)
+	$(LP) $(OBJ) -o $@ -lgtest -lpthread
 
-SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
-
-build: makedirs
-	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
-
-clean:
-	@ rm -rf $(LIBRARY)
+$(TEST_BINDIR)/test-HashTable: $(OBJ)
+	$(LP) $(OBJ) -o $@ -lgtest -lpthread
 

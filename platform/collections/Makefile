@@ -22,28 +22,25 @@
 #
 # ===========================================================================
 
-#
-#	Makefile for the platform subsystem of VDB3
-#
-
-#-------------------------------------------------------------------------------
-# default
-#
 default: build
 
-TOP ?= $(abspath ..)
-MODULE = platform
-SUBDIRS ?= memory collections
+TOP ?= $(abspath ../..)
+MODULE = platform/collections
+SUBDIRS =
 
-include $(TOP)/$(MODULE)/Makefile.env
+include $(TOP)/build/Makefile.env
 
-LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
+OBJ = $(addsuffix .$(LOBX),$(SRC))
 
-SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
+build:
+	@ $(MAKE_CMD) $(OBJ)
 
-build: makedirs
-	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
+#
+# subdirectory-specific part
+#
 
-clean:
-	@ rm -rf $(LIBRARY)
+SRC = \
+	
+
+
 

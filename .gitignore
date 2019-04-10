@@ -2,6 +2,7 @@
 actual/
 # don't want checkouts to overwrite the current build config
 /Makefile.config
+**/test/Makefile.config
 html/
 .vscode
 test_detail.xml
