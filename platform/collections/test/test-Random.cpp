@@ -28,7 +28,7 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <map>
+#include <set>
 #include <set>
 #include <stdexcept>
 #include <stdint.h>
@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
-#include <unordered_map>
+#include <unordered_set>
 
 #include <gtest/gtest.h>
 
@@ -77,30 +77,30 @@ TEST ( Random, Range)
 TEST ( Random, Dups)
 {
     Random r;
-    std::unordered_map<uint64_t> map;
+    std::unordered_set<uint64_t> set;
     size_t ins=1000;
     for ( size_t i=0; i!=ins; ++i)
     {
         uint64_t x=r();
-        ASSERT_EQ(map.count(x),0);
-        map.insert(x);
+        ASSERT_EQ(set.count(x),0);
+        set.insert(x);
     }
-    ASSERT_EQ(map.size(),ins);
+    ASSERT_EQ(set.size(),ins);
 }
 
 TEST (Random, Bytes)
 {
     Random r;
-    std::unordered_map<string> map;
+    std::unordered_set<string> set;
 
-    size_t int=50;
+    size_t ins=50;
     for (size_t i=0; i!=ins; ++i)
     {
         std::string bytes=r.randbytes(i);
         ASSERT_EQ(bytes.size(),i);
-        ASSERT_EQ(map.count(bytes),0);
-        map.insert(bytes);
+        ASSERT_EQ(set.count(bytes),0);
+        set.insert(bytes);
     }
-    ASSERT_EQ(map.size(), ins);
+    ASSERT_EQ(set.size(), ins);
 }
 

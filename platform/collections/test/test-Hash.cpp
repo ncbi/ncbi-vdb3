@@ -31,8 +31,8 @@
 #include <map>
 #include <set>
 #include <stdexcept>
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdint>
+#include <cstdio>
 #include <sys/time.h>
 #include <unistd.h>
 #include <utility>
@@ -40,8 +40,20 @@
 
 #include <gtest/gtest.h>
 
-using namespace std;
 using namespace VDB3;
+
+static uint64_t stopwatch ( )
+{
+    static uint64_t start = 0;
+    struct timeval tv_cur;
+
+    gettimeofday ( &tv_cur, NULL );
+    uint64_t finish = tv_cur.tv_sec * 1000000 + tv_cur.tv_usec;
+    uint64_t elapsed = finish - start;
+    start = finish;
+    return elapsed;
+}
+
 
 TEST ( Hash, Basic)
 {
@@ -54,11 +66,11 @@ TEST ( Hash, Basic)
     uint64_t hash2 = Hash ( str, size );
     ASSERT_EQ ( hash, hash2 );
 
-    uint64_t hash3 = HashCStr ( str );
+    uint64_t hash3 = Hash ( str );
     ASSERT_EQ ( hash, hash3 );
 }
 
-TEST_CASE (Hash, String)
+TEST (Hash, String)
 {
     std::string str="This space for rent";
     uint64_t hash = Hash(str);
@@ -66,7 +78,7 @@ TEST_CASE (Hash, String)
     ASSERT_EQ (Hash(str), Hash(str));
 }
 
-TEST_CASE (Hash, Integer)
+TEST (Hash, Integer)
 {
     int i=random();
     uint64_t hash=Hash(i);
@@ -75,19 +87,19 @@ TEST_CASE (Hash, Integer)
     ASSERT_NE(hash, Hash(i));
 }
 
-TEST_CASE (Hash, Float)
+TEST (Hash, Float)
 {
     float a=0.0,b=-0.0;
     ASSERT_EQ(Hash(a), Hash(b));
 }
 
-TEST_CASE (Hash, Double)
+TEST (Hash, Double)
 {
     double a=0.0,b=-0.0;
     ASSERT_EQ(Hash(a), Hash(b));
 }
 
-TEST_CASE ( Hash_unique )
+TEST ( Hash,Unique )
 {
     const char *str = "Tu estas probando este hoy, no manana";
     size_t size = strlen ( str );
@@ -97,7 +109,7 @@ TEST_CASE ( Hash_unique )
     ASSERT_NE ( hash1, hash2 );
 }
 
-TEST_CASE ( Hash_Adjacent )
+TEST ( Hash,Adjacent )
 {
     uint64_t hash1, hash2, diff;
 
@@ -129,7 +141,7 @@ TEST_CASE ( Hash_Adjacent )
     ASSERT_LE ( diff, (uint64_t)7 );
 }
 
-TEST_CASE ( Hash_Collide )
+TEST ( Hash,Collide )
 {
     // We fill a buffer with random bytes, and then increment each byte once
     // and verify no collisions occur for all lengths.
@@ -146,7 +158,7 @@ TEST_CASE ( Hash_Collide )
                 buf[j] += 1;
                 uint64_t hash = Hash ( buf, l );
                 size_t count = set.count ( hash );
-                if ( count ) {
+                if ( count != 0 ) {
                     collisions++;
                     fprintf ( stderr,
                         "Collision at %lu on hash of len %lu is %lx: "
@@ -159,21 +171,21 @@ TEST_CASE ( Hash_Collide )
     ASSERT_EQ ( inserts, set.size () );
 }
 
-TEST_CASE ( Hash_Speed )
+TEST ( Hash,Speed )
 {
     char key[8192];
-    unsigned long loops = 1000000;
+    uint64_t loops = 1000000;
 
     for ( uint64_t i = 0; i != sizeof ( key ); i++ ) key[i] = random ();
 
     long len = 4;
     while ( len < 10000 ) {
         stopwatch ();
-        for ( unsigned long i = 0; i != loops; i++ ) Hash ( key, len );
+        for ( uint64_t i = 0; i != loops; i++ ) Hash ( key, len );
 
-        unsigned long us = stopwatch ();
-        unsigned long hps = 1000000 * loops / us;
-        unsigned long mbps = hps * len / 1048576;
+        uint64_t us = stopwatch ();
+        uint64_t hps = 1000000 * loops / us;
+        uint64_t mbps = hps * len / 1048576;
         printf ( "Hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
             len, us, hps, mbps );
 
@@ -181,21 +193,21 @@ TEST_CASE ( Hash_Speed )
     }
 }
 
-TEST_CASE ( string_hash_Speed )
+TEST ( Hash, string_hash_Speed )
 {
     char key[8192];
-    unsigned long loops = 1000000;
+    uint64_t loops = 1000000;
 
     for ( uint64_t i = 0; i != sizeof ( key ); i++ ) key[i] = random ();
 
     long len = 4;
     while ( len < 10000 ) {
         stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ ) string_hash ( key, len );
+        for ( uint64_t i = 0; i != loops; i++ ) Hash ( key, len );
 
-        unsigned long us = stopwatch ();
-        unsigned long hps = 1000000 * loops / us;
-        unsigned long mbps = hps * len / 1048576;
+        uint64_t us = stopwatch ();
+        uint64_t hps = 1000000 * loops / us;
+        uint64_t mbps = hps * len / 1048576;
         printf (
             "string_hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
             len, us, hps, mbps );
@@ -204,9 +216,9 @@ TEST_CASE ( string_hash_Speed )
     }
 }
 
-TEST_CASE ( std_hash_Speed )
+TEST ( Hash,std_hash_Speed )
 {
-    unsigned long loops = 1000000;
+    uint64_t loops = 1000000;
     string str = "1234";
 
     std::size_t hash = 0;
@@ -216,9 +228,9 @@ TEST_CASE ( std_hash_Speed )
         for ( uint64_t i = 0; i != loops; i++ )
             hash += std::hash<std::string> {}( str );
 
-        unsigned long us = stopwatch () + 1;
-        unsigned long hps = 1000000 * loops / us;
-        unsigned long mbps = hps * len / 1048576;
+        uint64_t us = stopwatch () + 1;
+        uint64_t hps = 1000000 * loops / us;
+        uint64_t mbps = hps * len / 1048576;
         printf (
             "std::hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
             len, us, hps, mbps );
@@ -228,10 +240,10 @@ TEST_CASE ( std_hash_Speed )
     }
 }
 
-TEST_CASE ( hash_hamming )
+TEST ( Hash,hamming )
 {
     char key[100];
-    uint64_t mask = 0xfff;
+    const uint64_t mask = 0xfff;
     uint64_t hash_collisions[mask + 1];
     uint64_t khash_collisions[mask + 1];
     uint64_t rhash_collisions[mask + 1];
@@ -249,11 +261,11 @@ TEST_CASE ( hash_hamming )
         Hash ( foo1, strlen ( foo1 ) ), foo2,
         Hash ( foo2, strlen ( foo2 ) ) );
     printf ( "string_hash of %s is %u, %s is %u\n", foo1,
-        string_hash ( foo1, strlen ( foo1 ) ), foo2,
-        string_hash ( foo2, strlen ( foo2 ) ) );
+        Hash ( foo1, strlen ( foo1 ) ), foo2,
+        Hash ( foo2, strlen ( foo2 ) ) );
     for ( uint64_t i = 0; i != 10000000; i++ ) {
         sprintf ( key, "ABCD%lu", i );
-        uint64_t hash = string_hash ( key, strlen ( key ) );
+        uint64_t hash = Hash ( key, strlen ( key ) );
         hash &= mask;
         hash_collisions[hash] = hash_collisions[hash] + 1;
 
@@ -278,153 +290,5 @@ TEST_CASE ( hash_hamming )
     printf ( "string_hash longest probe is %lu\n", hash_max );
     printf ( "khash longest probe is %lu\n", khash_max );
     printf ( "rhash longest probe is %lu\n", rhash_max );
-}
-
-TEST ( PinnedMemoryMgr, Instantiate )
-{
-    PinnedMemoryMgr mgr ( nullptr );
-}
-
-TEST ( PinnedMemoryMgr, Allocate )
-{
-    PinnedMemoryMgr mgr ( nullptr );
-    MemoryManagerItf::pointer p = mgr.allocate(1);
-    ASSERT_NE ( nullptr, p );
-    mgr.deallocate(p, 1);
-}
-
-/**
-* Fake locker class for testing. Keeps track of currently "pinned" blocks
-*/
-class TestLocker : public PinnedMemoryMgr :: MemoryLockerItf
-{
-public:
-    TestLocker(){}
-    virtual ~TestLocker () {}
-    /**
-     * Add an address range to the list of "pinned" ranges
-     * @param ptr pointer to the start of the address range
-     * @param bytes size of the address range
-     */
-    virtual void lock( MemoryManagerItf :: pointer ptr, MemoryManagerItf :: size_type bytes )
-    {
-        blocks [ ptr ] = bytes;
-    }
-    /**
-     * Remove an address range from the list of "pinned" ranges
-     * @param ptr pointer to the start of the address range
-     * @param bytes size of the address range
-     */
-    virtual void unlock( MemoryManagerItf :: pointer ptr, MemoryManagerItf :: size_type bytes )
-    {
-        assert ( bytes == blocks [ ptr ] );
-        blocks . erase ( ptr );
-    }
-
-    typedef std::map < MemoryManagerItf :: pointer, MemoryManagerItf :: size_type > Blocks; ///< block start -> block size
-    Blocks blocks; ///< currently pinned blocks
-};
-
-TEST ( PinnedMemoryMgr, CustomLocker_Pin )
-{
-    TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
-    MemoryManagerItf :: pointer p = mgr . allocate ( 1 );
-    ASSERT_EQ ( 1, tl . blocks [ p ] );
-
-    mgr . deallocate ( p, 1 );
-}
-
-TEST ( PinnedMemoryMgr, CustomLocker_Unpin )
-{
-    TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
-    MemoryManagerItf :: pointer p = mgr . allocate ( 1 );
-
-    mgr . deallocate ( p, 1 );
-    ASSERT_EQ ( tl . blocks . end (), tl . blocks . find ( p ) );
-}
-
-TEST ( PinnedMemoryMgr, CustomLocker_Alloc_0_size )
-{
-    TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
-    MemoryManagerItf :: pointer p = mgr . allocate ( 0 );
-    ASSERT_EQ ( nullptr, p );
-    ASSERT_EQ ( 0, tl . blocks . size () );
-}
-
-TEST ( PinnedMemoryMgr, CustomLocker_Realloc )
-{
-    TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
-    MemoryManagerItf :: pointer p1 = mgr . allocate ( 1 );
-
-    // should call unlock(p1, 1), lock(p2, 100)
-    const size_t NewSize = 100;
-    MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, NewSize );
-    ASSERT_NE ( p1, p2 );
-    ASSERT_EQ ( NewSize, tl . blocks [ p2 ] );
-    ASSERT_EQ ( tl . blocks . end (), tl . blocks . find ( p1 ) );
-
-    mgr . deallocate ( p2, NewSize );
-    ASSERT_EQ ( 0, tl . blocks . size () );
-}
-
-TEST ( PinnedMemoryMgr, CustomLocker_Realloc_0_size )
-{
-    TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
-    MemoryManagerItf :: pointer p1 = mgr . allocate ( 1 );
-    MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, 0 );
-    ASSERT_EQ ( nullptr, p2 );
-    ASSERT_EQ ( 0, tl . blocks . size () );
-}
-
-static PrimordialMemoryMgr primMgr;
-
-/**
-* Under valgrind, the default heap manager always moves the block on reallocate()
-* In order to test scenarios when reallocaiton does not move the block, we will use this
-* simple manager.
-*/
-class NoMoveReallocMgr : public TrackingMemoryManager
-{ // never moves the block on reallocate
-public:
-    virtual pointer reallocate ( pointer ptr, size_type new_size )
-    {   // do not move
-        setBlockSize ( ptr, new_size );
-        return ptr;
-    }
-};
-
-TEST ( PinnedMemoryMgr, CustomLocker_Realloc_same_size )
-{
-    TestLocker tl;
-    NoMoveReallocMgr nmm;
-    PinnedMemoryMgr mgr ( &nmm, & tl );
-    const size_t Size = 100;
-    MemoryManagerItf :: pointer p1 = mgr . allocate ( Size );
-    MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, Size );
-    ASSERT_EQ ( p1, p2 );
-    ASSERT_EQ ( 1, tl . blocks . size () );
-
-    mgr . deallocate ( p2, Size ); // or could be p1
-    ASSERT_EQ ( 0, tl . blocks . size () );
-}
-
-TEST ( PinnedMemoryMgr, CustomLocker_Realloc_shrink )
-{
-    TestLocker tl;
-    NoMoveReallocMgr nmm;
-    PinnedMemoryMgr mgr ( &nmm, & tl );
-    MemoryManagerItf :: pointer p1 = mgr . allocate ( 100 );
-    const size_t NewSize = 99;
-    MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, NewSize );
-    ASSERT_EQ ( p1, p2 );   // hope the PrimordialHeapMgr did not move the memory block
-    ASSERT_EQ ( NewSize, tl . blocks [ p1 ] );
-
-    mgr . deallocate ( p2, NewSize ); // or could be p1
-    ASSERT_EQ ( 0, tl . blocks . size () );
 }
 

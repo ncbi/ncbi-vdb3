@@ -57,6 +57,7 @@ namespace VDB3
           private:
               struct bucket
               {
+                  uint64_t hashandbits;
                   KEY key;
                   VALUE value;
               };

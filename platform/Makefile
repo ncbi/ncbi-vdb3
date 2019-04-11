@@ -33,7 +33,7 @@ default: build
 
 TOP ?= $(abspath ..)
 MODULE = platform
-SUBDIRS ?= memory collections
+SUBDIRS ?= memory # collections
 
 include $(TOP)/$(MODULE)/Makefile.env
 
