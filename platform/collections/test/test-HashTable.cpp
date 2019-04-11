@@ -32,13 +32,12 @@
 #include <collections/HashTable.hpp>
 
 #include <gtest/gtest.h>
-using namespace std;
 using namespace VDB3;
 
-TEST (HashTable, Basic)
+TEST ( HashTable, Basic )
 {
-    HashTable<int,int> htab;
-    ASSERT_EQ(htab.size(),0);
+    HashTable<int, int> htab;
+    ASSERT_EQ ( htab.size (), 0 );
 }
 #if 0
 TEST (HashTable, KHashTableSet )
@@ -799,7 +798,7 @@ static void make_benchkeys ( void )
     }
 }
 
-TEST (HashTable, stdunorderedSetBench )
+TEST ( HashTable, stdunorderedSetBench )
 {
     make_benchkeys ();
     std::set<uint64_t> hset;
@@ -848,7 +847,7 @@ TEST (HashTable, stdunorderedSetBench )
     printf ( "\n" );
 }
 
-TEST (HashTable, JudyBench )
+TEST ( HashTable, JudyBench )
 {
     make_benchkeys ();
     KVector *kv;
@@ -904,7 +903,7 @@ TEST (HashTable, JudyBench )
     printf ( "\n" );
 }
 
-TEST (HashTable, HashMapBench )
+TEST ( HashTable, HashMapBench )
 {
     make_benchkeys ();
     KHashTable *hmap;
@@ -973,7 +972,7 @@ TEST (HashTable, HashMapBench )
     printf ( "\n" );
 }
 
-TEST (HashTable, KHash_Speed )
+TEST ( HashTable, KHash_Speed )
 {
     char key[8192];
     unsigned long loops = 1000000;
@@ -995,7 +994,7 @@ TEST (HashTable, KHash_Speed )
     }
 }
 
-TEST (HashTable, string_hash_Speed )
+TEST ( HashTable, string_hash_Speed )
 {
     char key[8192];
     unsigned long loops = 1000000;
@@ -1018,7 +1017,7 @@ TEST (HashTable, string_hash_Speed )
     }
 }
 
-TEST (HashTable, std_hash_Speed )
+TEST ( HashTable, std_hash_Speed )
 {
     unsigned long loops = 1000000;
     string str = "1234";
@@ -1042,7 +1041,7 @@ TEST (HashTable, std_hash_Speed )
     }
 }
 
-TEST (HashTable, hash_hamming )
+TEST ( HashTable, hash_hamming )
 {
     char key[100];
     uint64_t mask = 0xfff;

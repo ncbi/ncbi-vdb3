@@ -26,50 +26,47 @@
 
 #pragma once
 
-#include <cstdlib>
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
-namespace VDB3
-{
-    template<class KEY, class VALUE>
-        class HashTable {
-          public:
-              HashTable (size_t initial_capacity=0)
-              {}
-              virtual ~HashTable();
+namespace VDB3 {
+template <class KEY, class VALUE> class HashTable {
+public:
+    //    HashTable ( size_t initial_capacity = 0 ) {}
+    //    virtual ~HashTable ();
 
-              size_t size(void) const noexcept {};
+    size_t size ( void ) const noexcept { return count_; }
 
-              void erase() noexcept;
-              size_t count(KEY k) const noexcept;
-              void insert(KEY k, VALUE v);
+    void erase () noexcept;
+    size_t count ( KEY k ) const noexcept { return 0; }
+    void insert ( KEY k, VALUE v );
 
-              void reserve(size_t capcity);
+    void reserve ( size_t capcity );
 
-              float load_factor() const noexcept;
-              float max_load_factor() const noexcept;
-              void max_load_factor(float factor);
+    float load_factor () const noexcept;
+    float max_load_factor () const noexcept;
+    void max_load_factor ( float factor );
 
-              VALUE get(KEY k) const noexcept;
+    VALUE get ( KEY k ) const noexcept;
 
-              void erase(KEY k) noexcept;
-          private:
-              struct bucket
-              {
-                  uint64_t hashandbits;
-                  KEY key;
-                  VALUE value;
-              };
+    void erase ( KEY k ) noexcept;
 
-              std::vector<bucket> buckets_;
+private:
+    struct bucket {
+        uint64_t hashandbits;
+        KEY key;
+        VALUE value;
+    };
 
-              uint64_t mask_;
-              size_t num_buckets_; /* Always a power of 2 */
-              size_t count_;
-              size_t load_; /* Included invisible buckets */
-              double max_load_factor_;
+    std::vector<bucket> buckets_;
 
-              // @TODO: Iterators, Persist, Allocators
-        };
-}
+    uint64_t mask_ = 0;
+    size_t num_buckets_ = 0; /* Always a power of 2 */
+    size_t count_ = 0;
+    size_t load_ = 0; /* Included invisible buckets */
+    double max_load_factor_ = 0;
+
+    // @TODO: Iterators, Persist, Allocators
+};
+} // namespace VDB3

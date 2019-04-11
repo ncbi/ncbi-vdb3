@@ -28,79 +28,109 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <set>
+#include <iostream>
 #include <set>
 #include <stdexcept>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <unordered_set>
 #include <utility>
 #include <vector>
-#include <unordered_set>
 
 #include <gtest/gtest.h>
 
-using namespace std;
 using namespace VDB3;
 
-TEST ( Random, Basic)
+TEST ( Random, Basic )
 {
     Random r;
 
-    uint64_t r1=r();
-    uint64_t r2=r();
+    uint64_t r1 = r ();
+    uint64_t r2 = r ();
 
-    ASSERT_NE(r1,r2);
-    ASSERT_NE(r1,0);
-    ASSERT_NE(r1,123);
+    ASSERT_NE ( r1, r2 );
+    ASSERT_NE ( r1, 0 );
+    ASSERT_NE ( r1, 123 );
 
-    r.seed(3);
-    uint64_t r3=r();
-    ASSERT_NE(r1,r3);
-    ASSERT_NE(r2,r3);
-    ASSERT_EQ(r3,123);
+    r.seed ( 3 );
+    uint64_t r3 = r ();
+    ASSERT_NE ( r1, r3 );
+    ASSERT_NE ( r2, r3 );
+    ASSERT_EQ ( r3, 274928369666 );
 }
 
-TEST ( Random, Range)
+TEST ( Random, Range )
 {
     Random r;
 
-    for (int i=0; i!=1000; ++i)
-    {
-        uint64_t x=r.randint(5,6);
-        ASSERT_LE(x,6);
-        ASSERT_GE(x,5);
+    for ( int i = 0; i != 1000; ++i ) {
+        uint64_t x = r.randint ( 5, 6 );
+        ASSERT_LE ( x, 6 );
+        ASSERT_GE ( x, 5 );
     }
 }
 
-TEST ( Random, Dups)
+TEST ( Random, Dups )
 {
     Random r;
     std::unordered_set<uint64_t> set;
-    size_t ins=1000;
-    for ( size_t i=0; i!=ins; ++i)
-    {
-        uint64_t x=r();
-        ASSERT_EQ(set.count(x),0);
-        set.insert(x);
+    size_t ins = 10000;
+    for ( size_t i = 0; i != ins; ++i ) {
+        uint64_t x = r ();
+        ASSERT_EQ ( set.count ( x ), 0 );
+        set.insert ( x );
     }
-    ASSERT_EQ(set.size(),ins);
+    ASSERT_EQ ( set.size (), ins );
 }
 
-TEST (Random, Bytes)
+TEST ( Random, Double )
 {
     Random r;
-    std::unordered_set<string> set;
-
-    size_t ins=50;
-    for (size_t i=0; i!=ins; ++i)
-    {
-        std::string bytes=r.randbytes(i);
-        ASSERT_EQ(bytes.size(),i);
-        ASSERT_EQ(set.count(bytes),0);
-        set.insert(bytes);
+    std::unordered_set<double> set;
+    size_t ins = 10000;
+    for ( size_t i = 0; i != ins; ++i ) {
+        double x = r.randdouble ();
+        ASSERT_EQ ( set.count ( x ), 0 );
+        ASSERT_LT ( x, 1.0 );
+        ASSERT_GT ( x, 0.0 );
+        set.insert ( x );
     }
-    ASSERT_EQ(set.size(), ins);
+    ASSERT_EQ ( set.size (), ins );
+}
+TEST ( Random, Bytes )
+{
+    Random r;
+    std::unordered_set<std::string> set;
+
+    int ins = 0;
+    size_t szs = 50;
+    for ( size_t i = 6; i != szs; ++i ) {
+        for ( int loop = 0; loop != 100; ++loop ) {
+            std::string bytes = r.randbytes ( i );
+            ASSERT_EQ ( bytes.size (), i );
+            ASSERT_EQ ( set.count ( bytes ), 0 );
+            set.insert ( bytes );
+            ++ins;
+        }
+    }
+    ASSERT_EQ ( set.size (), ins );
 }
 
+TEST ( Random, UUID )
+{
+    Random r;
+    std::unordered_set<std::string> set;
+
+    for ( int i = 0; i != 100; ++i ) {
+        std::string uuid = r.uuid4 ();
+        ASSERT_EQ ( uuid.size (), 36 );
+        ASSERT_EQ ( uuid[8], '-' );
+        ASSERT_EQ ( uuid[13], '-' );
+        ASSERT_EQ ( uuid[18], '-' );
+        ASSERT_EQ ( uuid[14], '4' );
+        ASSERT_EQ ( set.count ( uuid ), 0 );
+        set.insert ( uuid );
+    }
+}

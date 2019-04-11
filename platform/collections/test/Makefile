@@ -47,15 +47,16 @@ SRC = \
 	test-Hash \
 	test-HashTable
 
-GTESTLIB = /usr/local/googletest/1.8/bin/lib/
+GTESTLIB = /home/vartanianmh/googletest
+
 OBJ = $(addsuffix .$(OBJX),$(SRC))
 
 $(TEST_BINDIR)/test-Hash: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(GTESTLIB) -lgtest -lpthread
+	$(LP) $(OBJ) -o $@ -L$(GTESTLIB)/build/lib -lgtest -lpthread -std=gnu++11
 
 $(TEST_BINDIR)/test-Random: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(GTESTLIB) -lgtest -lpthread
+	$(LP) $(OBJ) -o $@ -L$(GTESTLIB)/build/lib -lgtest -lpthread -std=gnu++11
 
 $(TEST_BINDIR)/test-HashTable: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(GTESTLIB) -lgtest -lpthread
+	$(LP) $(OBJ) -o $@ -L$(GTESTLIB)/build/lib -lgtest -lpthread -std=gnu++11
 
