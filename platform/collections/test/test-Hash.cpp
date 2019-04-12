@@ -43,19 +43,7 @@
 
 using namespace VDB3;
 
-static uint64_t stopwatch ()
-{
-    static uint64_t start = 0;
-    struct timeval tv_cur = {};
-
-    gettimeofday ( &tv_cur, nullptr );
-    auto finish = static_cast<uint64_t> ( tv_cur.tv_sec ) * 1000000
-        + static_cast<uint64_t> ( tv_cur.tv_usec );
-    auto elapsed = finish - start;
-    start = finish;
-    return elapsed;
-}
-
+#define BENCHMARK
 
 TEST ( Hash, Basic )
 {
@@ -70,6 +58,9 @@ TEST ( Hash, Basic )
 
     uint64_t hash3 = Hash ( str );
     ASSERT_EQ ( hash, hash3 );
+
+    std::string s = str;
+    ASSERT_EQ ( hash, Hash ( s ) );
 }
 
 TEST ( Hash, String )
@@ -99,6 +90,9 @@ TEST ( Hash, Double )
 {
     double a = 0.0, b = -0.0;
     ASSERT_EQ ( Hash ( a ), Hash ( b ) );
+    ASSERT_NE ( Hash ( a ), Hash ( b + 1.0 ) );
+    ASSERT_NE ( Hash ( a ), Hash ( b + 0.0001 ) );
+    ASSERT_NE ( Hash ( a ), Hash ( b - 1.0 ) );
 }
 
 TEST ( Hash, Unique )
@@ -111,20 +105,14 @@ TEST ( Hash, Unique )
     ASSERT_NE ( hash1, hash2 );
 }
 
+/*
 TEST ( Hash, Locality )
 {
-    uint64_t a = 1;
-    uint64_t b = 2;
-    uint64_t c = 3;
-    uint64_t d = 4;
-    uint64_t hasha = Hash ( a );
-    uint64_t hashb = Hash ( b );
-    uint64_t hashc = Hash ( c );
-    uint64_t hashd = Hash ( d );
-    printf ( "hasha is %zx\nhashb is %zx\n", hasha, hashb );
-    printf ( "hashc is %zx\nhashd is %zx\n", hashc, hashd );
+    for ( uint64_t i = 0; i != 8; ++i ) {
+        printf ( "hash of %lu is %zx\n", i, Hash ( i ) );
+    }
 }
-
+*/
 TEST ( Hash, Adjacent )
 {
     uint64_t hash1, hash2;
@@ -144,19 +132,21 @@ TEST ( Hash, Adjacent )
     hash2 = Hash ( str2, size );
     hash1 &= 0xffffff;
     hash2 &= 0xffffff;
-    auto diff2 = hash2 ^ hash1;
+    auto diff2 = hash2 - hash1;
     if ( diff2 > 7 ) {
-        fprintf ( stderr, "%lx %lx\n", hash1, hash2 );
+        fprintf ( stderr, "diff %lx %lx\n", hash1, hash2 );
         ASSERT_LE ( diff2, 7 );
     }
+}
 
-    str1 = "str02";
-    str2 = "str03";
-    size = strlen ( str1 );
-    hash1 = Hash ( str1, size );
-    hash2 = Hash ( str2, size );
-    diff = hash2 ^ hash1;
-    printf ( "hash1 is %zx\nhash2 is %zx\n", hash1, hash2 );
+TEST ( Hash, StrAdjacent )
+{
+    std::string str1 = "str02";
+    std::string str2 = "str03";
+    auto hash1 = Hash ( str1 );
+    auto hash2 = Hash ( str2 );
+    auto diff = hash2 ^ hash1;
+    // printf ( "hash1 is %zx\nhash2 is %zx\n", hash1, hash2 );
     ASSERT_LE ( diff, 7 );
 }
 
@@ -181,8 +171,9 @@ TEST ( Hash, Collide )
                 if ( count != 0 ) {
                     collisions++;
                     fprintf ( stderr,
-                        "Collision at %lu on hash of len %lu is %lx: "
-                        "%lu elements\n",
+                        "Collision at byte %lu on hash of len %lu, hash is "
+                        "%lx: "
+                        "%lu elements in set\n",
                         j, l, hash, set.size () );
                 }
                 set.insert ( hash );
@@ -190,6 +181,21 @@ TEST ( Hash, Collide )
             }
     ASSERT_EQ ( inserts, set.size () );
 }
+#ifdef BENCHMARK
+
+static uint64_t stopwatch ()
+{
+    static uint64_t start = 0;
+    struct timeval tv_cur = {};
+
+    gettimeofday ( &tv_cur, nullptr );
+    auto finish = static_cast<uint64_t> ( tv_cur.tv_sec ) * 1000000
+        + static_cast<uint64_t> ( tv_cur.tv_usec );
+    auto elapsed = finish - start;
+    start = finish;
+    return elapsed;
+}
+
 
 TEST ( Hash, Speed )
 {
@@ -200,39 +206,16 @@ TEST ( Hash, Speed )
         key[i] = static_cast<char> ( random () );
 
     uint64_t len = 4;
+    uint64_t hash = 0;
     while ( len < 10000 ) {
         stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ ) Hash ( key, len );
+        for ( uint64_t i = 0; i != loops; i++ ) hash += Hash ( key, len );
 
         uint64_t us = stopwatch ();
         uint64_t hps = 1000000 * loops / us;
         uint64_t mbps = hps * len / 1048576;
-        printf ( "Hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
-            len, us, hps, mbps );
-
-        len *= 2;
-    }
-}
-
-TEST ( Hash, string_hash_Speed )
-{
-    char key[8192];
-    uint64_t loops = 1000000;
-
-    for ( uint64_t i = 0; i != sizeof ( key ); i++ )
-        key[i] = static_cast<char> ( random () );
-
-    uint64_t len = 4;
-    while ( len < 10000 ) {
-        stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ ) Hash ( key, len );
-
-        uint64_t us = stopwatch ();
-        uint64_t hps = 1000000 * loops / us;
-        uint64_t mbps = hps * len / 1048576;
-        printf (
-            "string_hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
-            len, us, hps, mbps );
+        printf ( "Hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec) %lu\n",
+            len, us, hps, mbps, hash );
 
         len *= 2;
     }
@@ -311,3 +294,4 @@ TEST ( Hash, hamming )
     printf ( "khash longest probe is %lu\n", khash_max );
     printf ( "rhash longest probe is %lu\n", rhash_max );
 }
+#endif // BENCHMARK

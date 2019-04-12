@@ -82,7 +82,8 @@ public:
     double randdouble ( void )
     {
         uint64_t r = next ();
-        return ( r >> 11u ) * ( 1.0 / ( UINT64_C ( 1 ) << 53 ) );
+        return static_cast<double> ( r >> 11u )
+            * ( 1.0 / ( UINT64_C ( 1 ) << 53u ) );
     }
 
     std::string randbytes ( size_t num )
