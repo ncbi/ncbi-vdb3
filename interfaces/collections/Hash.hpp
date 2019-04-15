@@ -108,11 +108,11 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         // Most bits into two S-boxes
         h1 ^= _mm_bslli_si128 ( h1, 9 );
         h2 ^= _mm_bslli_si128 ( h2, 11 );
-        __m128i h3 = _mm_setzero_si128 ();
-        h1 = _mm_xor_si128 ( h1, h2 );
-        h1 = _mm_aesenc_si128 ( h1, h3 );
-        h1 = _mm_aesenc_si128 ( h1, h3 );
-        hash += static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h1 ) );
+        __m128i h3;
+        h3 = _mm_xor_si128 ( h1, h2 );
+        h3 = _mm_aesenc_si128 ( h3, h1 );
+        h3 = _mm_aesenc_si128 ( h3, h2 );
+        hash += static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h3 ) );
     }
 
     assert ( len < 32 );
