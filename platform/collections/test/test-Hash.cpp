@@ -43,7 +43,7 @@
 
 using namespace VDB3;
 
-#define BENCHMARK
+//#define BENCHMARK
 
 TEST ( Hash, Basic )
 {
@@ -73,6 +73,7 @@ TEST ( Hash, String )
 
 TEST ( Hash, Integer )
 {
+    srandom ( static_cast<unsigned int> ( time ( nullptr ) ) );
     auto i = random ();
     uint64_t hash = Hash ( i );
     ASSERT_EQ ( hash, Hash ( i ) );
@@ -183,21 +184,49 @@ TEST ( Hash, Collide )
 }
 #ifdef BENCHMARK
 
-static uint64_t stopwatch ()
+static double stopwatch ( double start = 0.0 )
 {
-    static uint64_t start = 0;
     struct timeval tv_cur = {};
-
     gettimeofday ( &tv_cur, nullptr );
-    auto finish = static_cast<uint64_t> ( tv_cur.tv_sec ) * 1000000
-        + static_cast<uint64_t> ( tv_cur.tv_usec );
-    auto elapsed = finish - start;
-    start = finish;
+    double finish = static_cast<double> ( tv_cur.tv_sec )
+        + static_cast<double> ( tv_cur.tv_usec ) / 1000000.0;
+    // printf("usec=%d\n",tv_cur.tv_usec);
+    if ( start == 0.0 ) return finish;
+    double elapsed = finish - start;
+    if ( elapsed == 0.0 ) elapsed = 1 / 1000000000.0;
     return elapsed;
 }
 
 
 TEST ( Hash, Speed )
+{
+    char key[16384];
+    uint64_t loops = 1000000;
+
+    for ( uint64_t i = 0; i != sizeof ( key ); i++ )
+        key[i] = static_cast<char> ( random () );
+
+    uint64_t len = 4;
+    uint64_t hash = 0;
+    while ( len <= sizeof ( key ) ) {
+        double start = stopwatch ();
+        for ( uint64_t i = 0; i != loops; i++ ) {
+            ++key[0]; // defeat compiler memoization
+            hash += Hash ( key, len );
+        }
+
+        double elapsed = stopwatch ( start );
+        double hps = static_cast<double> ( loops ) / elapsed;
+        double mbps = hps * static_cast<double> ( len ) / 1048576.0;
+        printf ( "Hash %lu %.1f elapsed (%.1f hash/sec, %.1f Mbytes/sec) %lu\n",
+            len, elapsed, hps, mbps, hash & 0xff );
+
+        len *= 2;
+    }
+}
+
+/*
+TEST ( KHash, Speed )
 {
     char key[8192];
     uint64_t loops = 1000000;
@@ -207,20 +236,51 @@ TEST ( Hash, Speed )
 
     uint64_t len = 4;
     uint64_t hash = 0;
-    while ( len < 10000 ) {
-        stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ ) hash += Hash ( key, len );
+    while ( len  <= sizeof(key) ) {
+        double start = stopwatch ();
+        for ( uint64_t i = 0; i != loops; i++ ) {
+            ++key[0]; // defeat compiler memoization
+            hash += KHash ( key, len );
+        }
 
-        uint64_t us = stopwatch ();
-        uint64_t hps = 1000000 * loops / us;
-        uint64_t mbps = hps * len / 1048576;
-        printf ( "Hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec) %lu\n",
-            len, us, hps, mbps, hash );
+        double elapsed = stopwatch ( start );
+        double hps = static_cast<double> ( loops ) / elapsed;
+        double mbps = hps * static_cast<double> ( len ) / 1048576.0;
+        printf (
+            "KHash %lu %.1f elapsed (%.1f hash/sec, %.1f Mbytes/sec) %lu\n",
+            len, elapsed, hps, mbps, hash & 0xff );
 
         len *= 2;
     }
 }
+TEST ( memset, Speed )
+{
+    char key[2048576];
+    uint64_t loops = 1000000;
 
+    for ( uint64_t i = 0; i != sizeof ( key ); i++ )
+        key[i] = static_cast<char> ( random () );
+
+    uint64_t len = 4;
+    uint64_t hash = 0;
+    while ( len  <= sizeof(key) ) {
+        double start = stopwatch ();
+        for ( uint64_t i = 0; i != loops; i++ ) {
+            ++key[0]; // defeat compiler memoization
+            memset(key, 1, len);
+        }
+
+        double elapsed = stopwatch ( start );
+        double hps = static_cast<double> ( loops ) / elapsed;
+        double mbps = hps * static_cast<double> ( len ) / 1048576.0;
+        printf (
+            "memset %lu %.1f elapsed (%.1f hash/sec, %.1f Mbytes/sec) %lu\n",
+            len, elapsed, hps, mbps, hash & 0xff );
+
+        len *= 2;
+    }
+}
+*/
 TEST ( Hash, std_hash_Speed )
 {
     uint64_t loops = 1000000;
@@ -228,17 +288,19 @@ TEST ( Hash, std_hash_Speed )
 
     std::size_t hash = 0;
     uint64_t len = 4;
-    while ( len < 10000 ) {
-        stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ )
+    while ( len <= 8192 ) {
+        double start = stopwatch ();
+        for ( uint64_t i = 0; i != loops; i++ ) {
+            str[0]++; // defeat compiler memoization
             hash += std::hash<std::string> {}( str );
+        }
 
-        uint64_t us = stopwatch () + 1;
-        uint64_t hps = 1000000 * loops / us;
-        uint64_t mbps = hps * len / 1048576;
+        double elapsed = stopwatch ( start );
+        double hps = static_cast<double> ( loops ) / elapsed;
+        double mbps = hps * static_cast<double> ( len ) / 1048576.0;
         printf (
-            "std::hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
-            len, us, hps, mbps );
+            "std::hash %lu %.1f elapsed (%.1f hash/sec, %.1f Mbytes/sec)\n",
+            len, elapsed, hps, mbps );
 
         len *= 2;
         str += str;
@@ -250,31 +312,18 @@ TEST ( Hash, hamming )
     char key[100];
     const uint64_t mask = 0xfff;
     uint64_t hash_collisions[mask + 1];
-    uint64_t khash_collisions[mask + 1];
     uint64_t rhash_collisions[mask + 1];
 
     for ( uint64_t i = 0; i != mask + 1; i++ ) {
         hash_collisions[i] = 0;
-        khash_collisions[i] = 0;
         rhash_collisions[i] = 0;
     }
 
-    const char *foo1 = "ABCDE1";
-    const char *foo2 = "ABCDE2";
-
-    printf ( "khash of %s is %zu, %s is %zu\n", foo1,
-        Hash ( foo1, strlen ( foo1 ) ), foo2, Hash ( foo2, strlen ( foo2 ) ) );
-    printf ( "string_hash of %s is %zu, %s is %lu\n", foo1,
-        Hash ( foo1, strlen ( foo1 ) ), foo2, Hash ( foo2, strlen ( foo2 ) ) );
     for ( uint64_t i = 0; i != 10000000; i++ ) {
         sprintf ( key, "ABCD%lu", i );
         uint64_t hash = Hash ( key, strlen ( key ) );
         hash &= mask;
         hash_collisions[hash] = hash_collisions[hash] + 1;
-
-        hash = Hash ( key, strlen ( key ) );
-        hash &= mask;
-        khash_collisions[hash] = khash_collisions[hash] + 1;
 
         hash = static_cast<uint64_t> ( random () );
         hash &= mask;
@@ -282,16 +331,12 @@ TEST ( Hash, hamming )
     }
 
     uint64_t hash_max = 0;
-    uint64_t khash_max = 0;
     uint64_t rhash_max = 0;
     for ( uint64_t i = 0; i != mask; i++ ) {
         if ( hash_collisions[i] > hash_max ) hash_max = hash_collisions[i];
-        if ( khash_collisions[i] > khash_max ) khash_max = khash_collisions[i];
         if ( rhash_collisions[i] > rhash_max ) rhash_max = rhash_collisions[i];
     }
 
-    printf ( "string_hash longest probe is %lu\n", hash_max );
-    printf ( "khash longest probe is %lu\n", khash_max );
     printf ( "rhash longest probe is %lu\n", rhash_max );
 }
 #endif // BENCHMARK

@@ -54,15 +54,14 @@ namespace VDB3 {
 // References:
 // * https://github.com/rurban/smhasher/
 // * https://bigdata.uni-saarland.de/publications/p249-richter.pdf
-uint64_t Hash ( const char *s, size_t len ) noexcept
-    __attribute__ ( ( const ) );
-uint64_t Hash ( const std::string &str ) noexcept __attribute__ ( ( const ) );
-uint64_t Hash ( int i ) noexcept __attribute__ ( ( const ) );
-uint64_t Hash ( long int i ) noexcept __attribute__ ( ( const ) );
-uint64_t Hash ( unsigned long long l ) noexcept __attribute__ ( ( const ) );
-uint64_t Hash ( uint64_t l ) noexcept __attribute__ ( ( const ) );
-uint64_t Hash ( float f ) noexcept __attribute__ ( ( const ) );
-uint64_t Hash ( double d ) noexcept __attribute__ ( ( const ) );
+uint64_t Hash ( const char *s, size_t len ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( const std::string &str ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( int i ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( long int i ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( unsigned long long l ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( uint64_t l ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( float f ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( double d ) noexcept __attribute__ ( ( pure ) );
 
 
 static inline uint64_t rotr ( const uint64_t x, int k )
@@ -70,16 +69,6 @@ static inline uint64_t rotr ( const uint64_t x, int k )
     return ( x << ( 64 - k ) | ( x >> k ) );
 }
 
-/*
-static uint64_t hashmix (
-    uint64_t hash, uint64_t high, uint64_t low, uint64_t mul )
-{
-    uint64_t masked = low & 0xfcu // locality preserving
-    uint64_t h1 = ( high + masked ) * mul;
-    uint64_t h2 = rotr ( h1, 47U );
-    return hash + h2 + low * 2; // locality restricting
-}
-*/
 uint64_t Hash ( const char *s, size_t len ) noexcept
 {
     static const uint64_t lowbits = 0xfcffffffffffffffu;
@@ -91,22 +80,39 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
     uint64_t hash = 0; // maybe seed?
 
     if ( UNLIKELY ( len >= 32 ) ) {
-        // High bandwidth mode
+        // High throughput mode
+        static const unsigned char init[16] = {0xe4, 0x64, 0xea, 0xfd, 0x56,
+            0x61, 0x72, 0x74, 0x61, 0x6e, 0x69, 0x61, 0x6e, 0x4d, 0x48, 0xf6};
         __m128i h1 = _mm_setzero_si128 ();
-        __m128i h2 = _mm_setzero_si128 ();
-        __m128i h3 = _mm_setzero_si128 ();
-        while ( len >= 32 ) {
+        __m128i h2 = _mm_loadu_si128 ( reinterpret_cast<const __m128i *> (
+            init ) ); // Avoid swapped 16 bytes
+
+        while ( len >= 64 ) {
+            len -= 64;
+            const __m128i *s128 = reinterpret_cast<const __m128i *> ( s );
+            h1 += _mm_loadu_si128 ( s128 );
+            h2 += _mm_loadu_si128 ( s128 + 1 );
+            h1 += _mm_loadu_si128 ( s128 + 2 );
+            h2 += _mm_loadu_si128 ( s128 + 3 );
+            s += 64;
+        }
+
+        if ( len >= 32 ) {
             len -= 32;
             const __m128i *s128 = reinterpret_cast<const __m128i *> ( s );
             h1 += _mm_loadu_si128 ( s128 );
             h2 += _mm_loadu_si128 ( s128 + 1 );
-            h3 += _mm_aesenc_si128 ( h1, h2 );
             s += 32;
         }
-        h3 = _mm_aesenc_si128 ( h3, h1 );
-        h3 = _mm_aesenc_si128 ( h3, h2 );
-        hash = static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h3 ) );
-        // fprintf ( stderr, "bighash is %lx\n", hash );
+
+        // Most bits into two S-boxes
+        h1 ^= _mm_bslli_si128 ( h1, 9 );
+        h2 ^= _mm_bslli_si128 ( h2, 11 );
+        __m128i h3 = _mm_setzero_si128 ();
+        h1 = _mm_xor_si128 ( h1, h2 );
+        h1 = _mm_aesenc_si128 ( h1, h3 );
+        h1 = _mm_aesenc_si128 ( h1, h3 );
+        hash += static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h1 ) );
     }
 
     assert ( len < 32 );
@@ -163,13 +169,10 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         memcpy ( &l1, s, sizeof ( l1 ) );
         memcpy ( &l2, s + 1, sizeof ( l2 ) );
         const uint8_t b1 = static_cast<uint8_t> ( l2 >> 24 );
-        // printf ( "l1 is %x\nl2 is %x,b1=%x\n", l1, l2, b1 );
         l2 &= static_cast<uint32_t> ( lowbits >> 32 );
-        // printf ( "l2 is now %x,b1=%x\n", l2, b1 );
         hash += ( l1 + l2 ) * k0;
         hash = rotr ( hash, 33 );
         hash += b1 * 2u;
-        // printf ( "hash is %lx\n", hash );
         return hash;
     }
     case 6: {
@@ -198,7 +201,6 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         uint64_t ll1, ll2;
         memcpy ( &ll1, s, sizeof ( ll1 ) );
         ll2 = ( ll1 & 0x3FFFFFFFFFFFFFFCU );
-        // printf("ll1 is %lx\nll2 is %lx\n", ll1, ll2);
         hash += rotr ( ll2 * k0, 47 );
         hash += ( ll1 << 1 );
         hash += ( ll1 >> 62 );
