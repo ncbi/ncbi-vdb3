@@ -32,7 +32,7 @@ default: test
 TOP ?= $(abspath ../../..)
 MODULE = platform/collections/test
 
-TESTS = test-Hash test-Random test-HashTable
+TESTS = test-collections
 
 include $(TOP)/platform/Makefile.test
 
@@ -41,8 +41,7 @@ include $(TOP)/platform/Makefile.test
 #
 
 # project collections
-SRC = \
-	test-main \
+SRC = test-main \
 	test-Random \
 	test-Hash \
 	test-HashTable
@@ -51,12 +50,5 @@ GTESTLIB = /home/vartanianmh/googletest
 
 OBJ = $(addsuffix .$(OBJX),$(SRC))
 
-$(TEST_BINDIR)/test-Hash: $(OBJ)
+$(TEST_BINDIR)/test-collections: $(OBJ)
 	$(LP) $(OBJ) -o $@ -L$(GTESTLIB)/build/lib -lgtest -lpthread -std=gnu++11
-
-$(TEST_BINDIR)/test-Random: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(GTESTLIB)/build/lib -lgtest -lpthread -std=gnu++11
-
-$(TEST_BINDIR)/test-HashTable: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(GTESTLIB)/build/lib -lgtest -lpthread -std=gnu++11
-
