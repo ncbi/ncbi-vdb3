@@ -26,46 +26,190 @@
 
 #pragma once
 
+#include <cassert>
+#include <climits>
+#include <collections/Hash.hpp>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <stdexcept>
 #include <vector>
 
 namespace VDB3 {
-template <class KEY, class VALUE> class HashTable {
+template <typename KEY, typename VALUE> class HashTable {
 public:
     //    HashTable ( size_t initial_capacity = 0 ) {}
     //    virtual ~HashTable ();
+    //    operator ==,!=
 
-    size_t size ( void ) const noexcept { return count_; }
+    void reserve ( size_t capacity ) noexcept { rehash ( capacity ); }
 
-    void erase () noexcept;
-    size_t count ( KEY k ) const noexcept { return 0; }
-    void insert ( KEY k, VALUE v );
+    bool empty () const noexcept { return count_ == 0; }
+    size_t size () const noexcept { return count_; }
 
-    void reserve ( size_t capcity );
+    void clear () noexcept
+    {
+        buckets_.clear ();
+        count_ = 0;
+        load_ = 0;
+    }
 
-    float load_factor () const noexcept;
-    float max_load_factor () const noexcept;
-    void max_load_factor ( float factor );
+    bool contains ( const KEY &k ) const noexcept
+    {
+        return ( findbucket ( k ) != ULONG_MAX );
+    }
 
-    VALUE get ( KEY k ) const noexcept;
+    size_t count ( const KEY &k ) const noexcept
+    {
+        if ( contains ( k ) )
+            return 1;
+        else
+            return 0;
+    }
 
-    void erase ( KEY k ) noexcept;
+    VALUE get ( const KEY &k ) const // can throw std::out_of_range
+    {
+        size_t bucketid = findbucket ( k );
+        if ( bucketid == ULONG_MAX ) throw std::out_of_range ( "no such key" );
+        return buckets_[bucketid].value;
+    }
+
+    void insert ( const KEY &k, const VALUE &v ) noexcept
+    {
+        const uint64_t hash = Hash ( k ) | ( BUCKET_VALID | BUCKET_VISIBLE );
+        if ( UNLIKELY ( buckets_.capacity () == 0 ) ) rehash ( 16 );
+        assert ( buckets_.capacity () > 0 );
+        const size_t mask = buckets_.capacity () - 1;
+        assert ( mask != 0 );
+        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a power of 2
+        size_t bucketidx = hash;
+        size_t triangle = 0;
+        while ( 1 ) {
+            bucketidx &= mask;
+            auto &abucket = buckets_[bucketidx];
+            if ( !( abucket.hashandbits & BUCKET_VALID ) ) {
+                // insert
+
+                abucket.hashandbits = hash;
+                abucket.key = k;
+                abucket.value = v;
+
+                ++count_;
+                ++load_;
+
+                double load_factor = static_cast<double> ( load_ )
+                    / static_cast<double> ( buckets_.capacity () );
+
+                if ( load_factor > 0.6 ) {
+                    if ( static_cast<double> ( count_ )
+                            / static_cast<double> ( load_ )
+                        > 0.5 )
+                        rehash ( buckets_.capacity () * 2 );
+                    /* lots of deletes, just rehash table at existing size */
+                    rehash ( buckets_.capacity () );
+                }
+                return;
+            }
+
+            // replacement
+            if ( abucket.hashandbits == hash ) {
+                if ( LIKELY ( abucket.key == k ) ) { abucket.value = v; }
+            }
+            ++triangle;
+            bucketidx += ( triangle * ( triangle + 1 ) / 2 );
+        }
+    }
+    // insert_or_assign
+
+
+    bool erase ( const KEY &k ) noexcept
+    {
+        size_t bucketid = findbucket ( k );
+        if ( bucketid == ULONG_MAX ) return false;
+        buckets_[bucketid].hashandbits = BUCKET_VALID;
+        --count_;
+        return true;
+    }
 
 private:
+    static const uint64_t BUCKET_VALID = 1ul << 63u;
+    static const uint64_t BUCKET_VISIBLE = 1ul << 62u;
+
+    // Returns index to found bucket or LONG_MAX
+    size_t findbucket ( const KEY k ) const
+    {
+        if ( UNLIKELY ( count_ == 0 ) ) return ULONG_MAX;
+        const uint64_t hash = Hash ( k ) | ( BUCKET_VALID | BUCKET_VISIBLE );
+        const size_t mask = buckets_.capacity () - 1;
+        assert ( buckets_.capacity () > 0 );
+        assert ( mask != 0 );
+        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a power of 2
+        size_t bucketidx = hash;
+        size_t triangle = 0;
+        while ( 1 ) {
+            bucketidx &= mask;
+            const auto &abucket = buckets_[bucketidx];
+            if ( !( abucket.hashandbits & BUCKET_VALID ) ) return ULONG_MAX;
+
+            if ( abucket.hashandbits == hash ) {
+                // hash hit, probability very low (2^-62) that this is an actual
+                // miss, but we have to check.
+                if ( LIKELY ( abucket.key == k ) ) return bucketidx;
+            }
+            // To improve lookups when hash function has poor distribution, we
+            // use quadratic probing with a triangle sequence: 0,1,3,6,10...
+            // This will allow complete coverage on a % 2^N hash table.
+            ++triangle;
+            bucketidx += ( triangle * ( triangle + 1 ) / 2 );
+        }
+    }
+
+    int uint64_msbit ( uint64_t self ) __attribute__ ( ( const ) )
+    {
+        if ( self == 0 ) return -1;
+        return 63 - __builtin_clzll ( self );
+    }
+
+    void rehash ( size_t newcapacity )
+    {
+        newcapacity = std::max ( count_, newcapacity );
+
+        const auto lg2 = uint64_msbit ( newcapacity | 1u );
+        newcapacity = 1uL << lg2;
+
+        std::vector<bucket> newbuckets;
+        newbuckets.resize ( newcapacity );
+        const size_t newmask = newcapacity - 1;
+        assert ( newmask != 0 );
+        assert ( ( ( newmask + 1 ) & newmask ) == 0 ); // newmask+1 is a power
+                                                       // of 2
+
+        count_ = 0;
+        for ( size_t i = 0; i != buckets_.size (); ++i )
+        // for ( auto const &abucket : buckets_ ) {
+        {
+            auto &abucket = buckets_[i];
+            if ( ( abucket.hashandbits & BUCKET_VALID )
+                && ( abucket.hashandbits & BUCKET_VISIBLE ) ) {
+                newbuckets[abucket.hashandbits & newmask] = abucket;
+                ++count_;
+            }
+        }
+        load_ = count_;
+        buckets_ = newbuckets;
+        assert ( buckets_.capacity () >= newcapacity );
+    }
+
     struct bucket {
         uint64_t hashandbits;
         KEY key;
         VALUE value;
     };
 
-    std::vector<bucket> buckets_;
+    std::vector<bucket> buckets_ {};
 
-    uint64_t mask_ = 0;
-    size_t num_buckets_ = 0; /* Always a power of 2 */
     size_t count_ = 0;
     size_t load_ = 0; /* Included invisible buckets */
-    double max_load_factor_ = 0;
 
     // @TODO: Iterators, Persist, Allocators
 };

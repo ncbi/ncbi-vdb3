@@ -44,7 +44,8 @@ include $(TOP)/platform/Makefile.test
 SRC = test-main \
 	test-Random \
 	test-Hash \
-	test-HashTable
+	test-HashTable \
+	../Hash
 
 GTESTLIB = /home/vartanianmh/googletest
 

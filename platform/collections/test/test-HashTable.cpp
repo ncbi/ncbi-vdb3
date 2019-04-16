@@ -34,59 +34,60 @@
 #include <gtest/gtest.h>
 using namespace VDB3;
 
-TEST ( HashTable, Basic )
+TEST ( HashTable, Init )
 {
     HashTable<int, int> htab;
     ASSERT_EQ ( htab.size (), 0 );
 }
-#if 0
-TEST (HashTable, KHashTableSet )
+
+TEST ( HashTable, Basic )
 {
-    rc_t rc;
-    const char *str1 = "Tu estas probando este hoy, no manana";
-    const char *str2 = "Tu estas probando este hoy, no mananX";
-    size_t size = strlen ( str1 );
+    std::string str1 = "Tu estas probando este hoy, no manana";
+    std::string str2 = "Tu estas probando este hoy, no mananX";
 
-    KHashTable *hset = NULL;
-    rc = KHashTableMake ( NULL, 8, 0, 0, 1.0, hashkey_cstr );
-    REQUIRE_RC_FAIL ( rc );
-    REQUIRE_EQ ( (void *)hset, (void *)NULL );
-    rc = KHashTableMake ( &hset, 8, 0, 0, -1.0, hashkey_cstr );
-    REQUIRE_RC_FAIL ( rc );
-    rc = KHashTableMake ( &hset, 8, 0, 0, 1.0, hashkey_cstr );
-    REQUIRE_RC_FAIL ( rc );
-    rc = KHashTableMake ( &hset, 0, 0, 0, 1.0, hashkey_raw );
-    REQUIRE_RC_FAIL ( rc );
-    rc = KHashTableMake ( &hset, 4, 0, 0, 1.0, hashkey_cstr );
-    REQUIRE_RC_FAIL ( rc );
-    REQUIRE_EQ ( (void *)hset, (void *)NULL );
+    HashTable<std::string, int> hmap;
+    ASSERT_EQ ( hmap.size (), 0 );
+    ASSERT_EQ ( hmap.empty (), true );
 
-    rc = KHashTableMake ( &hset, 8, 0, 0, 0.0, hashkey_cstr );
-    REQUIRE_RC ( rc );
-    REQUIRE_NE ( (void *)hset, (void *)NULL );
+    hmap.clear ();
+    ASSERT_EQ ( hmap.empty (), true );
+    ASSERT_EQ ( hmap.contains ( "foo" ), false );
+    ASSERT_EQ ( hmap.count ( "foo" ), 0 );
+    ASSERT_EQ ( hmap.erase ( "foo" ), false );
 
-    size_t sz = KHashTableCount ( hset );
-    REQUIRE_EQ ( sz, (size_t)0 );
+    hmap.insert ( str1, 3 );
+    ASSERT_EQ ( hmap.size (), 1 );
+    ASSERT_EQ ( hmap.empty (), false );
+    ASSERT_EQ ( hmap.count ( str1 ), 1 );
+    ASSERT_EQ ( hmap.get ( str1 ), 3 );
 
-    uint64_t hash = KHash ( str1, size );
-    rc = KHashTableAdd ( hset, str1, hash, NULL );
-    REQUIRE_RC ( rc );
-    rc = KHashTableAdd ( hset, str1, hash, NULL );
-    REQUIRE_RC ( rc );
+    hmap.insert ( str2, 4 );
+    ASSERT_EQ ( hmap.size (), 2 );
+    ASSERT_EQ ( hmap.empty (), false );
+    ASSERT_EQ ( hmap.count ( str2 ), 1 );
+    ASSERT_EQ ( hmap.get ( str2 ), 4 );
 
-    sz = KHashTableCount ( hset );
-    REQUIRE_EQ ( sz, (size_t)1 );
+    ASSERT_EQ ( hmap.erase ( str1 ), true );
+    ASSERT_EQ ( hmap.size (), 1 );
+    ASSERT_EQ ( hmap.empty (), false );
+    ASSERT_EQ ( hmap.count ( str1 ), 0 );
+    ASSERT_THROW ( hmap.get ( str1 ), std::out_of_range );
+    ASSERT_EQ ( hmap.count ( str2 ), 1 );
+    ASSERT_EQ ( hmap.get ( str2 ), 4 );
 
-    bool found;
-    found = KHashTableFind ( hset, str1, hash, NULL );
-    REQUIRE_EQ ( found, true );
-
-    found = KHashTableFind ( hset, str2, hash, NULL );
-    REQUIRE_EQ ( found, false );
-
-    KHashTableDispose ( hset, NULL, NULL, NULL );
+    hmap.clear ();
+    ASSERT_EQ ( hmap.empty (), true );
+    ASSERT_EQ ( hmap.size (), 0 );
+    ASSERT_EQ ( hmap.contains ( str1 ), false );
+    ASSERT_EQ ( hmap.count ( str1 ), 0 );
+    ASSERT_THROW ( hmap.get ( str1 ), std::out_of_range );
+    ASSERT_EQ ( hmap.erase ( str1 ), false );
+    ASSERT_EQ ( hmap.contains ( str2 ), false );
+    ASSERT_EQ ( hmap.count ( str2 ), 0 );
+    ASSERT_EQ ( hmap.erase ( str2 ), false );
+    ASSERT_THROW ( hmap.get ( str2 ), std::out_of_range );
 }
-
+#if 0
 TEST (HashTable, HashTableMap )
 {
     const char *str1 = "Tu estas probando este hoy, no manana";
