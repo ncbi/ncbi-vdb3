@@ -27,11 +27,15 @@
 /**
  * Unit tests for hashtables
  */
-/* #define BENCHMARK */
+#define BENCHMARK
 
 #include <collections/HashTable.hpp>
 #include <collections/Random.hpp>
 #include <map>
+#include <set>
+#include <sys/time.h>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <gtest/gtest.h>
 using namespace VDB3;
@@ -607,324 +611,214 @@ TEST (HashTable, HashTableMapIterator )
 #endif
 #ifdef BENCHMARK
 static double stopwatch ( double start = 0.0 )
+    __attribute__ ( ( warn_unused_result ) );
+static double stopwatch ( double start )
 {
     struct timeval tv_cur = {};
     gettimeofday ( &tv_cur, nullptr );
     double finish = static_cast<double> ( tv_cur.tv_sec )
         + static_cast<double> ( tv_cur.tv_usec ) / 1000000.0;
-    // printf("usec=%d\n",tv_cur.tv_usec);
     if ( start == 0.0 ) return finish;
     double elapsed = finish - start;
     if ( elapsed == 0.0 ) elapsed = 1 / 1000000000.0;
     return elapsed;
 }
 
-static uint64_t *benchkeys = NULL;
-static const size_t numbenchkeys = 1 << 26;
-
-static void make_benchkeys ( void )
+static std::vector<uint64_t> make_benchkeys ( void )
 {
-    if ( benchkeys == NULL ) {
-        benchkeys = (uint64_t *)calloc ( 8, numbenchkeys );
+    std::vector<uint64_t> benchkeys ( 1u << 26 );
+    for ( size_t i = 0; i != benchkeys.size (); ++i ) benchkeys[i] = i;
 
-        for ( size_t i = 0; i != numbenchkeys; ++i )
-            benchkeys[i] = random () * random () + random ();
-    }
+    return benchkeys;
 }
-
-TEST ( HashTable, stdunorderedSetBench )
+/*
+TEST ( HashTable, stdSetBench )
 {
-    make_benchkeys ();
+    const uint64_t loops = 1000000;
+    auto benchkeys = make_benchkeys ();
     std::set<uint64_t> hset;
 
-    for ( unsigned long numelem = 4; numelem < ( 1ULL << 26 ); numelem *= 2 ) {
+    for ( size_t numelem = 4; numelem <= benchkeys.size (); numelem *= 2 ) {
         hset.clear ();
 
-        stopwatch ();
-        for ( size_t i = 0; i != numelem; i++ ) {
-            hset.insert ( benchkeys[i] );
+        double start = stopwatch ();
+        for ( size_t i = 0; i != numelem; ++i ) {
+            auto idx = i;
+            hset.insert ( benchkeys[idx] );
         }
         size_t sz = hset.size ();
-        ASSERT_EQ ( sz, (size_t)numelem );
+        ASSERT_EQ ( sz, numelem );
         printf ( "std::set " );
-        printf (
-            "required %lu ms to insert %lu\n", stopwatch () / 1000, numelem );
+        double elapsed = stopwatch ( start );
+        printf ( "required %.1fs to insert %lu\n", elapsed, numelem );
 
-        stopwatch ();
-        const long loops = 1000000;
-        uint64_t c = 0;
-        for ( long loop = 0; loop != loops; loop++ ) {
+        start = stopwatch ();
+        unsigned long int c = 0;
+        for ( uint64_t loop = 0; loop != loops; loop++ ) {
             c += hset.count ( loop );
         }
-        unsigned long us = stopwatch ();
-
+        elapsed = stopwatch ( start );
         printf ( "Found %lu,", c );
-        double lps = (double)loops / us;
-        printf ( "numelem=%lu\t%.1f Mlookups/sec, ", numelem, lps );
-        printf ( "load factor %f,", hset.load_factor () );
-        printf ( "buckets %ld,", hset.bucket_count () );
+        double lps = static_cast<double> ( loops ) / elapsed;
+        printf ( "numelem=%lu\t%.1f Mlookups/sec, ", numelem, lps / 1000000.0 );
 
-        stopwatch ();
+        start = stopwatch ();
         c = 0;
-        for ( long loop = 0; loop != loops; loop++ ) {
+        for ( uint64_t loop = 0; loop != loops; loop++ ) {
             c += hset.count ( benchkeys[loop] );
         }
-        us = stopwatch ();
-
+        elapsed = stopwatch ( start );
         printf ( "Random found %lu,", c );
-        lps = (double)loops / us;
-        printf ( "\t%.1f Mlookups/sec, ", lps );
-        printf ( "load factor %f,", hset.load_factor () );
-        printf ( "buckets %ld,", hset.bucket_count () );
+        lps = static_cast<double> ( loops ) / elapsed;
+        printf ( "\t%.1f Mlookups/sec, ", lps / 1000000.0 );
         printf ( "\n" );
     }
     printf ( "\n" );
 }
-
-TEST ( HashTable, JudyBench )
+*/
+TEST ( HashTable, stdunorderedSetBench )
 {
-    make_benchkeys ();
-    KVector *kv;
-    for ( unsigned long numelem = 4; numelem != ( 1ULL << 26 ); numelem *= 2 ) {
-        KVectorMake ( &kv );
+    const uint64_t loops = 1000000;
+    auto benchkeys = make_benchkeys ();
+    std::unordered_set<uint64_t> hset;
 
-        stopwatch ();
-        for ( size_t i = 0; i != numelem; i++ ) {
-            uint64_t key = benchkeys[i];
-            uint64_t val = i + 1;
-            KVectorSetU64 ( kv, key, val );
+    for ( size_t numelem = 4; numelem <= benchkeys.size (); numelem *= 2 ) {
+        hset.clear ();
+
+        double start = stopwatch ();
+        for ( size_t i = 0; i != numelem; ++i ) {
+            auto idx = i;
+            hset.insert ( benchkeys[idx] );
         }
-        printf ( "Judy " );
-        printf (
-            "required %lu ms to insert %lu\n", stopwatch () / 1000, numelem );
+        size_t sz = hset.size ();
+        ASSERT_EQ ( sz, numelem );
+        printf ( "std::unordered_set " );
+        double elapsed = stopwatch ( start );
+        printf ( "required %.1fs to insert %lu\n", elapsed, numelem );
 
-        stopwatch ();
-        unsigned long loops = 1000000;
-        unsigned long c = 0;
-        for ( unsigned long loop = 0; loop != loops; loop++ ) {
-            uint64_t key = loop;
-            uint64_t val = loop + 1;
-            size_t found = 0;
-            rc_t rc = KVectorGetU64 ( kv, key, &found );
-            if ( found && found != val )
-                fprintf ( stderr, "miss %ld %ld\n", val, found );
-
-            c += ( rc == 0 );
+        start = stopwatch ();
+        unsigned long int c = 0;
+        for ( uint64_t loop = 0; loop != loops; loop++ ) {
+            c += hset.count ( loop );
         }
-        unsigned long us = stopwatch ();
+        elapsed = stopwatch ( start );
+        printf ( "Found %lu,", c );
+        double lps = static_cast<double> ( loops ) / elapsed;
+        printf ( "numelem=%lu\t%.1f Mlookups/sec, ", numelem, lps / 1000000.0 );
 
-        printf ( "Judy Found %lu,", c );
-        double lps = (double)loops / us;
-        printf ( "numelem=%lu\t %.1f Mlookups/sec, ", numelem, lps );
-
-        stopwatch ();
+        start = stopwatch ();
         c = 0;
-        for ( unsigned long loop = 0; loop != loops; loop++ ) {
-            uint64_t key = benchkeys[loop];
-            size_t found = 0;
-            KVectorGetU64 ( kv, key, &found );
-            c += ( found != 0 );
+        for ( uint64_t loop = 0; loop != loops; loop++ ) {
+            c += hset.count ( benchkeys[loop] );
         }
-        us = stopwatch ();
-
-        printf ( "Random %lu,", c );
-        lps = (double)loops / us;
-        printf ( "\t%.1f Mlookups/sec, ", lps );
+        elapsed = stopwatch ( start );
+        printf ( "Random found %lu,", c );
+        lps = static_cast<double> ( loops ) / elapsed;
+        printf ( "\t%.1f Mlookups/sec, ", lps / 1000000.0 );
         printf ( "\n" );
-
-        KVectorRelease ( kv );
     }
     printf ( "\n" );
 }
+/*
+   TEST ( HashTable, JudyBench )
+   {
+   make_benchkeys ();
+   KVector *kv;
+   for ( unsigned long numelem = 4; numelem != ( 1ULL << 26 ); numelem *= 2 ) {
+   KVectorMake ( &kv );
+
+   stopwatch ();
+   for ( size_t i = 0; i != numelem; i++ ) {
+   uint64_t key = benchkeys[i];
+   uint64_t val = i + 1;
+   KVectorSetU64 ( kv, key, val );
+   }
+   printf ( "Judy " );
+   printf (
+   "required %lu ms to insert %lu\n", stopwatch () / 1000, numelem );
+
+   stopwatch ();
+   unsigned long loops = 1000000;
+   unsigned long c = 0;
+   for ( unsigned long loop = 0; loop != loops; loop++ ) {
+   uint64_t key = loop;
+   uint64_t val = loop + 1;
+   size_t found = 0;
+   rc_t rc = KVectorGetU64 ( kv, key, &found );
+   if ( found && found != val )
+   fprintf ( stderr, "miss %ld %ld\n", val, found );
+
+   c += ( rc == 0 );
+   }
+   unsigned long us = stopwatch ();
+
+   printf ( "Judy Found %lu,", c );
+   double lps = (double)loops / us;
+   printf ( "numelem=%lu\t %.1f Mlookups/sec, ", numelem, lps );
+
+   stopwatch ();
+   c = 0;
+   for ( unsigned long loop = 0; loop != loops; loop++ ) {
+   uint64_t key = benchkeys[loop];
+   size_t found = 0;
+   KVectorGetU64 ( kv, key, &found );
+   c += ( found != 0 );
+   }
+   us = stopwatch ();
+
+   printf ( "Random %lu,", c );
+   lps = (double)loops / us;
+   printf ( "\t%.1f Mlookups/sec, ", lps );
+   printf ( "\n" );
+
+   KVectorRelease ( kv );
+   }
+   printf ( "\n" );
+   }
+   */
 
 TEST ( HashTable, HashMapBench )
 {
-    make_benchkeys ();
-    KHashTable *hmap;
+    const uint64_t loops = 1000000;
+    auto benchkeys = make_benchkeys ();
+    HashTable<uint64_t, uint64_t> hmap;
 
-    for ( unsigned long numelem = 4; numelem != ( 1ULL << 26 ); numelem *= 2 ) {
-        rc_t rc = KHashTableMake ( &hmap, 8, 8, 0, 0.0, hashkey_raw );
-        ASSERT_RC ( rc );
+    for ( size_t numelem = 4; numelem <= benchkeys.size (); numelem *= 2 ) {
+        hmap.clear ();
 
-        size_t sz = KHashTableCount ( hmap );
-        ASSERT_EQ ( sz, (size_t)0 );
-
-        stopwatch ();
-        for ( size_t i = 0; i != numelem; i++ ) {
-            uint64_t key = benchkeys[i];
-            uint64_t hash = KHash ( (char *)&key, 8 );
-            uint64_t val = i;
-            rc = KHashTableAdd ( hmap, &key, hash, (void *)&val );
-            // Don't invoke ASSERT_RC, affects benchmark
-            //            ASSERT_RC(rc);
+        double start = stopwatch ();
+        for ( size_t i = 0; i != numelem; ++i ) {
+            auto idx = i;
+            hmap.insert ( benchkeys[idx], i );
         }
-        sz = KHashTableCount ( hmap );
-        ASSERT_EQ ( sz, (size_t)numelem );
-        printf ( "KHashTable " );
-        printf (
-            "required %lu ms to insert %lu\n", stopwatch () / 1000, numelem );
+        size_t sz = hmap.size ();
+        ASSERT_EQ ( sz, numelem );
+        printf ( "VDB3::HashTable " );
+        double elapsed = stopwatch ( start );
+        printf ( "required %.1fs to insert %lu\n", elapsed, numelem );
 
-        stopwatch ();
-        unsigned long loops = 1000000;
-        unsigned long c = 0;
-        for ( unsigned long loop = 0; loop != loops; loop++ ) {
-            uint64_t key = loop;
-            uint64_t hash = KHash ( (char *)&key, 8 );
-            uint64_t val;
-            bool found = KHashTableFind ( hmap, &key, hash, &val );
-            c += found;
+        start = stopwatch ();
+        unsigned long int c = 0;
+        for ( uint64_t loop = 0; loop != loops; loop++ ) {
+            c += hmap.count ( loop );
         }
-        unsigned long us = stopwatch ();
-
+        elapsed = stopwatch ( start );
         printf ( "Found %lu,", c );
-        double lps = (double)loops / us;
-        printf ( "numelem=%lu\t %.1f Mlookups/sec, ", numelem, lps );
+        double lps = static_cast<double> ( loops ) / elapsed;
+        printf ( "numelem=%lu\t%.1f Mlookups/sec, ", numelem, lps / 1000000.0 );
 
-        stopwatch ();
+        start = stopwatch ();
         c = 0;
-        for ( unsigned long loop = 0; loop != loops; loop++ ) {
-            uint64_t key = benchkeys[loop];
-            uint64_t hash = KHash ( (char *)&key, 8 );
-            uint64_t val;
-            bool found = KHashTableFind ( hmap, &key, hash, &val );
-            c += found;
+        for ( uint64_t loop = 0; loop != loops; loop++ ) {
+            c += hmap.count ( benchkeys[loop] );
         }
-        us = stopwatch ();
-
-        if ( numelem <= loops )
-            ASSERT_EQ ( c, numelem );
-        else
-            ASSERT_EQ ( c, loops );
-
-        printf ( "Random %lu,", c );
-        lps = (double)loops / us;
-        printf ( "\t%.1f Mlookups/sec, ", lps );
+        elapsed = stopwatch ( start );
+        printf ( "Random found %lu,", c );
+        lps = static_cast<double> ( loops ) / elapsed;
+        printf ( "\t%.1f Mlookups/sec, ", lps / 1000000.0 );
         printf ( "\n" );
-
-        KHashTableDispose ( hmap, NULL, NULL, NULL );
     }
     printf ( "\n" );
-}
-
-TEST ( HashTable, KHash_Speed )
-{
-    char key[8192];
-    unsigned long loops = 1000000;
-
-    for ( uint64_t i = 0; i != sizeof ( key ); i++ ) key[i] = random ();
-
-    long len = 4;
-    while ( len < 10000 ) {
-        stopwatch ();
-        for ( unsigned long i = 0; i != loops; i++ ) KHash ( key, len );
-
-        unsigned long us = stopwatch ();
-        unsigned long hps = 1000000 * loops / us;
-        unsigned long mbps = hps * len / 1048576;
-        printf ( "KHash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
-            len, us, hps, mbps );
-
-        len *= 2;
-    }
-}
-
-TEST ( HashTable, string_hash_Speed )
-{
-    char key[8192];
-    unsigned long loops = 1000000;
-
-    for ( uint64_t i = 0; i != sizeof ( key ); i++ ) key[i] = random ();
-
-    long len = 4;
-    while ( len < 10000 ) {
-        stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ ) string_hash ( key, len );
-
-        unsigned long us = stopwatch ();
-        unsigned long hps = 1000000 * loops / us;
-        unsigned long mbps = hps * len / 1048576;
-        printf (
-            "string_hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
-            len, us, hps, mbps );
-
-        len *= 2;
-    }
-}
-
-TEST ( HashTable, std_hash_Speed )
-{
-    unsigned long loops = 1000000;
-    string str = "1234";
-
-    std::size_t hash = 0;
-    long len = 4;
-    while ( len < 10000 ) {
-        stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ )
-            hash += std::hash<std::string> {}( str );
-
-        unsigned long us = stopwatch () + 1;
-        unsigned long hps = 1000000 * loops / us;
-        unsigned long mbps = hps * len / 1048576;
-        printf (
-            "std::hash %lu %lu us elapsed (%lu hash/sec, %lu Mbytes/sec)\n",
-            len, us, hps, mbps );
-
-        len *= 2;
-        str += str;
-    }
-}
-
-TEST ( HashTable, hash_hamming )
-{
-    char key[100];
-    uint64_t mask = 0xfff;
-    uint64_t hash_collisions[mask + 1];
-    uint64_t khash_collisions[mask + 1];
-    uint64_t rhash_collisions[mask + 1];
-
-    for ( uint64_t i = 0; i != mask + 1; i++ ) {
-        hash_collisions[i] = 0;
-        khash_collisions[i] = 0;
-        rhash_collisions[i] = 0;
-    }
-
-    const char *foo1 = "ABCDE1";
-    const char *foo2 = "ABCDE2";
-
-    printf ( "khash of %s is %lx, %s is %lx\n", foo1,
-        KHash ( foo1, strlen ( foo1 ) ), foo2,
-        KHash ( foo2, strlen ( foo2 ) ) );
-    printf ( "string_hash of %s is %u, %s is %u\n", foo1,
-        string_hash ( foo1, strlen ( foo1 ) ), foo2,
-        string_hash ( foo2, strlen ( foo2 ) ) );
-    for ( uint64_t i = 0; i != 10000000; i++ ) {
-        sprintf ( key, "ABCD%lu", i );
-        uint64_t hash = string_hash ( key, strlen ( key ) );
-        hash &= mask;
-        hash_collisions[hash] = hash_collisions[hash] + 1;
-
-        hash = KHash ( key, strlen ( key ) );
-        hash &= mask;
-        khash_collisions[hash] = khash_collisions[hash] + 1;
-
-        hash = random ();
-        hash &= mask;
-        rhash_collisions[hash] = rhash_collisions[hash] + 1;
-    }
-
-    uint64_t hash_max = 0;
-    uint64_t khash_max = 0;
-    uint64_t rhash_max = 0;
-    for ( uint64_t i = 0; i != mask; i++ ) {
-        if ( hash_collisions[i] > hash_max ) hash_max = hash_collisions[i];
-        if ( khash_collisions[i] > khash_max ) khash_max = khash_collisions[i];
-        if ( rhash_collisions[i] > rhash_max ) rhash_max = rhash_collisions[i];
-    }
-
-    printf ( "string_hash longest probe is %lu\n", hash_max );
-    printf ( "khash longest probe is %lu\n", khash_max );
-    printf ( "rhash longest probe is %lu\n", rhash_max );
 }
 
 #endif // BENCHMARK

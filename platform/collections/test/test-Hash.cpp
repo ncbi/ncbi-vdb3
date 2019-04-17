@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -168,7 +169,7 @@ TEST ( Hash, Collide )
 
     size_t inserts = 0;
     size_t collisions = 0;
-    for ( size_t l = 0; l != sizeof ( buf ); l++ )
+    for ( size_t l = 4; l != sizeof ( buf ); l++ )
         for ( size_t j = 0; j != l; j++ )
             for ( size_t k = 0; k != 255; k++ ) {
                 buf[j] = static_cast<char> ( buf[j] + 1 );
@@ -187,21 +188,33 @@ TEST ( Hash, Collide )
             }
     ASSERT_EQ ( inserts, set.size () );
 }
-#ifdef BENCHMARK
 
+/*
+TEST ( Hash, dump )
+{
+    std::string line;
+    std::ifstream ifile("/tmp/mike_logs/tokens.uniq");
+    while (std::getline(ifile, line))
+    {
+        uint64_t hash=Hash(line);
+        std::cout << hash << "\t" << line.substr(0,20) << "\n";
+    }
+}
+*/
+#ifdef BENCHMARK
 static double stopwatch ( double start = 0.0 )
+    __attribute__ ( ( warn_unused_result ) );
+static double stopwatch ( double start )
 {
     struct timeval tv_cur = {};
     gettimeofday ( &tv_cur, nullptr );
     double finish = static_cast<double> ( tv_cur.tv_sec )
         + static_cast<double> ( tv_cur.tv_usec ) / 1000000.0;
-    // printf("usec=%d\n",tv_cur.tv_usec);
     if ( start == 0.0 ) return finish;
     double elapsed = finish - start;
     if ( elapsed == 0.0 ) elapsed = 1 / 1000000000.0;
     return elapsed;
 }
-
 
 TEST ( Hash, Speed )
 {
@@ -344,4 +357,5 @@ TEST ( Hash, hamming )
 
     printf ( "rhash longest probe is %lu\n", rhash_max );
 }
+
 #endif // BENCHMARK

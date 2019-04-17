@@ -109,8 +109,8 @@ private:
     {
         if ( UNLIKELY ( count_ == 0 ) ) return ULONG_MAX;
         const uint64_t hash = Hash ( k ) | ( BUCKET_VALID | BUCKET_VISIBLE );
-        const size_t mask = buckets_.capacity () - 1;
-        assert ( buckets_.capacity () > 0 );
+        const size_t mask = buckets_.size () - 1;
+        assert ( buckets_.size () > 0 );
         assert ( mask != 0 );
         assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a mask
         size_t bucketidx = hash;
@@ -143,8 +143,8 @@ private:
     void rehash ( size_t newcapacity )
     {
         // fprintf ( stderr, "    rehash(%lu) was %lu, count=%lu", newcapacity,
-        // buckets_.capacity (), count_ );
-        newcapacity = std::max ( count_, newcapacity );
+        // buckets_.size(), count_ );
+        newcapacity = std::max ( 2 * count_, newcapacity );
         const size_t minsize = 16;
         newcapacity = std::max ( minsize, newcapacity );
 
@@ -153,14 +153,15 @@ private:
         // fprintf ( stderr, " resizing to %lu\n", newcapacity );
 
         std::vector<HashBucket> newbuckets ( newcapacity );
+        assert ( newbuckets.size () == newcapacity );
+        assert ( newbuckets.capacity () == newcapacity );
         const auto oldbuckets = buckets_;
-        buckets_ = std::move ( newbuckets );
+        buckets_ = newbuckets; // std::move ( newbuckets );
         load_ = 0;
         count_ = 0;
 
-        for ( const auto &b : newbuckets ) assert ( b.hashandbits == 0 );
-
-        for ( size_t i = 0; i != oldbuckets.size (); ++i ) {
+        size_t oldsize = oldbuckets.size ();
+        for ( size_t i = 0; i != oldsize; ++i ) {
             const auto &bucket = oldbuckets[i];
             /*
             fprintf ( stderr, "\nold bucket %lu hash=%lx ", i,
@@ -178,30 +179,33 @@ private:
 
     void insert ( uint64_t hash, const KEY &k, const VALUE &v ) noexcept
     {
-        // fprintf ( stderr, "load=%lu, capa=%lu\n", load_, buckets_.capacity ()
+        // fprintf ( stderr, "load=%lu, capa=%lu\n", load_, buckets_.size ()
         // );
-        bool grow = load_ >= ( buckets_.capacity () * 5 / 8 );
+        bool grow = load_ >= ( buckets_.size () * 5 / 8 );
         if ( UNLIKELY ( grow ) ) {
             //            fprintf ( stderr, "grow time load=%lu, count=%lu\n",
             //            load_, count_ );
             if ( ( load_ + 1 ) / ( count_ + 1 ) == 1 ) {
                 // Expand
-                rehash ( buckets_.capacity () * 2 );
+                rehash ( buckets_.size () * 2 );
             } else {
                 // lots of deletes, just rehash table at existing size
-                rehash ( buckets_.capacity () );
+                rehash ( buckets_.size () );
             }
         }
 
-        assert ( buckets_.capacity () > 0 );
-        const size_t mask = buckets_.capacity () - 1;
+        assert ( buckets_.size () > 0 );
+        const size_t mask = buckets_.size () - 1;
         assert ( mask != 0 );
         assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a mask
         size_t bucketidx = hash;
         size_t triangle = 0;
         while ( 1 ) {
             bucketidx &= mask;
-            assert ( bucketidx <= buckets_.size () );
+            if ( bucketidx >= buckets_.size () )
+                fprintf ( stderr, "bucketidx=%lu, mask=%lx, size=%lu,%lu\n",
+                    bucketidx, mask, buckets_.size (), buckets_.capacity () );
+            assert ( bucketidx < buckets_.size () );
             auto &bucket = buckets_[bucketidx];
             // fprintf ( stderr, "insert hash=%lx, mask=%lx, bucketidx=%lu\n",
             // hash, mask, bucketidx );
