@@ -29,11 +29,13 @@
 #include <cstdint>
 #include <string>
 
+// c++20 defines [[likely]] [[unlikely]]
 #define UNLIKELY( x ) __builtin_expect ( !!( x ), 0 )
 #define LIKELY( x ) __builtin_expect ( !!( x ), 1 )
 
 namespace VDB3 {
-uint64_t Hash ( const char *s, size_t len ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( const char *s, size_t len ) noexcept
+    __attribute__ ( ( pure, warn_unused_result ) );
 uint64_t Hash ( const std::string &str ) noexcept __attribute__ ( ( pure ) );
 uint64_t Hash ( int i ) noexcept __attribute__ ( ( pure ) );
 uint64_t Hash ( long int i ) noexcept __attribute__ ( ( pure ) );

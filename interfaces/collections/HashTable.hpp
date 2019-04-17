@@ -44,8 +44,14 @@ public:
 
     void reserve ( size_t capacity ) noexcept { rehash ( capacity ); }
 
-    bool empty () const noexcept { return count_ == 0; }
-    size_t size () const noexcept { return count_; }
+    bool empty () const noexcept __attribute__ ( ( warn_unused_result ) )
+    {
+        return count_ == 0;
+    }
+    size_t size () const noexcept __attribute__ ( ( warn_unused_result ) )
+    {
+        return count_;
+    }
 
     void clear () noexcept
     {
@@ -55,11 +61,13 @@ public:
     }
 
     bool contains ( const KEY &k ) const noexcept
+        __attribute__ ( ( warn_unused_result ) )
     {
         return ( findbucket ( k ) != ULONG_MAX );
     }
 
     size_t count ( const KEY &k ) const noexcept
+        __attribute__ ( ( warn_unused_result ) )
     {
         if ( contains ( k ) )
             return 1;
@@ -67,7 +75,8 @@ public:
             return 0;
     }
 
-    VALUE get ( const KEY &k ) const // can throw std::out_of_range
+    VALUE get ( const KEY &k ) const
+        __attribute__ ( ( warn_unused_result ) ) // can throw std::out_of_range
     {
         size_t bucketid = findbucket ( k );
         if ( bucketid == ULONG_MAX ) throw std::out_of_range ( "no such key" );
@@ -77,50 +86,10 @@ public:
     void insert ( const KEY &k, const VALUE &v ) noexcept
     {
         const uint64_t hash = Hash ( k ) | ( BUCKET_VALID | BUCKET_VISIBLE );
-        if ( UNLIKELY ( buckets_.capacity () == 0 ) ) rehash ( 16 );
-        assert ( buckets_.capacity () > 0 );
-        const size_t mask = buckets_.capacity () - 1;
-        assert ( mask != 0 );
-        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a power of 2
-        size_t bucketidx = hash;
-        size_t triangle = 0;
-        while ( 1 ) {
-            bucketidx &= mask;
-            auto &abucket = buckets_[bucketidx];
-            if ( !( abucket.hashandbits & BUCKET_VALID ) ) {
-                // insert
-
-                abucket.hashandbits = hash;
-                abucket.key = k;
-                abucket.value = v;
-
-                ++count_;
-                ++load_;
-
-                double load_factor = static_cast<double> ( load_ )
-                    / static_cast<double> ( buckets_.capacity () );
-
-                if ( load_factor > 0.6 ) {
-                    if ( static_cast<double> ( count_ )
-                            / static_cast<double> ( load_ )
-                        > 0.5 )
-                        rehash ( buckets_.capacity () * 2 );
-                    /* lots of deletes, just rehash table at existing size */
-                    rehash ( buckets_.capacity () );
-                }
-                return;
-            }
-
-            // replacement
-            if ( abucket.hashandbits == hash ) {
-                if ( LIKELY ( abucket.key == k ) ) { abucket.value = v; }
-            }
-            ++triangle;
-            bucketidx += ( triangle * ( triangle + 1 ) / 2 );
-        }
+        insert ( hash, k, v );
     }
-    // insert_or_assign
 
+    // insert_or_assign
 
     bool erase ( const KEY &k ) noexcept
     {
@@ -143,18 +112,19 @@ private:
         const size_t mask = buckets_.capacity () - 1;
         assert ( buckets_.capacity () > 0 );
         assert ( mask != 0 );
-        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a power of 2
+        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a mask
         size_t bucketidx = hash;
         size_t triangle = 0;
         while ( 1 ) {
             bucketidx &= mask;
-            const auto &abucket = buckets_[bucketidx];
-            if ( !( abucket.hashandbits & BUCKET_VALID ) ) return ULONG_MAX;
+            assert ( bucketidx <= buckets_.size () );
+            const auto &bucket = buckets_[bucketidx];
+            if ( !( bucket.hashandbits & BUCKET_VALID ) ) return ULONG_MAX;
 
-            if ( abucket.hashandbits == hash ) {
+            if ( bucket.hashandbits == hash ) {
                 // hash hit, probability very low (2^-62) that this is an actual
                 // miss, but we have to check.
-                if ( LIKELY ( abucket.key == k ) ) return bucketidx;
+                if ( LIKELY ( bucket.key == k ) ) return bucketidx;
             }
             // To improve lookups when hash function has poor distribution, we
             // use quadratic probing with a triangle sequence: 0,1,3,6,10...
@@ -172,41 +142,109 @@ private:
 
     void rehash ( size_t newcapacity )
     {
+        // fprintf ( stderr, "    rehash(%lu) was %lu, count=%lu", newcapacity,
+        // buckets_.capacity (), count_ );
         newcapacity = std::max ( count_, newcapacity );
+        const size_t minsize = 16;
+        newcapacity = std::max ( minsize, newcapacity );
 
         const auto lg2 = uint64_msbit ( newcapacity | 1u );
         newcapacity = 1uL << lg2;
+        // fprintf ( stderr, " resizing to %lu\n", newcapacity );
 
-        std::vector<bucket> newbuckets;
-        newbuckets.resize ( newcapacity );
-        const size_t newmask = newcapacity - 1;
-        assert ( newmask != 0 );
-        assert ( ( ( newmask + 1 ) & newmask ) == 0 ); // newmask+1 is a power
-                                                       // of 2
-
+        std::vector<HashBucket> newbuckets ( newcapacity );
+        const auto oldbuckets = buckets_;
+        buckets_ = std::move ( newbuckets );
+        load_ = 0;
         count_ = 0;
-        for ( size_t i = 0; i != buckets_.size (); ++i )
-        // for ( auto const &abucket : buckets_ ) {
-        {
-            auto &abucket = buckets_[i];
-            if ( ( abucket.hashandbits & BUCKET_VALID )
-                && ( abucket.hashandbits & BUCKET_VISIBLE ) ) {
-                newbuckets[abucket.hashandbits & newmask] = abucket;
-                ++count_;
+
+        for ( const auto &b : newbuckets ) assert ( b.hashandbits == 0 );
+
+        for ( size_t i = 0; i != oldbuckets.size (); ++i ) {
+            const auto &bucket = oldbuckets[i];
+            /*
+            fprintf ( stderr, "\nold bucket %lu hash=%lx ", i,
+            bucket.hashandbits ); if ( bucket.hashandbits & BUCKET_VALID )
+                fprintf ( stderr, "VALID " );
+            if ( bucket.hashandbits & BUCKET_VISIBLE )
+                fprintf ( stderr, "VISIBLE " );
+*/
+            if ( bucket.hashandbits & BUCKET_VISIBLE ) {
+                insert ( bucket.hashandbits, bucket.key, bucket.value );
             }
         }
-        load_ = count_;
-        buckets_ = newbuckets;
-        assert ( buckets_.capacity () >= newcapacity );
+        // fprintf ( stderr, "rehashed\n" );
     }
 
-    struct bucket {
+    void insert ( uint64_t hash, const KEY &k, const VALUE &v ) noexcept
+    {
+        // fprintf ( stderr, "load=%lu, capa=%lu\n", load_, buckets_.capacity ()
+        // );
+        bool grow = load_ >= ( buckets_.capacity () * 5 / 8 );
+        if ( UNLIKELY ( grow ) ) {
+            //            fprintf ( stderr, "grow time load=%lu, count=%lu\n",
+            //            load_, count_ );
+            if ( ( load_ + 1 ) / ( count_ + 1 ) == 1 ) {
+                // Expand
+                rehash ( buckets_.capacity () * 2 );
+            } else {
+                // lots of deletes, just rehash table at existing size
+                rehash ( buckets_.capacity () );
+            }
+        }
+
+        assert ( buckets_.capacity () > 0 );
+        const size_t mask = buckets_.capacity () - 1;
+        assert ( mask != 0 );
+        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a mask
+        size_t bucketidx = hash;
+        size_t triangle = 0;
+        while ( 1 ) {
+            bucketidx &= mask;
+            assert ( bucketidx <= buckets_.size () );
+            auto &bucket = buckets_[bucketidx];
+            // fprintf ( stderr, "insert hash=%lx, mask=%lx, bucketidx=%lu\n",
+            // hash, mask, bucketidx );
+
+            if ( !( bucket.hashandbits & BUCKET_VALID ) ) { // insert
+                bucket.hashandbits = hash;
+                bucket.key = k;
+                bucket.value = v;
+
+                ++count_;
+                ++load_;
+
+                // fprintf ( stderr, "inserted hash=%lx\n", hash );
+                return;
+            }
+
+            // replacement
+            if ( bucket.hashandbits == hash ) {
+                if ( LIKELY ( bucket.key == k ) ) {
+                    bucket.value = v;
+                    // fprintf ( stderr, "          replaced %lx\n", hash );
+                }
+                return;
+            }
+
+            // probe
+            ++triangle;
+            // fprintf ( stderr, "probe %lu  ", triangle );
+            bucketidx += ( triangle * ( triangle + 1 ) / 2 );
+        }
+    }
+
+
+    struct HashBucket {
         uint64_t hashandbits;
         KEY key;
         VALUE value;
+        //        HashBucket () { fprintf ( stderr, "HashBucket ctor %lx\n",
+        //        hashandbits ); } ~HashBucket () { fprintf ( stderr,
+        //        "HashBucket dtor %lx\n", hashandbits ); }
     };
 
-    std::vector<bucket> buckets_ {};
+    std::vector<HashBucket> buckets_ {};
 
     size_t count_ = 0;
     size_t load_ = 0; /* Included invisible buckets */

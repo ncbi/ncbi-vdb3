@@ -69,6 +69,11 @@ TEST ( Hash, String )
     uint64_t hash = Hash ( str );
     ASSERT_NE ( hash, 0 );
     ASSERT_EQ ( Hash ( str ), Hash ( str ) );
+
+    str = "";
+    std::string str2 = "";
+    ASSERT_EQ ( Hash ( str ), Hash ( str ) );
+    ASSERT_EQ ( Hash ( str ), Hash ( str2 ) );
 }
 
 TEST ( Hash, Integer )
