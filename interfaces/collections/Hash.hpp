@@ -29,18 +29,18 @@
 #include <cstdint>
 #include <string>
 
-// c++20 defines [[likely]] [[unlikely]]
-#define UNLIKELY( x ) __builtin_expect ( !!( x ), 0 )
-#define LIKELY( x ) __builtin_expect ( !!( x ), 1 )
+#define ATTRPURE __attribute__ ( ( pure ) )
+#define ATTRPUREWARNUNUSED __attribute__ ( ( pure, warn_unused_result ) )
+#define ATTRWARNUNUSED __attribute__ ( ( warn_unused_result ) )
+#define ATTRCONST __attribute__ ( ( const ) )
 
 namespace VDB3 {
-uint64_t Hash ( const char *s, size_t len ) noexcept
-    __attribute__ ( ( pure, warn_unused_result ) );
-uint64_t Hash ( const std::string &str ) noexcept __attribute__ ( ( pure ) );
-uint64_t Hash ( int i ) noexcept __attribute__ ( ( pure ) );
-uint64_t Hash ( long int i ) noexcept __attribute__ ( ( pure ) );
-uint64_t Hash ( unsigned long long l ) noexcept __attribute__ ( ( pure ) );
-uint64_t Hash ( uint64_t l ) noexcept __attribute__ ( ( pure ) );
-uint64_t Hash ( float f ) noexcept __attribute__ ( ( pure ) );
-uint64_t Hash ( double d ) noexcept __attribute__ ( ( pure ) );
+uint64_t Hash ( const char *s, size_t len ) noexcept ATTRPUREWARNUNUSED;
+uint64_t Hash ( const std::string &str ) noexcept ATTRPURE;
+uint64_t Hash ( int i ) noexcept ATTRPURE;
+uint64_t Hash ( long int i ) noexcept ATTRPURE;
+uint64_t Hash ( unsigned long long l ) noexcept ATTRPURE;
+uint64_t Hash ( uint64_t l ) noexcept ATTRPURE;
+uint64_t Hash ( float f ) noexcept ATTRPURE;
+uint64_t Hash ( double d ) noexcept ATTRPURE;
 } // namespace VDB3

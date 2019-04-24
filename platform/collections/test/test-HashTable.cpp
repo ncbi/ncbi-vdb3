@@ -27,7 +27,7 @@
 /**
  * Unit tests for hashtables
  */
-#define BENCHMARK
+//#define BENCHMARK
 
 #include <collections/HashTable.hpp>
 #include <collections/Random.hpp>
@@ -610,8 +610,7 @@ TEST (HashTable, HashTableMapIterator )
 
 #endif
 #ifdef BENCHMARK
-static double stopwatch ( double start = 0.0 )
-    __attribute__ ( ( warn_unused_result ) );
+static double stopwatch ( double start = 0.0 ) WARNUNUSED;
 static double stopwatch ( double start )
 {
     struct timeval tv_cur = {};

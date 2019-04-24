@@ -39,9 +39,10 @@
 #include <cinttypes>
 #include <fstream>
 
+#undef memcpy // Code never copies overlapping regions
 
 namespace VDB3 {
-class Random // Very fast RNG
+class Random final // Very fast RNG
 {
 public:
     Random ()

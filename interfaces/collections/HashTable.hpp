@@ -25,6 +25,10 @@
  */
 
 #pragma once
+#ifdef NDEBUG
+#undef _GLIBCXX_ASSERTIONS
+#undef _FORITFY_SOURCE
+#endif
 
 #include <cassert>
 #include <climits>
@@ -35,8 +39,13 @@
 #include <stdexcept>
 #include <vector>
 
+// c++20 defines [[likely]] [[unlikely]]
+// gcc 9 has __builtin_expect_with_probability
+#define UNLIKELY( x ) __builtin_expect ( !!( x ), 0 )
+#define LIKELY( x ) __builtin_expect ( !!( x ), 1 )
+
 namespace VDB3 {
-template <typename KEY, typename VALUE> class HashTable {
+template <typename KEY, typename VALUE> class HashTable final {
 public:
     //    HashTable ( size_t initial_capacity = 0 ) {}
     //    virtual ~HashTable ();
@@ -44,14 +53,8 @@ public:
 
     void reserve ( size_t capacity ) noexcept { rehash ( capacity ); }
 
-    bool empty () const noexcept __attribute__ ( ( warn_unused_result ) )
-    {
-        return count_ == 0;
-    }
-    size_t size () const noexcept __attribute__ ( ( warn_unused_result ) )
-    {
-        return count_;
-    }
+    bool empty () const noexcept ATTRWARNUNUSED { return count_ == 0; }
+    size_t size () const noexcept ATTRWARNUNUSED { return count_; }
 
     void clear () noexcept
     {
@@ -60,14 +63,12 @@ public:
         load_ = 0;
     }
 
-    bool contains ( const KEY &k ) const noexcept
-        __attribute__ ( ( warn_unused_result ) )
+    bool contains ( const KEY &k ) const noexcept ATTRPURE ATTRWARNUNUSED
     {
         return ( findbucket ( k ) != ULONG_MAX );
     }
 
-    size_t count ( const KEY &k ) const noexcept
-        __attribute__ ( ( warn_unused_result ) )
+    size_t count ( const KEY &k ) const noexcept ATTRPURE ATTRWARNUNUSED
     {
         if ( contains ( k ) )
             return 1;
@@ -75,8 +76,8 @@ public:
             return 0;
     }
 
-    VALUE get ( const KEY &k ) const
-        __attribute__ ( ( warn_unused_result ) ) // can throw std::out_of_range
+    VALUE get ( const KEY &k ) const ATTRWARNUNUSED // can throw
+                                                    // std::out_of_range
     {
         size_t bucketid = findbucket ( k );
         if ( bucketid == ULONG_MAX ) throw std::out_of_range ( "no such key" );
@@ -105,7 +106,7 @@ private:
     static const uint64_t BUCKET_VISIBLE = 1ul << 62u;
 
     // Returns index to found bucket or LONG_MAX
-    size_t findbucket ( const KEY k ) const
+    size_t findbucket ( const KEY k ) const ATTRPURE
     {
         if ( UNLIKELY ( count_ == 0 ) ) return ULONG_MAX;
         const uint64_t hash = Hash ( k ) | ( BUCKET_VALID | BUCKET_VISIBLE );
@@ -134,7 +135,7 @@ private:
         }
     }
 
-    int uint64_msbit ( uint64_t self ) __attribute__ ( ( const ) )
+    int uint64_msbit ( uint64_t self ) ATTRCONST
     {
         if ( self == 0 ) return -1;
         return 63 - __builtin_clzll ( self );

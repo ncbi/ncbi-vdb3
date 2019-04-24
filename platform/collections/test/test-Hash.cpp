@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -44,7 +45,7 @@
 
 using namespace VDB3;
 
-//#define BENCHMARK
+#define BENCHMARK
 
 TEST ( Hash, Basic )
 {
@@ -75,6 +76,8 @@ TEST ( Hash, String )
     std::string str2 = "";
     ASSERT_EQ ( Hash ( str ), Hash ( str ) );
     ASSERT_EQ ( Hash ( str ), Hash ( str2 ) );
+
+    ASSERT_NE ( Hash ( "-110886" ), Hash ( "-160836" ) );
 }
 
 TEST ( Hash, Integer )
@@ -132,8 +135,8 @@ TEST ( Hash, Adjacent )
     auto diff = hash2 - hash1;
     ASSERT_LE ( diff, 7 );
 
-    const char *str1 = "nearstring01";
-    const char *str2 = "nearstring02";
+    const char *str1 = "nearstring02";
+    const char *str2 = "nearstring03";
     size_t size = strlen ( str1 );
     hash1 = Hash ( str1, size );
     hash2 = Hash ( str2, size );
@@ -146,26 +149,115 @@ TEST ( Hash, Adjacent )
     }
 }
 
+TEST ( Hash, Collisision )
+{
+    std::string str1 = "31S15M1D10M2D79M";
+    std::string str2 = "34S27M1D14M1D76M";
+    ASSERT_NE ( str1, str2 );
+    auto hash1 = Hash ( str1 );
+    auto hash2 = Hash ( str2 );
+    ASSERT_NE ( hash1, hash2 );
+}
+
+TEST ( Hash, Long )
+{
+    std::string str1
+        = "*GGFGFGGGGGGGGGGGGGGGGGGGGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    std::string str2
+        = "*GGFGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          "GGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    auto hash1 = Hash ( str1 );
+    auto hash2 = Hash ( str2 );
+    ASSERT_NE ( str1, str2 );
+    ASSERT_NE ( hash1, hash2 );
+
+    str1 = "4FFGFGFGFGFGFGFGGGFGGGGGGDGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    str2 = "4FFGFGFGFGFGFGFGGGFGGGGGGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGEGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    ASSERT_NE ( str1, str2 );
+    ASSERT_NE ( Hash ( str1 ), Hash ( str2 ) );
+
+    str1 = "GGGGGGGGGGGGGGGGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    str2 = "7GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    ASSERT_NE ( str1, str2 );
+    ASSERT_NE ( Hash ( str1 ), Hash ( str2 ) );
+
+    str1 = ">GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    str2 = ">GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    ASSERT_NE ( str1, str2 );
+    ASSERT_NE ( Hash ( str1 ), Hash ( str2 ) );
+}
+
 TEST ( Hash, StrAdjacent )
 {
     std::string str1 = "str02";
     std::string str2 = "str03";
     auto hash1 = Hash ( str1 );
     auto hash2 = Hash ( str2 );
-    auto diff = hash2 ^ hash1;
+    hash1 &= 0xffffff;
+    hash2 &= 0xffffff;
+    auto diff = hash2 - hash1;
     // printf ( "hash1 is %zx\nhash2 is %zx\n", hash1, hash2 );
     ASSERT_LE ( diff, 7 );
+}
+
+TEST ( Hash, StrAdjacents )
+{
+    for ( size_t l = 1; l != 300; ++l ) {
+        if ( ( l % 32 ) == 0 ) continue;
+        std::string str ( l, '$' );
+        ASSERT_EQ ( l, str.size () );
+        // std::cerr << str << "\n";
+        uint64_t hash1 = Hash ( str );
+        str[l - 1] = '%';
+        // std::cerr << str << "\n";
+        uint64_t hash2 = Hash ( str );
+        hash1 &= 0xffffff;
+        hash2 &= 0xffffff;
+        auto diff = labs ( static_cast<long int> ( hash2 - hash1 ) );
+        if ( diff > 7 ) {
+            printf ( "at length %lu\nhash1 is %zx\nhash2 is %zx\n", l, hash1,
+                hash2 );
+            ASSERT_LE ( diff, 7 );
+        }
+    }
 }
 
 TEST ( Hash, Collide )
 {
     // We fill a buffer with random bytes, and then increment each byte once
     // and verify no collisions occur for all lengths.
-    char buf[37];
+    char buf[97];
     for ( size_t l = 0; l != sizeof ( buf ); l++ )
         buf[l] = static_cast<char> ( random () );
 
-    std::set<uint64_t> set;
+    std::map<uint64_t, size_t> map;
 
     size_t inserts = 0;
     size_t collisions = 0;
@@ -174,36 +266,46 @@ TEST ( Hash, Collide )
             for ( size_t k = 0; k != 255; k++ ) {
                 buf[j] = static_cast<char> ( buf[j] + 1 );
                 uint64_t hash = Hash ( buf, l );
-                size_t count = set.count ( hash );
+                size_t count = map.count ( hash );
+                if ( 0 ) {
+                    fprintf ( stderr, "(%lu) ", l );
+                    for ( size_t d = 0; d != l; ++d )
+                        fprintf ( stderr, "%02x ",
+                            static_cast<unsigned char> ( buf[d] ) );
+                    fprintf ( stderr, "=%lx\n\n", hash );
+                }
                 if ( count != 0 ) {
                     collisions++;
                     fprintf ( stderr,
                         "Collision at byte %lu on hash of len %lu, hash is "
                         "%lx: "
-                        "%lu elements in set\n",
-                        j, l, hash, set.size () );
+                        "%lu elements in map, prev size was %lu\n",
+                        j, l, hash, map.size (), map[hash] );
+                    exit ( 1 );
                 }
-                set.insert ( hash );
+                map[hash] = l;
                 inserts++;
             }
-    ASSERT_EQ ( inserts, set.size () );
+    ASSERT_EQ ( inserts, map.size () );
 }
 
-/*
-TEST ( Hash, dump )
+TEST ( Hash, bigcoll )
 {
-    std::string line;
-    std::ifstream ifile("/tmp/mike_logs/tokens.uniq");
-    while (std::getline(ifile, line))
-    {
-        uint64_t hash=Hash(line);
-        std::cout << hash << "\t" << line.substr(0,20) << "\n";
+    std::map<uint64_t, std::string> cols;
+    for ( unsigned int i = 0; i != 200; ++i ) {
+        std::string reps ( i, '#' );
+        uint64_t hash = Hash ( reps );
+        if ( cols.count ( hash ) != 0 )
+            fprintf ( stderr, "collide %u: %s\t(%lu %lu)\n", i, reps.data (),
+                reps.size (), cols[hash].size () );
+        ASSERT_EQ ( cols.count ( hash ), 0 );
+        cols[hash] = reps;
     }
 }
-*/
+
+
 #ifdef BENCHMARK
-static double stopwatch ( double start = 0.0 )
-    __attribute__ ( ( warn_unused_result ) );
+static double stopwatch ( double start = 0.0 ) ATTRWARNUNUSED;
 static double stopwatch ( double start )
 {
     struct timeval tv_cur = {};
@@ -356,6 +458,17 @@ TEST ( Hash, hamming )
     }
 
     printf ( "rhash longest probe is %lu\n", rhash_max );
+}
+
+TEST ( Hash, dump )
+{
+    std::string line;
+    std::ifstream ifile ( "/tmp/mike_logs/tokens.uniq" );
+    while ( std::getline ( ifile, line ) ) {
+        uint64_t hash = Hash ( line );
+        // std::cerr << hash << "\t" << line.substr(0,20) << "\n";
+        std::cout << hash << "\t" << line.size () << "\t" << line << "\n";
+    }
 }
 
 #endif // BENCHMARK
