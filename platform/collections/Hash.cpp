@@ -98,13 +98,6 @@ static inline uint64_t bigmix2 ( uint64_t hash, uint64_t ll1, uint64_t ll2 )
     return hash;
 }
 
-/*
-static void print128_num ( int n, __m128i var )
-{
-    uint64_t *v64val = reinterpret_cast<uint64_t *> ( &var );
-    fprintf ( stderr, "val %d is %.16lx %.16lx\n", n, v64val[1], v64val[0] );
-}
-*/
 static inline uint64_t mix128 ( size_t len, const char *s )
 {
     const __m128i c128_0 = _mm_setzero_si128 ();
@@ -112,12 +105,10 @@ static inline uint64_t mix128 ( size_t len, const char *s )
         = _mm_loadu_si128 ( reinterpret_cast<const __m128i *> ( keys[0] ) );
     const __m128i c128_low
         = _mm_loadu_si128 ( reinterpret_cast<const __m128i *> ( lowbits128 ) );
-    // const __m128i c128_2 = _mm_loadu_si128 ( reinterpret_cast<const __m128i
-    // *> ( keys[1] ) );
     const __m128i *s0 = reinterpret_cast<const __m128i *> ( s );
     const __m128i *s1 = reinterpret_cast<const __m128i *> ( s + ( len - 16 ) );
     const auto h1 = _mm_loadu_si128 ( s0 );
-    const auto h2 = _mm_xor_si128 ( h1, c128_1 );
+    const auto h2 = h1 ^ c128_1;
 
 
     const auto hlow = _mm_loadu_si128 ( s1 );
@@ -129,7 +120,7 @@ static inline uint64_t mix128 ( size_t len, const char *s )
     h5 = _mm_aesenc_si128 ( h5, c128_0 );
     const auto h6 = _mm_aesenc_si128 ( h5, hlow3 );
     const auto h7 = _mm_bsrli_si128 ( h6, 8 );
-    const auto h8 = _mm_xor_si128 ( h6, h7 );
+    const auto h8 = h6 ^ h7;
 
     return static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h8 ) );
 }
@@ -139,7 +130,6 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
 {
     uint64_t hash = len * k0; // maybe seed?
 
-    const __m128i c128_0 = _mm_setzero_si128 ();
     const __m128i c128_1
         = _mm_loadu_si128 ( reinterpret_cast<const __m128i *> ( keys[0] ) );
     const __m128i c128_2
@@ -166,29 +156,20 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
             h5 = _mm_loadu_si128 ( s128 + 2 );
             h6 = _mm_loadu_si128 ( s128 + 3 );
 
-            /*
-            h3 = _mm_xor_si128 ( h3, c128_1 );
-            h4 = _mm_xor_si128 ( h4, c128_2 );
-            h5 = _mm_xor_si128 ( h5, c128_3 );
-            */
-
             h3 ^= _mm_slli_epi64 ( h4, 1 );
-            h3 ^= _mm_srli_epi64 ( h6, 1 );
+            h4 ^= _mm_slli_epi64 ( h5, 2 );
             h5 ^= _mm_slli_epi64 ( h6, 1 );
+            h6 ^= _mm_slli_epi64 ( h3, 3 );
 
             h1 += h3;
             h1 ^= h5;
 
-            h2 ^= h3;
-            h2 += h5;
-            // h2 ^= h6;
-            // h2 += _mm_aesenc_si128 ( h5, h6 );
+            h2 ^= h4;
+            h2 += h6;
+            h1 += _mm_slli_epi64 ( h2, 4 );
 
             s += 64;
         }
-
-        // h1 = _mm_aesenc_si128 ( h1, c128_0 );
-        // h2 = _mm_aesenc_si128 ( h2, c128_0 );
 
         if ( len >= 32 ) {
             const __m128i *s128 = reinterpret_cast<const __m128i *> ( s );
@@ -199,16 +180,15 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
             s += 32;
         }
         h1 = _mm_aesenc_si128 ( h1, h5 );
-        h2 = _mm_aesenc_si128 ( h2, h3 );
         h1 = _mm_aesenc_si128 ( h1, h6 );
+        h2 = _mm_aesenc_si128 ( h2, h3 );
         h2 = _mm_aesenc_si128 ( h2, h4 );
 
-        h1 = _mm_xor_si128 ( h1, h2 );
+        h1 = h1 ^ h2;
         h1 = _mm_aesenc_si128 ( h1, c128_1 );
 
         h1 ^= _mm_bsrli_si128 ( h1, 8 );
 
-        // h1 = _mm_aesenc_si128 ( h1, c128_0);
         hash += static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h1 ) );
     }
 
@@ -308,13 +288,10 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         uint64_t ll1, ll2;
         memcpy ( &ll1, s, sizeof ( ll1 ) );
         ll2 = ( ll1 & 0xFCFFFFFFFFFFFFFCU );
-        // fprintf(stderr,"ll1=%lx ll2=%lx ", ll1,ll2);
         hash ^= rotr ( ll2 * k1, 47 );
-        // fprintf(stderr,"rot =%lx ", rotr(ll2*k1,47));
         hash ^= rotr ( hash * k2, 31 );
         hash += ( ll1 << 1 );
         hash += ( ll1 >> 56 );
-        // fprintf(stderr,"hash=%lx\n", hash);
         return hash;
     }
     case 9: {
@@ -368,9 +345,9 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         h3 = _mm_bsrli_si128 ( h1, 15 );
         h3 = _mm_slli_epi64 ( h3, 1 );
 
-        h1 = _mm_xor_si128 ( h2, c128_1 );
-        h1 = _mm_xor_si128 ( h1, c128_1 );
-        h1 = _mm_aesenc_si128 ( h1, h3 );
+        h2 ^= c128_1;
+        h2 = _mm_aesenc_si128 ( h2, c128_2 );
+        h1 = _mm_aesenc_si128 ( h2, h3 );
         h1 += _mm_bsrli_si128 ( h1, 8 );
 
         return hash + static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h1 ) );

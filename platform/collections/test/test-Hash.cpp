@@ -212,6 +212,20 @@ TEST ( Hash, Long )
            "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
     ASSERT_NE ( str1, str2 );
     ASSERT_NE ( Hash ( str1 ), Hash ( str2 ) );
+
+    str1 = "*GGGFGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+    str2 = "*GGGFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "FGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGCCCCC";
+
+    ASSERT_NE ( str1, str2 );
+    ASSERT_NE ( Hash ( str1 ), Hash ( str2 ) );
 }
 
 TEST ( Hash, StrAdjacent )
@@ -326,7 +340,7 @@ TEST ( Hash, Speed )
     for ( uint64_t i = 0; i != sizeof ( key ); i++ )
         key[i] = static_cast<char> ( random () );
 
-    uint64_t len = 4;
+    uint64_t len = 3;
     uint64_t hash = 0;
     while ( len <= sizeof ( key ) ) {
         double start = stopwatch ();
@@ -345,69 +359,13 @@ TEST ( Hash, Speed )
     }
 }
 
-/*
-TEST ( KHash, Speed )
-{
-    char key[8192];
-    uint64_t loops = 1000000;
-
-    for ( uint64_t i = 0; i != sizeof ( key ); i++ )
-        key[i] = static_cast<char> ( random () );
-
-    uint64_t len = 4;
-    uint64_t hash = 0;
-    while ( len  <= sizeof(key) ) {
-        double start = stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ ) {
-            ++key[0]; // defeat compiler memoization
-            hash += KHash ( key, len );
-        }
-
-        double elapsed = stopwatch ( start );
-        double hps = static_cast<double> ( loops ) / elapsed;
-        double mbps = hps * static_cast<double> ( len ) / 1048576.0;
-        printf (
-            "KHash %lu %.1f elapsed (%.1f hash/sec, %.1f Mbytes/sec) %lu\n",
-            len, elapsed, hps, mbps, hash & 0xff );
-
-        len *= 2;
-    }
-}
-TEST ( memset, Speed )
-{
-    char key[2048576];
-    uint64_t loops = 1000000;
-
-    for ( uint64_t i = 0; i != sizeof ( key ); i++ )
-        key[i] = static_cast<char> ( random () );
-
-    uint64_t len = 4;
-    uint64_t hash = 0;
-    while ( len  <= sizeof(key) ) {
-        double start = stopwatch ();
-        for ( uint64_t i = 0; i != loops; i++ ) {
-            ++key[0]; // defeat compiler memoization
-            memset(key, 1, len);
-        }
-
-        double elapsed = stopwatch ( start );
-        double hps = static_cast<double> ( loops ) / elapsed;
-        double mbps = hps * static_cast<double> ( len ) / 1048576.0;
-        printf (
-            "memset %lu %.1f elapsed (%.1f hash/sec, %.1f Mbytes/sec) %lu\n",
-            len, elapsed, hps, mbps, hash & 0xff );
-
-        len *= 2;
-    }
-}
-*/
 TEST ( Hash, std_hash_Speed )
 {
     uint64_t loops = 1000000;
     std::string str = "1234";
 
     std::size_t hash = 0;
-    uint64_t len = 4;
+    uint64_t len = 3;
     while ( len <= 8192 ) {
         double start = stopwatch ();
         for ( uint64_t i = 0; i != loops; i++ ) {
