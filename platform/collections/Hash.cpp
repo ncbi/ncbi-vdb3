@@ -352,48 +352,20 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
 
         return hash + static_cast<uint64_t> ( _mm_cvtsi128_si64 ( h1 ) );
     }
-    case 17: {
-        return hash + mix128 ( len, s );
-    }
-    case 18: {
-        return hash + mix128 ( len, s );
-    }
-    case 19: {
-        return hash + mix128 ( len, s );
-    }
-    case 20: {
-        return hash + mix128 ( len, s );
-    }
-    case 21: {
-        return hash + mix128 ( len, s );
-    }
-    case 22: {
-        return hash + mix128 ( len, s );
-    }
-    case 23: {
-        return hash + mix128 ( len, s );
-    }
-    case 24: {
-        return hash + mix128 ( len, s );
-    }
-    case 25: {
-        return hash + mix128 ( len, s );
-    }
-    case 26: {
-        return hash + mix128 ( len, s );
-    }
-    case 27: {
-        return hash + mix128 ( len, s );
-    }
-    case 28: {
-        return hash + mix128 ( len, s );
-    }
-    case 29: {
-        return hash + mix128 ( len, s );
-    }
-    case 30: {
-        return hash + mix128 ( len, s );
-    }
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
+    case 29:
+    case 30:
     case 31: {
         return hash + mix128 ( len, s );
     }
