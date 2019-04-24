@@ -45,8 +45,6 @@
 
 using namespace VDB3;
 
-#define BENCHMARK
-
 TEST ( Hash, Basic )
 {
     const char *str = "Tu estas probando este hoy, no manana";
@@ -318,7 +316,6 @@ TEST ( Hash, bigcoll )
 }
 
 
-#ifdef BENCHMARK
 static double stopwatch ( double start = 0.0 ) ATTRWARNUNUSED;
 static double stopwatch ( double start )
 {
@@ -332,7 +329,7 @@ static double stopwatch ( double start )
     return elapsed;
 }
 
-TEST ( Hash, Speed )
+TEST ( Hash, Benchmark_Speed )
 {
     char key[16384];
     uint64_t loops = 1000000;
@@ -359,7 +356,7 @@ TEST ( Hash, Speed )
     }
 }
 
-TEST ( Hash, std_hash_Speed )
+TEST ( Hash, Benchmark_std_hash )
 {
     uint64_t loops = 1000000;
     std::string str = "1234";
@@ -417,7 +414,7 @@ TEST ( Hash, hamming )
 
     printf ( "rhash longest probe is %lu\n", rhash_max );
 }
-
+/*
 TEST ( Hash, dump )
 {
     std::string line;
@@ -428,5 +425,4 @@ TEST ( Hash, dump )
         std::cout << hash << "\t" << line.size () << "\t" << line << "\n";
     }
 }
-
-#endif // BENCHMARK
+*/

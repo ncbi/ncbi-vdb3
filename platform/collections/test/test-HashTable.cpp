@@ -27,8 +27,8 @@
 /**
  * Unit tests for hashtables
  */
-//#define BENCHMARK
 
+#include <collections/Hash.hpp>
 #include <collections/HashTable.hpp>
 #include <collections/Random.hpp>
 #include <map>
@@ -372,7 +372,6 @@ TEST ( HashTable, HashTableMapReserve )
 }
 
 #if 0
-
 TEST (HashTable, HashTableSetPersist )
 {
     rc_t rc;
@@ -607,10 +606,9 @@ TEST (HashTable, HashTableMapIterator )
     }
     KHashTableDispose ( hmap, NULL, NULL, NULL );
 }
-
 #endif
-#ifdef BENCHMARK
-static double stopwatch ( double start = 0.0 ) WARNUNUSED;
+
+static double stopwatch ( double start = 0.0 ) ATTRWARNUNUSED;
 static double stopwatch ( double start )
 {
     struct timeval tv_cur = {};
@@ -630,8 +628,8 @@ static std::vector<uint64_t> make_benchkeys ( void )
 
     return benchkeys;
 }
-/*
-TEST ( HashTable, stdSetBench )
+
+TEST ( HashTable, Benchmark_stdSetBench )
 {
     const uint64_t loops = 1000000;
     auto benchkeys = make_benchkeys ();
@@ -674,8 +672,8 @@ TEST ( HashTable, stdSetBench )
     }
     printf ( "\n" );
 }
-*/
-TEST ( HashTable, stdunorderedSetBench )
+
+TEST ( HashTable, Benchmark_stdunorderedSetBench )
 {
     const uint64_t loops = 1000000;
     auto benchkeys = make_benchkeys ();
@@ -718,65 +716,8 @@ TEST ( HashTable, stdunorderedSetBench )
     }
     printf ( "\n" );
 }
-/*
-   TEST ( HashTable, JudyBench )
-   {
-   make_benchkeys ();
-   KVector *kv;
-   for ( unsigned long numelem = 4; numelem != ( 1ULL << 26 ); numelem *= 2 ) {
-   KVectorMake ( &kv );
 
-   stopwatch ();
-   for ( size_t i = 0; i != numelem; i++ ) {
-   uint64_t key = benchkeys[i];
-   uint64_t val = i + 1;
-   KVectorSetU64 ( kv, key, val );
-   }
-   printf ( "Judy " );
-   printf (
-   "required %lu ms to insert %lu\n", stopwatch () / 1000, numelem );
-
-   stopwatch ();
-   unsigned long loops = 1000000;
-   unsigned long c = 0;
-   for ( unsigned long loop = 0; loop != loops; loop++ ) {
-   uint64_t key = loop;
-   uint64_t val = loop + 1;
-   size_t found = 0;
-   rc_t rc = KVectorGetU64 ( kv, key, &found );
-   if ( found && found != val )
-   fprintf ( stderr, "miss %ld %ld\n", val, found );
-
-   c += ( rc == 0 );
-   }
-   unsigned long us = stopwatch ();
-
-   printf ( "Judy Found %lu,", c );
-   double lps = (double)loops / us;
-   printf ( "numelem=%lu\t %.1f Mlookups/sec, ", numelem, lps );
-
-   stopwatch ();
-   c = 0;
-   for ( unsigned long loop = 0; loop != loops; loop++ ) {
-   uint64_t key = benchkeys[loop];
-   size_t found = 0;
-   KVectorGetU64 ( kv, key, &found );
-   c += ( found != 0 );
-   }
-   us = stopwatch ();
-
-   printf ( "Random %lu,", c );
-   lps = (double)loops / us;
-   printf ( "\t%.1f Mlookups/sec, ", lps );
-   printf ( "\n" );
-
-   KVectorRelease ( kv );
-   }
-   printf ( "\n" );
-   }
-   */
-
-TEST ( HashTable, HashMapBench )
+TEST ( HashTable, Benchmark_HashMap )
 {
     const uint64_t loops = 1000000;
     auto benchkeys = make_benchkeys ();
@@ -819,5 +760,3 @@ TEST ( HashTable, HashMapBench )
     }
     printf ( "\n" );
 }
-
-#endif // BENCHMARK
