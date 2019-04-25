@@ -75,11 +75,6 @@ static const unsigned char keys[4][16] = {
         0xf0, 0xc8, 0xcd, 0x82}};
 
 
-static inline uint64_t rotr ( const uint64_t x, int k )
-{
-    return ( x << ( 64 - k ) | ( x >> k ) );
-}
-
 static inline uint64_t bigmix2 ( uint64_t hash, uint64_t ll1, uint64_t ll2 )
 {
     uint64_t b1 = ( ll2 >> 56 ) << 1;
@@ -285,10 +280,13 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         return hash;
     }
     case 8: { // locality preserving for 64 bit ints
-        uint64_t ll1, ll2;
+        uint64_t ll1;
         memcpy ( &ll1, s, sizeof ( ll1 ) );
+#if 0
+        uint64_t ll2;
         ll2 = ( ll1 & 0xFCFFFFFFFFFFFFFCU );
         hash ^= rotr ( ll2 * k1, 47 );
+#endif
         hash ^= rotr ( hash * k2, 31 );
         hash += ( ll1 << 1 );
         hash += ( ll1 >> 56 );
@@ -381,6 +379,7 @@ uint64_t Hash ( const std::string &str ) noexcept
     return Hash ( str.data (), str.size () );
 }
 
+#if 0
 uint64_t Hash ( int i ) noexcept
 {
     return Hash ( reinterpret_cast<const char *> ( &i ), sizeof ( i ) );
@@ -400,6 +399,7 @@ uint64_t Hash ( uint64_t l ) noexcept
 {
     return Hash ( reinterpret_cast<const char *> ( &l ), sizeof ( l ) );
 }
+#endif
 
 uint64_t Hash ( float f ) noexcept
 {

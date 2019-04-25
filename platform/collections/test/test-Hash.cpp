@@ -130,10 +130,15 @@ TEST ( Hash, Adjacent )
 
     uint64_t val = 0x1234567890ABCDE0;
 
+    hash1 = Hash ( val );
+    hash2 = Hash ( val + 1 );
+    auto diff = hash2 - hash1;
+    ASSERT_LE ( diff, 7 );
+
     hash1 = Hash ( reinterpret_cast<char *> ( &val ), 8 );
     ++val;
     hash2 = Hash ( reinterpret_cast<char *> ( &val ), 8 );
-    auto diff = hash2 - hash1;
+    diff = hash2 - hash1;
     ASSERT_LE ( diff, 7 );
 
     const char *str1 = "nearstring02";

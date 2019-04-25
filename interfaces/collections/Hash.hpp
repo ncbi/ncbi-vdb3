@@ -37,10 +37,39 @@
 namespace VDB3 {
 uint64_t Hash ( const char *s, size_t len ) noexcept ATTRPUREWARNUNUSED;
 uint64_t Hash ( const std::string &str ) noexcept ATTRPURE;
-uint64_t Hash ( int i ) noexcept ATTRPURE;
-uint64_t Hash ( long int i ) noexcept ATTRPURE;
-uint64_t Hash ( unsigned long long l ) noexcept ATTRPURE;
-uint64_t Hash ( uint64_t l ) noexcept ATTRPURE;
+
 uint64_t Hash ( float f ) noexcept ATTRPURE;
 uint64_t Hash ( double d ) noexcept ATTRPURE;
+
+static inline uint64_t rotr ( const uint64_t x, int k )
+{
+    return ( x << ( 64 - k ) | ( x >> k ) );
+}
+
+inline uint64_t HashInline ( uint64_t ll1 ) noexcept
+{
+    static const uint64_t k1 = 0xb492b66fbe98f273;
+    // static const uint64_t k2 = 0x9ae16a3b2f90404f;
+    uint64_t ll2 = ( ll1 & 0xFFFFFFFFFFFFFFFCU );
+    uint64_t hash = rotr ( ll2 * k1, 47 );
+    // hash ^= rotr ( hash * k2, 31 );
+    hash += ( ll1 << 1 );
+    // hash += ( ll1 >> 56 );
+    return hash;
+}
+
+inline uint64_t Hash ( int i ) noexcept
+{
+    return HashInline ( static_cast<uint64_t> ( i ) );
+}
+inline uint64_t Hash ( long int i ) noexcept
+{
+    return HashInline ( static_cast<uint64_t> ( i ) );
+}
+inline uint64_t Hash ( unsigned long long l ) noexcept
+{
+    return HashInline ( l );
+}
+inline uint64_t Hash ( uint64_t l ) noexcept { return HashInline ( l ); }
+
 } // namespace VDB3
