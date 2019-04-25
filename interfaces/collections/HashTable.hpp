@@ -37,7 +37,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
+#include <sys/mman.h>
 #include <vector>
+
 
 // c++20 defines [[likely]] [[unlikely]]
 // gcc 9 has __builtin_expect_with_probability
@@ -159,9 +161,18 @@ private:
         std::vector<HashBucket> newbuckets ( newcapacity );
         assert ( newbuckets.size () == newcapacity );
         assert ( newbuckets.capacity () == newcapacity );
-        const auto oldbuckets = buckets_;
-        buckets_ = newbuckets; // std::move ( newbuckets );
+        const auto oldbuckets = std::move ( buckets_ );
+        buckets_ = std::move ( newbuckets );
         assert ( buckets_.size () == newcapacity );
+
+        const size_t madv_sz = buckets_.size () * sizeof ( HashBucket );
+        auto madv_ptr = reinterpret_cast<uint64_t> ( buckets_.data () );
+        // fprintf(stderr,"data is %p\n", (void *)madv_ptr);
+        madv_ptr &= 0xfffffffffffff000u;
+
+        madvise ( reinterpret_cast<void *> ( madv_ptr ), madv_sz, MADV_RANDOM );
+        // fprintf(stderr, "madvise %p %zu\n", (void*)madv_ptr, madv_sz);
+
         mask_ = newcapacity - 1;
         assert ( ( ( mask_ + 1 ) & mask_ ) == 0 ); // mask_+1 is a mask_
         // fprintf ( stderr, "  new mask is %lx\n", mask_ );
@@ -182,6 +193,7 @@ private:
                 insert ( bucket.hashandbits, bucket.key, bucket.value );
             }
         }
+
         // fprintf ( stderr, "rehashed\n" );
     }
 

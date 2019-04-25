@@ -624,8 +624,10 @@ static double stopwatch ( double start )
 static std::vector<uint64_t> make_benchkeys ()
 {
     Random r;
-    std::vector<uint64_t> benchkeys ( 1u << 26 );
-    for ( size_t i = 0; i != benchkeys.size (); ++i ) benchkeys[i] = r ();
+    std::vector<uint64_t> benchkeys;
+    size_t sz = 1u << 24;
+    for ( size_t i = 0; i != sz; ++i ) benchkeys.push_back ( i );
+    for ( size_t i = 0; i != sz; ++i ) benchkeys.push_back ( r () );
 
     return benchkeys;
 }
