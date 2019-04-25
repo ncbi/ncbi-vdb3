@@ -58,7 +58,7 @@ public:
         next ();
     }
 
-    Random ( uint64_t value ) { seed ( value ); }
+    explicit Random ( uint64_t value ) { seed ( value ); }
 
     void seed ( uint64_t value )
     {

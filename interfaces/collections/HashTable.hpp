@@ -51,6 +51,8 @@ public:
     //    virtual ~HashTable ();
     //    operator ==,!=
 
+    HashTable () { reserve ( 0 ); }
+
     void reserve ( size_t capacity ) noexcept { rehash ( capacity ); }
 
     bool empty () const noexcept ATTRWARNUNUSED { return count_ == 0; }
@@ -58,7 +60,9 @@ public:
 
     void clear () noexcept
     {
+        size_t sz = size ();
         buckets_.clear ();
+        reserve ( sz );
         count_ = 0;
         load_ = 0;
     }
@@ -108,17 +112,16 @@ private:
     // Returns index to found bucket or LONG_MAX
     size_t findbucket ( const KEY k ) const ATTRPURE
     {
-        if ( UNLIKELY ( count_ == 0 ) ) return ULONG_MAX;
         const uint64_t hash = Hash ( k ) | ( BUCKET_VALID | BUCKET_VISIBLE );
-        const size_t mask = buckets_.size () - 1;
+        // const size_t mask_ = buckets_.size () - 1;
+        assert ( mask_ != 0 );
+        assert ( ( ( mask_ + 1 ) & mask_ ) == 0 ); // mask_+1 is a mask_
         assert ( buckets_.size () > 0 );
-        assert ( mask != 0 );
-        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a mask
         size_t bucketidx = hash;
         size_t triangle = 0;
         while ( 1 ) {
-            bucketidx &= mask;
-            assert ( bucketidx <= buckets_.size () );
+            bucketidx &= mask_;
+            assert ( bucketidx < mask_ + 1 );
             const auto &bucket = buckets_[bucketidx];
             if ( !( bucket.hashandbits & BUCKET_VALID ) ) return ULONG_MAX;
 
@@ -158,6 +161,10 @@ private:
         assert ( newbuckets.capacity () == newcapacity );
         const auto oldbuckets = buckets_;
         buckets_ = newbuckets; // std::move ( newbuckets );
+        assert ( buckets_.size () == newcapacity );
+        mask_ = newcapacity - 1;
+        assert ( ( ( mask_ + 1 ) & mask_ ) == 0 ); // mask_+1 is a mask_
+        // fprintf ( stderr, "  new mask is %lx\n", mask_ );
         load_ = 0;
         count_ = 0;
 
@@ -182,34 +189,29 @@ private:
     {
         // fprintf ( stderr, "load=%lu, capa=%lu\n", load_, buckets_.size ()
         // );
-        bool grow = load_ >= ( buckets_.size () * 5 / 8 );
+        bool grow = load_ >= ( ( mask_ * 5 ) / 8 );
         if ( UNLIKELY ( grow ) ) {
-            //            fprintf ( stderr, "grow time load=%lu, count=%lu\n",
-            //            load_, count_ );
+            //                        fprintf ( stderr, "grow time load=%lu,
+            //                        count=%lu\n", load_, count_ );
             if ( ( load_ + 1 ) / ( count_ + 1 ) == 1 ) {
                 // Expand
-                rehash ( buckets_.size () * 2 );
+                rehash ( ( mask_ + 1 ) * 2 );
             } else {
                 // lots of deletes, just rehash table at existing size
-                rehash ( buckets_.size () );
+                rehash ( mask_ + 1 );
             }
         }
 
         assert ( buckets_.size () > 0 );
-        const size_t mask = buckets_.size () - 1;
-        assert ( mask != 0 );
-        assert ( ( ( mask + 1 ) & mask ) == 0 ); // mask+1 is a mask
+        assert ( mask_ != 0 );
+        assert ( ( ( mask_ + 1 ) & mask_ ) == 0 ); // mask_+1 is a mask_
         size_t bucketidx = hash;
         size_t triangle = 0;
         while ( 1 ) {
-            bucketidx &= mask;
-            if ( bucketidx >= buckets_.size () )
-                fprintf ( stderr, "bucketidx=%lu, mask=%lx, size=%lu,%lu\n",
-                    bucketidx, mask, buckets_.size (), buckets_.capacity () );
-            assert ( bucketidx < buckets_.size () );
+            bucketidx &= mask_;
             auto &bucket = buckets_[bucketidx];
-            // fprintf ( stderr, "insert hash=%lx, mask=%lx, bucketidx=%lu\n",
-            // hash, mask, bucketidx );
+            // fprintf ( stderr, "insert hash=%lx, mask_=%lx, bucketidx=%lu\n",
+            // hash, mask_, bucketidx );
 
             if ( !( bucket.hashandbits & BUCKET_VALID ) ) { // insert
                 bucket.hashandbits = hash;
@@ -250,9 +252,9 @@ private:
     };
 
     std::vector<HashBucket> buckets_ {};
-
     size_t count_ = 0;
     size_t load_ = 0; /* Included invisible buckets */
+    size_t mask_ = 0;
 
     // @TODO: Iterators, Persist, Allocators
 };

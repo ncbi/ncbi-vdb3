@@ -70,9 +70,12 @@ TEST ( Hash, String )
     ASSERT_NE ( hash, 0 );
     ASSERT_EQ ( Hash ( str ), Hash ( str ) );
 
-    str = "";
-    std::string str2 = "";
+    std::string str2 = str;
     ASSERT_EQ ( Hash ( str ), Hash ( str ) );
+    ASSERT_EQ ( Hash ( str ), Hash ( str2 ) );
+
+    str = "";
+    str2 = "";
     ASSERT_EQ ( Hash ( str ), Hash ( str2 ) );
 
     ASSERT_NE ( Hash ( "-110886" ), Hash ( "-160836" ) );
@@ -138,8 +141,8 @@ TEST ( Hash, Adjacent )
     size_t size = strlen ( str1 );
     hash1 = Hash ( str1, size );
     hash2 = Hash ( str2, size );
-    hash1 &= 0xffffff;
-    hash2 &= 0xffffff;
+    hash1 &= 0xffffffu;
+    hash2 &= 0xffffffu;
     auto diff2 = hash2 - hash1;
     if ( diff2 > 7 ) {
         fprintf ( stderr, "diff %lx %lx\n", hash1, hash2 );
@@ -232,8 +235,8 @@ TEST ( Hash, StrAdjacent )
     std::string str2 = "str03";
     auto hash1 = Hash ( str1 );
     auto hash2 = Hash ( str2 );
-    hash1 &= 0xffffff;
-    hash2 &= 0xffffff;
+    hash1 &= 0xffffffu;
+    hash2 &= 0xffffffu;
     auto diff = hash2 - hash1;
     // printf ( "hash1 is %zx\nhash2 is %zx\n", hash1, hash2 );
     ASSERT_LE ( diff, 7 );
@@ -250,8 +253,8 @@ TEST ( Hash, StrAdjacents )
         str[l - 1] = '%';
         // std::cerr << str << "\n";
         uint64_t hash2 = Hash ( str );
-        hash1 &= 0xffffff;
-        hash2 &= 0xffffff;
+        hash1 &= 0xffffffu;
+        hash2 &= 0xffffffu;
         auto diff = labs ( static_cast<long int> ( hash2 - hash1 ) );
         if ( diff > 7 ) {
             printf ( "at length %lu\nhash1 is %zx\nhash2 is %zx\n", l, hash1,
@@ -261,7 +264,7 @@ TEST ( Hash, StrAdjacents )
     }
 }
 
-TEST ( Hash, Collide )
+TEST ( Hash, Thorough_Collide )
 {
     // We fill a buffer with random bytes, and then increment each byte once
     // and verify no collisions occur for all lengths.
@@ -279,13 +282,7 @@ TEST ( Hash, Collide )
                 buf[j] = static_cast<char> ( buf[j] + 1 );
                 uint64_t hash = Hash ( buf, l );
                 size_t count = map.count ( hash );
-                if ( 0 ) {
-                    fprintf ( stderr, "(%lu) ", l );
-                    for ( size_t d = 0; d != l; ++d )
-                        fprintf ( stderr, "%02x ",
-                            static_cast<unsigned char> ( buf[d] ) );
-                    fprintf ( stderr, "=%lx\n\n", hash );
-                }
+
                 if ( count != 0 ) {
                     collisions++;
                     fprintf ( stderr,
@@ -350,7 +347,7 @@ TEST ( Hash, Benchmark_Speed )
         double hps = static_cast<double> ( loops ) / elapsed;
         double mbps = hps * static_cast<double> ( len ) / 1048576.0;
         printf ( "Hash %lu %.1f elapsed (%.1f hash/sec, %.1f Mbytes/sec) %lu\n",
-            len, elapsed, hps, mbps, hash & 0xff );
+            len, elapsed, hps, mbps, hash & 0xffu );
 
         len *= 2;
     }
@@ -385,7 +382,7 @@ TEST ( Hash, Benchmark_std_hash )
 TEST ( Hash, hamming )
 {
     char key[100];
-    const uint64_t mask = 0xfff;
+    const uint64_t mask = 0xfffu;
     uint64_t hash_collisions[mask + 1];
     uint64_t rhash_collisions[mask + 1];
 
@@ -414,15 +411,16 @@ TEST ( Hash, hamming )
 
     printf ( "rhash longest probe is %lu\n", rhash_max );
 }
-/*
-TEST ( Hash, dump )
+
+TEST ( Hash, Thorough_dump )
 {
     std::string line;
     std::ifstream ifile ( "/tmp/mike_logs/tokens.uniq" );
-    while ( std::getline ( ifile, line ) ) {
-        uint64_t hash = Hash ( line );
-        // std::cerr << hash << "\t" << line.substr(0,20) << "\n";
-        std::cout << hash << "\t" << line.size () << "\t" << line << "\n";
-    }
+#if 0
+        while ( std::getline ( ifile, line ) ) {
+            uint64_t hash = Hash ( line );
+            // std::cerr << hash << "\t" << line.substr(0,20) << "\n";
+            std::cout << hash << "\t" << line.size () << "\t" << line << "\n";
+        }
+#endif
 }
-*/

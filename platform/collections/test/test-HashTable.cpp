@@ -238,17 +238,17 @@ TEST ( HashTable, HashTableMapValid )
 
 TEST ( HashTable, HashTableMapDeletes )
 {
-    HashTable<long int, long int> hmap;
-    std::map<long int, long int> map;
+    HashTable<int64_t, int64_t> hmap;
+    std::map<int64_t, int64_t> map;
 
-    long int threshold = random ();  // Delete some fraction of keys
-    long int threshold2 = random (); // Delete some fraction of keys
+    int64_t threshold = random ();  // Delete some fraction of keys
+    int64_t threshold2 = random (); // Delete some fraction of keys
 
-    for ( long int iter = 0; iter != 3; ++iter ) {
-        const long int loops = random () % 10000;
+    for ( int64_t iter = 0; iter != 3; ++iter ) {
+        const int64_t loops = random () % 10000;
         for ( int i = 0; i != loops; ++i ) {
-            long int key = random () % loops;
-            long int value = i;
+            int64_t key = random () % loops;
+            int64_t value = i;
 
             auto pair = std::make_pair ( key, value );
             if ( random () > threshold2 ) {
@@ -272,8 +272,8 @@ TEST ( HashTable, HashTableMapDeletes )
         }
 
         for ( int i = 0; i != loops; ++i ) {
-            long int key = random () % loops;
-            long int hvalue = 0;
+            int64_t key = random () % loops;
+            int64_t hvalue = 0;
             bool hfound = hmap.contains ( key );
 
             auto mapfound = map.find ( key );
@@ -282,7 +282,7 @@ TEST ( HashTable, HashTableMapDeletes )
             } else {
                 ASSERT_EQ ( hfound, true );
                 hvalue = hmap.get ( key );
-                long int mvalue = mapfound->second;
+                int64_t mvalue = mapfound->second;
                 ASSERT_EQ ( hvalue, mvalue );
             }
         }
@@ -296,7 +296,7 @@ TEST ( HashTable, HashTableMapSmallKeys )
 
     const int loops = 1000;
     for ( uint16_t i = 0; i != loops; ++i ) {
-        uint16_t key = static_cast<uint16_t> ( random () % loops );
+        auto key = static_cast<uint16_t> ( random () % loops );
         uint16_t value = i;
 
         auto pair = std::make_pair ( key, value );
@@ -310,7 +310,7 @@ TEST ( HashTable, HashTableMapSmallKeys )
     ASSERT_EQ ( mapcount, hmapcount );
 
     for ( int i = 0; i != loops; ++i ) {
-        uint16_t key = static_cast<uint16_t> ( random () % loops );
+        auto key = static_cast<uint16_t> ( random () % loops );
         uint16_t hvalue = 0;
         bool hfound = hmap.contains ( key );
 
@@ -329,7 +329,7 @@ TEST ( HashTable, HashTableMapSmallKeys )
 TEST ( HashTable, HashTableMapReserve )
 {
     HashTable<uint16_t, uint16_t> hmap;
-    size_t capacity = static_cast<size_t> ( random () % 20000 );
+    auto capacity = static_cast<size_t> ( random () % 20000 );
     hmap.reserve ( capacity );
     std::map<uint16_t, uint16_t> map;
 
@@ -338,7 +338,7 @@ TEST ( HashTable, HashTableMapReserve )
         capacity = static_cast<size_t> ( random () % 20000 );
         hmap.reserve ( capacity );
 
-        uint16_t key = static_cast<uint16_t> ( random () % loops );
+        auto key = static_cast<uint16_t> ( random () % loops );
         uint16_t value = i;
 
         auto pair = std::make_pair ( key, value );
@@ -355,7 +355,7 @@ TEST ( HashTable, HashTableMapReserve )
     ASSERT_EQ ( mapcount, hmapcount );
 
     for ( int i = 0; i != loops; ++i ) {
-        uint16_t key = static_cast<uint16_t> ( random () % loops );
+        auto key = static_cast<uint16_t> ( random () % loops );
         uint16_t hvalue = 0;
         bool hfound = hmap.contains ( key );
 
@@ -621,10 +621,11 @@ static double stopwatch ( double start )
     return elapsed;
 }
 
-static std::vector<uint64_t> make_benchkeys ( void )
+static std::vector<uint64_t> make_benchkeys ()
 {
+    Random r;
     std::vector<uint64_t> benchkeys ( 1u << 26 );
-    for ( size_t i = 0; i != benchkeys.size (); ++i ) benchkeys[i] = i;
+    for ( size_t i = 0; i != benchkeys.size (); ++i ) benchkeys[i] = r ();
 
     return benchkeys;
 }
@@ -650,7 +651,7 @@ TEST ( HashTable, Benchmark_stdSetBench )
         printf ( "required %.1fs to insert %lu\n", elapsed, numelem );
 
         start = stopwatch ();
-        unsigned long int c = 0;
+        uint64_t c = 0;
         for ( uint64_t loop = 0; loop != loops; loop++ ) {
             c += hset.count ( loop );
         }
@@ -694,7 +695,7 @@ TEST ( HashTable, Benchmark_stdunorderedSetBench )
         printf ( "required %.1fs to insert %lu\n", elapsed, numelem );
 
         start = stopwatch ();
-        unsigned long int c = 0;
+        uint64_t c = 0;
         for ( uint64_t loop = 0; loop != loops; loop++ ) {
             c += hset.count ( loop );
         }
@@ -738,7 +739,7 @@ TEST ( HashTable, Benchmark_HashMap )
         printf ( "required %.1fs to insert %lu\n", elapsed, numelem );
 
         start = stopwatch ();
-        unsigned long int c = 0;
+        uint64_t c = 0;
         for ( uint64_t loop = 0; loop != loops; loop++ ) {
             c += hmap.count ( loop );
         }

@@ -26,13 +26,13 @@
 
 #include <collections/Random.hpp>
 
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include <stdint.h>
-#include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <unordered_set>
