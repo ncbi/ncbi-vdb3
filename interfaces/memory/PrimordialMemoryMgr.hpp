@@ -41,12 +41,17 @@ public:
     virtual ~PrimordialMemoryMgr();
 
 public: // inherited from MemoryManagerItf
+    // VDB3-facing API
+    virtual void * allocateBlock ( bytes_t bytes );
+    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept;
 
+public: // inherited from MemoryManagerItf
+    // STL facing API
     virtual pointer allocate ( size_type bytes );
-
     virtual pointer reallocate ( pointer ptr, size_type new_size) ;
-
     virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
+
 
 private:
     /**

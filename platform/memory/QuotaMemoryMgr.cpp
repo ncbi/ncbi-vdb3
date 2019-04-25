@@ -32,9 +32,15 @@
 
 using namespace VDB3;
 
-QuotaMemoryMgr :: QuotaMemoryMgr( TrackingMemoryManagerItf * base_mgr, size_type quota )
+QuotaMemoryMgr :: QuotaMemoryMgr( TrackingMemoryMgr base_mgr, bytes_t quota )
 :   TrackingBypassMemoryManager ( base_mgr ),
     m_quota ( quota ),
+    m_used ( 0 )
+{
+}
+
+QuotaMemoryMgr :: QuotaMemoryMgr( bytes_t quota )
+:   m_quota ( quota ),
     m_used ( 0 )
 {
 }
@@ -51,7 +57,7 @@ QuotaMemoryMgr :: allocate ( size_type bytes )
         handle_quota_update ( m_used + bytes - m_quota );
         // will not return if fails
     }
-    pointer ret = baseMgr () . allocate ( bytes );
+    pointer ret = baseMgr () -> allocate ( bytes );
     if ( ret != nullptr ) // nullptr can happen if bytes == 0
     {
         m_used += bytes;
@@ -78,7 +84,7 @@ QuotaMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
         }
     }
 
-    pointer new_ptr = baseMgr () . reallocate ( old_ptr, new_size );
+    pointer new_ptr = baseMgr () -> reallocate ( old_ptr, new_size );
 
     // discount the old block size
     m_used -= old_size;
@@ -99,13 +105,13 @@ QuotaMemoryMgr :: deallocate ( pointer ptr, size_type bytes ) noexcept
         return;
     }
 
-    baseMgr () . deallocate ( ptr, bytes );
+    baseMgr () -> deallocate ( ptr, bytes );
 
     m_used -= bytes;
 }
 
 void
-QuotaMemoryMgr :: handle_quota_update( size_t min_extension )
+QuotaMemoryMgr :: handle_quota_update( bytes_t min_extension )
 {
     if ( ! update_quota ( min_extension ) )
     {

@@ -32,6 +32,9 @@
 namespace VDB3
 {
 
+class TrackingMemoryManagerItf;
+typedef std :: shared_ptr < TrackingMemoryManagerItf > TrackingMemoryMgr;
+
 /**
  * A memory manager interface for tracking allocated blocks and their sizes
  */
@@ -64,10 +67,19 @@ public:
      * Constructor.
      * @param baseMgr a memory manager to handle allocation/deallocation
      */
-    TrackingMemoryManager( MemoryManagerItf * baseMgr = nullptr );
+    TrackingMemoryManager( MemoryMgr baseMgr );
+    TrackingMemoryManager();
     virtual ~TrackingMemoryManager();
 
 public: // inherited from MemoryManagerItf
+    // VDB3-facing API
+    // calls to these methods are forwarded to the base manager, block sizes are not tracked
+    virtual void * allocateBlock ( bytes_t bytes );
+    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept;
+
+public: // inherited from MemoryManagerItf
+    // STL facing API
     virtual pointer allocate ( size_type bytes );
     virtual pointer reallocate ( pointer ptr, size_type new_size) ;
     virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
@@ -88,7 +100,7 @@ private:
             Blocks;
 
 private:
-    MemoryManagerItf &  m_baseMgr; ///< memory manager doing the allocation. TODO: use shared_ptr<MemoryManagerItf> ?
+    MemoryMgr m_baseMgr; ///< memory manager doing the allocation.
     Blocks m_blocks; ///< all tracked blocks
 };
 
@@ -103,10 +115,19 @@ public:
      * Constructor.
      * @param baseMgr a memory manager to handle allocation/deallocation and memory block tracking
      */
-    TrackingBypassMemoryManager ( TrackingMemoryManagerItf * baseMgr = nullptr );
+    TrackingBypassMemoryManager ( TrackingMemoryMgr baseMgr );
+    TrackingBypassMemoryManager ();
     virtual ~TrackingBypassMemoryManager ();
 
 public: // inherited from MemoryManagerItf
+    // VDB3-facing API
+    // calls to these methods are forwarded to the base manager, block sizes are not tracked
+    virtual void * allocateBlock ( bytes_t bytes );
+    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept;
+
+public: // inherited from MemoryManagerItf
+    // STL facing API
     virtual pointer allocate ( size_type bytes );
     virtual pointer reallocate ( pointer ptr, size_type new_size) ;
     virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
@@ -120,10 +141,10 @@ protected:
      * Access the base memory manager
      * @return the base memory manager
      */
-    TrackingMemoryManagerItf & baseMgr () { return m_baseMgr; }
+    TrackingMemoryMgr & baseMgr () { return m_baseMgr; }
 
 private:
-    TrackingMemoryManagerItf &  m_baseMgr; ///< memory manager doing the tracking/allocation. TODO: use shared_ptr<MemoryManagerItf> >
+    TrackingMemoryMgr  m_baseMgr; ///< memory manager doing the tracking/allocation.
 };
 
 } // namespace VDB3

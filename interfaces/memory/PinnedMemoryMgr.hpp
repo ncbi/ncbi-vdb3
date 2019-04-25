@@ -65,7 +65,8 @@ public:
      * @param base_mgr optional pointer to a memory manager to handle allocation and deallocation. If nullptr, a default manager will be used.
      * @param locker optional pointer to a memory locker object. By default, uses an object that calls Posix mlock/munlock.
     */
-    PinnedMemoryMgr( TrackingMemoryManagerItf * base_mgr = nullptr, MemoryLockerItf * locker = nullptr );
+    PinnedMemoryMgr( TrackingMemoryMgr base_mgr, MemoryLockerItf * locker = nullptr );
+    PinnedMemoryMgr( MemoryLockerItf * locker = nullptr );
 
     virtual ~PinnedMemoryMgr();
 

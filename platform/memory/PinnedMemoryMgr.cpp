@@ -40,18 +40,18 @@ PinnedMemoryMgr :: MemoryLockerItf :: ~MemoryLockerItf ()
 /**
 * Default memory locker. Uses mlock/munlock.
 */
-class PosixLocker : public PinnedMemoryMgr :: MemoryLockerItf
+class PosixMemoryPinner : public PinnedMemoryMgr :: MemoryLockerItf
 {
 public:
-    PosixLocker(){}
-    virtual ~PosixLocker () {}
+    PosixMemoryPinner(){}
+    virtual ~PosixMemoryPinner () {}
     /**
      * Locks memory in the address range starting at ptr and continuing for bytes.
      * @param ptr pointer to the start of the address range
      * @param bytes size of the address range
      * @exception ???
      */
-    virtual void lock( MemoryManagerItf :: pointer ptr, MemoryManagerItf :: size_type bytes )
+    virtual void lock( MemoryManagerItf :: pointer ptr, bytes_t bytes )
     {
         int res = mlock ( ptr, bytes );
         if ( res != 0 )
@@ -65,7 +65,7 @@ public:
      * @param bytes size of the address range
      * @exception ???
      */
-    virtual void unlock( MemoryManagerItf :: pointer ptr, MemoryManagerItf :: size_type bytes )
+    virtual void unlock( MemoryManagerItf :: pointer ptr, bytes_t bytes )
     {
         int res = munlock ( ptr, bytes );
         if ( res != 0 )
@@ -75,11 +75,16 @@ public:
     }
 };
 
-PosixLocker linuxLocker; ///< the default memory locker
+PosixMemoryPinner linuxLocker; ///< the default memory locker
 
-PinnedMemoryMgr :: PinnedMemoryMgr( TrackingMemoryManagerItf * base_mgr, MemoryLockerItf * locker )
+PinnedMemoryMgr :: PinnedMemoryMgr( TrackingMemoryMgr base_mgr, MemoryLockerItf * locker )
 :   TrackingBypassMemoryManager ( base_mgr ),
     m_locker ( locker == nullptr ? linuxLocker : * locker)
+{
+}
+
+PinnedMemoryMgr :: PinnedMemoryMgr( MemoryLockerItf * locker )
+:   m_locker ( locker == nullptr ? linuxLocker : * locker)
 {
 }
 
@@ -90,7 +95,7 @@ PinnedMemoryMgr :: ~PinnedMemoryMgr()
 PinnedMemoryMgr :: pointer
 PinnedMemoryMgr :: allocate ( size_type bytes )
 {
-    pointer ret = baseMgr () . allocate ( bytes );
+    pointer ret = baseMgr () -> allocate ( bytes );
     if ( ret != nullptr ) // nullptr can happen if bytes == 0
     {
         m_locker . lock ( ret, bytes );
@@ -106,9 +111,9 @@ PinnedMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
         return allocate ( new_size );
     }
 
-    size_t old_size = baseMgr () . getBlockSize ( old_ptr ); // will throw if bad block
+    size_t old_size = baseMgr () -> getBlockSize ( old_ptr ); // will throw if bad block
 
-    pointer new_ptr =  baseMgr () . reallocate ( old_ptr, new_size );
+    pointer new_ptr =  baseMgr () -> reallocate ( old_ptr, new_size );
     if ( old_ptr != new_ptr )
     {   // unpin the old block
         m_locker . unlock ( old_ptr, old_size );
@@ -132,9 +137,9 @@ PinnedMemoryMgr :: deallocate ( pointer ptr, size_type bytes ) noexcept
 
     try // this method is noexcept as required by the interface
     {
-        size_t size = baseMgr () . getBlockSize ( ptr ); // will throw if bad block
+        size_t size = baseMgr () -> getBlockSize ( ptr ); // will throw if bad block
         m_locker . unlock ( ptr, size );
-        baseMgr () . deallocate ( ptr, size );
+        baseMgr () -> deallocate ( ptr, size );
     }
     catch (...)
     {

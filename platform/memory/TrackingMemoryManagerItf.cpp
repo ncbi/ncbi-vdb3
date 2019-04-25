@@ -31,26 +31,51 @@
 
 #include <memory/PrimordialMemoryMgr.hpp>
 
+using namespace std;
 using namespace VDB3;
 
-static PrimordialMemoryMgr primMgr;
+static MemoryMgr primMgr = make_shared < PrimordialMemoryMgr > ();
 
 //////// TrackingMemoryManager
 
-TrackingMemoryManager :: TrackingMemoryManager( MemoryManagerItf * baseMgr )
-:   m_baseMgr ( baseMgr == nullptr ? primMgr : * baseMgr ),
-    m_blocks ( m_baseMgr )
+TrackingMemoryManager :: TrackingMemoryManager( MemoryMgr baseMgr )
+:   m_baseMgr( baseMgr ),
+    m_blocks( * m_baseMgr )
 {
 }
 
-TrackingMemoryManager :: ~TrackingMemoryManager()
+TrackingMemoryManager :: TrackingMemoryManager ()
+:   m_baseMgr( primMgr ),
+    m_blocks( * m_baseMgr )
 {
+}
+
+TrackingMemoryManager :: ~TrackingMemoryManager ()
+{
+}
+
+void *
+TrackingMemoryManager :: allocateBlock( bytes_t bytes )
+{
+    return m_baseMgr -> allocateBlock( bytes );
+}
+
+void *
+TrackingMemoryManager :: reallocateBlock( void * block, bytes_t cur_size, bytes_t new_size )
+{
+    return m_baseMgr -> reallocateBlock( block, cur_size, new_size );
+}
+
+void
+TrackingMemoryManager :: deallocateBlock( void * block, bytes_t size ) noexcept
+{
+    m_baseMgr -> deallocateBlock( block, size );
 }
 
 TrackingMemoryManager :: pointer
-TrackingMemoryManager :: allocate ( size_type bytes )
+TrackingMemoryManager :: allocate( size_type bytes )
 {
-    pointer ret = m_baseMgr . allocate ( bytes );
+    pointer ret = m_baseMgr -> allocate( bytes );
     if ( ret != nullptr )
     {
         m_blocks [ ret ] = bytes;
@@ -59,39 +84,53 @@ TrackingMemoryManager :: allocate ( size_type bytes )
 }
 
 TrackingMemoryManager :: pointer
-TrackingMemoryManager :: reallocate ( pointer ptr, size_type new_size )
+TrackingMemoryManager :: reallocate( pointer ptr, size_type new_size )
 {
-    pointer ret = m_baseMgr . reallocate ( ptr, new_size );
+    Blocks::const_iterator it = m_blocks . end();
+    if ( ptr != nullptr )
+    {
+        it = m_blocks . find( ptr );
+        if ( it == m_blocks . end () )
+        {
+            throw std :: logic_error( "TrackingMemoryManager :: getBlockSize () called with an unknown block" ); //TODO: replace with a VDB3 exception
+        }
+    }
+
+    pointer ret = m_baseMgr -> reallocate( ptr, new_size );
     if ( ret != nullptr )
     {
-        if ( ret != ptr )
+        if ( ret != ptr && it != m_blocks . end () )
         {
-            m_blocks . erase ( ptr );
+            m_blocks . erase( it );
         }
         m_blocks [ ret ] = new_size;
     }
-    else
+    else if ( it != m_blocks . end () )
     {
-        m_blocks . erase ( ptr );
+        m_blocks . erase( ptr );
     }
 
     return ret;
 }
 
 void
-TrackingMemoryManager :: deallocate ( pointer ptr, size_type bytes ) noexcept
+TrackingMemoryManager :: deallocate( pointer ptr, size_type bytes ) noexcept
 {
-    m_baseMgr . deallocate ( ptr, bytes );
-    m_blocks . erase ( ptr );
+    Blocks::const_iterator it = m_blocks . find(ptr);
+    if ( it != m_blocks . end () )
+    {
+        m_baseMgr -> deallocate( ptr, bytes );
+        m_blocks . erase( it );
+    }
 }
 
 TrackingMemoryManager :: size_type
-TrackingMemoryManager :: getBlockSize ( const_pointer ptr ) const
+TrackingMemoryManager :: getBlockSize( const_pointer ptr ) const
 {
     Blocks::const_iterator it = m_blocks . find(ptr);
-    if ( it == m_blocks . end() )
+    if ( it == m_blocks . end () )
     {
-        throw std :: logic_error ( "TrackingMemoryManager :: getBlockSize() called with an unknown block" ); //TODO: replace with a VDB3 exception
+        throw std :: logic_error( "TrackingMemoryManager :: getBlockSize () called with an unknown block" ); //TODO: replace with a VDB3 exception
     }
     else
     {
@@ -100,17 +139,22 @@ TrackingMemoryManager :: getBlockSize ( const_pointer ptr ) const
 }
 
 void
-TrackingMemoryManager :: setBlockSize ( const_pointer ptr, size_type size )
+TrackingMemoryManager :: setBlockSize( const_pointer ptr, size_type size )
 {
     m_blocks [ ptr ] = size;
 }
 
 //////// TrackingBypassMemoryManager
 
-static TrackingMemoryManager trackingMgr;
+static TrackingMemoryMgr trackingMgr = make_shared < TrackingMemoryManager > ();
 
-TrackingBypassMemoryManager :: TrackingBypassMemoryManager ( TrackingMemoryManagerItf * baseMgr )
-:   m_baseMgr ( baseMgr == nullptr ? trackingMgr : * baseMgr )
+TrackingBypassMemoryManager :: TrackingBypassMemoryManager( TrackingMemoryMgr baseMgr )
+:   m_baseMgr( baseMgr )
+{
+}
+
+TrackingBypassMemoryManager :: TrackingBypassMemoryManager ()
+:   m_baseMgr( trackingMgr )
 {
 }
 
@@ -118,34 +162,52 @@ TrackingBypassMemoryManager :: ~TrackingBypassMemoryManager ()
 {
 }
 
-TrackingBypassMemoryManager :: pointer
-TrackingBypassMemoryManager :: allocate ( size_type bytes )
+void *
+TrackingBypassMemoryManager :: allocateBlock( bytes_t bytes )
 {
-    return m_baseMgr . allocate ( bytes );
+    return m_baseMgr -> allocateBlock( bytes );
 }
 
-TrackingBypassMemoryManager :: pointer
-TrackingBypassMemoryManager :: reallocate ( pointer ptr, size_type new_size )
+void *
+TrackingBypassMemoryManager :: reallocateBlock( void * block, bytes_t cur_size, bytes_t new_size )
 {
-    return m_baseMgr . reallocate ( ptr, new_size );
+    return m_baseMgr -> reallocateBlock( block, cur_size, new_size );
 }
 
 void
-TrackingBypassMemoryManager :: deallocate ( pointer ptr, size_type bytes ) noexcept
+TrackingBypassMemoryManager :: deallocateBlock( void * block, bytes_t size ) noexcept
 {
-    m_baseMgr . deallocate ( ptr, bytes );
+    m_baseMgr -> deallocateBlock( block, size );
+}
+
+TrackingBypassMemoryManager :: pointer
+TrackingBypassMemoryManager :: allocate( size_type bytes )
+{
+    return m_baseMgr -> allocate( bytes );
+}
+
+TrackingBypassMemoryManager :: pointer
+TrackingBypassMemoryManager :: reallocate( pointer ptr, size_type new_size )
+{
+    return m_baseMgr -> reallocate( ptr, new_size );
+}
+
+void
+TrackingBypassMemoryManager :: deallocate( pointer ptr, size_type bytes ) noexcept
+{
+    m_baseMgr -> deallocate( ptr, bytes );
 }
 
 TrackingBypassMemoryManager :: size_type
-TrackingBypassMemoryManager :: getBlockSize ( const_pointer ptr ) const
+TrackingBypassMemoryManager :: getBlockSize( const_pointer ptr ) const
 {
-    return m_baseMgr . getBlockSize ( ptr );
+    return m_baseMgr -> getBlockSize( ptr );
 }
 
 void
-TrackingBypassMemoryManager :: setBlockSize ( const_pointer ptr, size_type size )
+TrackingBypassMemoryManager :: setBlockSize( const_pointer ptr, size_type size )
 {
-    m_baseMgr . setBlockSize ( ptr, size );
+    m_baseMgr -> setBlockSize( ptr, size );
 }
 
 

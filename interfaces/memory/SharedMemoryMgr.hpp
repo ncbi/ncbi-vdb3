@@ -49,18 +49,20 @@ public: // inherited from MemoryManagerItf
     using TrackingMemoryManager :: allocate;
     virtual pointer reallocate ( pointer ptr, size_type new_size );
 
-public:
-    /**
-     * Memory-map a (portion of a) file.
-     * @param bytes length of the mapped portion, in bytes
-     * @param fd file descriptor of an open file to be memory-mapped
-     * @param offset offset of the mapped portion, in bytes from the beginning of the file
-     * @param canWrite true if the block is to be updateable
-     * @param shared true if the block is to be shared between processes
-     * @return see MemoryManagerItf
-     * @exception TODO ??? if failed
-     */
-    pointer allocate ( size_type bytes, int fd, bool canWrite = false, off_t offset = 0, bool shared = false );
+////// TODO: separate memory-mapped file from anonymous shared memory blocks
+//
+// public:
+//     /**
+//      * Memory-map a (portion of a) file.
+//      * @param bytes length of the mapped portion, in bytes
+//      * @param fd file descriptor of an open file to be memory-mapped
+//      * @param offset offset of the mapped portion, in bytes from the beginning of the file
+//      * @param canWrite true if the block is to be updateable
+//      * @param shared true if the block is to be shared between processes
+//      * @return see MemoryManagerItf
+//      * @exception TODO ??? if failed
+//      */
+//     pointer allocate ( size_type bytes, int fd, bool canWrite = false, off_t offset = 0, bool shared = false );
 
 public:
     class SharedMemoryMgr_Internal;

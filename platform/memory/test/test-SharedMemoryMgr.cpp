@@ -74,48 +74,51 @@ TEST ( SharedMemoryMgr, Sharing )
     }
 }
 
-TEST ( SharedMemoryMgr, MmappingFile_Full_ReadWrite )
-{
-    const string Content = "1234";
-    {
-        ofstream f( test_info_ -> name() );
-        f << Content << endl;
-        f. close();
-    }
-
-    int fd = open ( test_info_ -> name(), O_RDWR );
-
-    SharedMemoryMgr mgr;
-    SharedMemoryMgr :: pointer p = mgr.allocate ( Content . size (), fd, true );
-    ASSERT_EQ ( Content, string ( (const char*)p, Content . size () ) );
-
-    mgr . deallocate ( p, Content . size () );
-
-    ASSERT_EQ ( 0, close ( fd ) );
-    remove ( test_info_ -> name() );
-}
-
-TEST ( SharedMemoryMgr, MmappingFile_Full_ReadOnly )
-{
-    const string Content = "1234";
-    {
-        ofstream f( test_info_ -> name() );
-        f << Content << endl;
-        f. close();
-    }
-
-    int fd = open ( test_info_ -> name(), O_RDONLY );
-
-    SharedMemoryMgr mgr;
-    SharedMemoryMgr :: pointer p = mgr.allocate ( Content . size (), fd ); // full file read only is the default
-    ASSERT_EQ ( Content, string ( (const char*)p, Content . size () ) );
-
-    mgr . deallocate ( p, Content . size () );
-
-    ASSERT_EQ ( 0, close ( fd ) );
-    remove ( test_info_ -> name() );
-}
-
 //TODO: read-only vs read-write anonymous blocks
+
+////// TODO: separate memory-mapped file from anonymous shared memory blocks
+//
+// TEST ( SharedMemoryMgr, MmappingFile_Full_ReadWrite )
+// {
+//     const string Content = "1234";
+//     {
+//         ofstream f( test_info_ -> name() );
+//         f << Content << endl;
+//         f. close();
+//     }
+
+//     int fd = open ( test_info_ -> name(), O_RDWR );
+
+//     SharedMemoryMgr mgr;
+//     SharedMemoryMgr :: pointer p = mgr.allocate ( Content . size (), fd, true );
+//     ASSERT_EQ ( Content, string ( (const char*)p, Content . size () ) );
+
+//     mgr . deallocate ( p, Content . size () );
+
+//     ASSERT_EQ ( 0, close ( fd ) );
+//     remove ( test_info_ -> name() );
+// }
+
+// TEST ( SharedMemoryMgr, MmappingFile_Full_ReadOnly )
+// {
+//     const string Content = "1234";
+//     {
+//         ofstream f( test_info_ -> name() );
+//         f << Content << endl;
+//         f. close();
+//     }
+
+//     int fd = open ( test_info_ -> name(), O_RDONLY );
+
+//     SharedMemoryMgr mgr;
+//     SharedMemoryMgr :: pointer p = mgr.allocate ( Content . size (), fd ); // full file read only is the default
+//     ASSERT_EQ ( Content, string ( (const char*)p, Content . size () ) );
+
+//     mgr . deallocate ( p, Content . size () );
+
+//     ASSERT_EQ ( 0, close ( fd ) );
+//     remove ( test_info_ -> name() );
+// }
 //TODO: portion of a file
 //TODO: map a file, non-shared
+

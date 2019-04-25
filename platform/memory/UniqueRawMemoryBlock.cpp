@@ -33,10 +33,10 @@ using namespace VDB3;
 
 /////////////// UniqueRawMemoryBlock
 
-UniqueRawMemoryBlock :: UniqueRawMemoryBlock ( MemoryManagerItf & p_mgr, size_t p_size )
+UniqueRawMemoryBlock :: UniqueRawMemoryBlock ( MemoryMgr p_mgr, bytes_t p_size )
 :   MemoryBlockItf ( p_mgr ),
     m_size ( p_size ),
-    m_ptr ( ( byte_t * ) getMgr() . allocate ( m_size ), Deleter<byte_t>( getMgr() ) )
+    m_ptr ( ( byte_t * ) p_mgr -> allocateBlock ( m_size ), Deleter ( p_mgr, p_size ) )
 {
 }
 
@@ -54,10 +54,18 @@ void UniqueRawMemoryBlock :: fill(byte_t filler)
     memset( m_ptr . get(), int ( filler ), size() );
 }
 
-UniqueRawMemoryBlock UniqueRawMemoryBlock :: clone() const
+UniqueRawMemoryBlock
+UniqueRawMemoryBlock :: clone() const
 {
     UniqueRawMemoryBlock ret ( getMgr(), m_size );
     memmove ( ret . getPtr() . get(), m_ptr . get(), m_size );
     return ret;
 }
 
+void
+UniqueRawMemoryBlock :: resize ( bytes_t new_size )
+{
+    byte_t * ptr = m_ptr . release ();
+    m_ptr . reset ( ( byte_t * ) getMgr() -> reallocateBlock ( ptr, size (), new_size ) );
+    m_size = new_size;
+}

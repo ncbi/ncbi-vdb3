@@ -30,8 +30,8 @@ using namespace VDB3;
 
 /////////////// MemoryBlockItf
 
-MemoryBlockItf :: MemoryBlockItf ( MemoryManagerItf & p_mgr )
-: mgr ( & p_mgr )
+MemoryBlockItf :: MemoryBlockItf ( MemoryMgr p_mgr )
+: mgr ( p_mgr )
 {
 }
 

@@ -26,6 +26,8 @@
 
 #include <memory/PrimordialMemoryMgr.hpp>
 
+#include <memory/MemoryBlockItf.hpp>
+
 using namespace VDB3;
 
 /////////////// PrimordialMemoryMgr
@@ -38,7 +40,26 @@ PrimordialMemoryMgr::~PrimordialMemoryMgr()
 {
 }
 
-MemoryManagerItf::pointer PrimordialMemoryMgr::allocate ( size_type size )
+void *
+PrimordialMemoryMgr::allocateBlock ( bytes_t bytes )
+{
+    return allocate ( bytes );
+}
+
+void *
+PrimordialMemoryMgr::reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size )
+{
+    return reallocate ( block, new_size );
+}
+
+void
+PrimordialMemoryMgr::deallocateBlock ( void * block, bytes_t size ) noexcept
+{
+    return deallocate ( block, size );
+}
+
+MemoryManagerItf::pointer
+PrimordialMemoryMgr::allocate ( size_type size )
 {
     if ( size == 0 )
     {
@@ -61,7 +82,7 @@ PrimordialMemoryMgr::deallocate ( pointer p, size_type bytes ) noexcept
 MemoryManagerItf::pointer
 PrimordialMemoryMgr:: reallocate ( pointer p, size_type s )
 {
-    pointer ret = realloc(p, s);
+    pointer ret = realloc ( p, s );
     if ( ret == nullptr && s != 0 )
     {
         throw std :: bad_alloc (); //TODO: use a VDB3 exception when implemented

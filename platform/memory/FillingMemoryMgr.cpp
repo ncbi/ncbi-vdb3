@@ -37,9 +37,15 @@ using namespace VDB3;
 const byte_t VDB3 :: FillingMemoryMgr :: DefaultFiller;
 const byte_t VDB3 :: FillingMemoryMgr :: DefaultTrash;
 
-FillingMemoryMgr :: FillingMemoryMgr( TrackingMemoryManagerItf * base_mgr, byte_t fill_byte, byte_t trash_byte )
+FillingMemoryMgr :: FillingMemoryMgr( TrackingMemoryMgr base_mgr, byte_t fill_byte, byte_t trash_byte )
 :   TrackingBypassMemoryManager ( base_mgr ),
     m_fillByte ( fill_byte ),
+    m_trashByte ( trash_byte )
+{
+}
+
+FillingMemoryMgr :: FillingMemoryMgr( byte_t fill_byte, byte_t trash_byte )
+:   m_fillByte ( fill_byte ),
     m_trashByte ( trash_byte )
 {
 }
@@ -81,7 +87,7 @@ FillingMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
     // Always move the block since we need to trash the original block
     // and by the time the underlying manager is done reallocating, the original block may be inaccessible.
     pointer new_ptr = allocate ( new_size );
-    memcpy ( new_ptr, old_ptr, std :: min ( old_size, new_size ) );
+    memmove ( new_ptr, old_ptr, std :: min ( old_size, new_size ) );
     deallocate ( old_ptr, old_size );
     return new_ptr;
 }
@@ -94,7 +100,13 @@ FillingMemoryMgr :: deallocate ( pointer ptr, size_type bytes ) noexcept
         return;
     }
 
-    memset( ptr, int ( m_trashByte ), getBlockSize ( ptr ) );
+    try
+    {   // getBlockSize() throws on an untracked block
+        memset( ptr, int ( m_trashByte ), getBlockSize ( ptr ) );
+    }
+    catch (...)
+    {
+    }
 
     TrackingBypassMemoryManager :: deallocate ( ptr, bytes );
 }

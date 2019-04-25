@@ -31,23 +31,33 @@ namespace VDB3
 {
 
 /**
- *  Interface for a memory block.
+ *  Interface for a reference-counted memory block.
  */
 class MemoryBlockItf
 {
 public:
+    // for memory management purposes only; to access the object uise data() in the subclasses
+    virtual void * ptr () const = 0;
+
     /**
      * Size of the memory block, in bytes.
      * @return Size of the memory block, in bytes.
      */
     virtual bytes_t size() const = 0;
 
+    /**
+     * Number of references to this block.
+     * @return Number of references to this block.
+    */
+    virtual unsigned long refcount () const noexcept = 0 ;
+
+
 protected:
     /**
      * Constructor.
-     * @param that source
+     * @param p_mgr associated memory manager
      */
-    MemoryBlockItf ( MemoryManagerItf & that );
+    MemoryBlockItf ( MemoryMgr p_mgr );
 
     /**
      * Copy constructor.
@@ -61,33 +71,7 @@ protected:
      * Access to the memory manager associated with the block.
      * @return instance of memory manager that allocated this block
      */
-    MemoryManagerItf& getMgr() const { return * mgr; }
-
-    /**
-    *  Deleter template, used to wrap MemoryBlockItf in "allocator" classes passed to STL containers.
-    */
-    template < typename T > class Deleter
-    {
-    public:
-        /**
-         * Constructor.
-         * @param p_mgr instance of memory manager to be used for deallocation
-         */
-        Deleter ( MemoryManagerItf & p_mgr ) : m_mgr ( p_mgr ) {}
-
-        /**
-         * Call a destructor on the argument and pass its memory to the associated memory manager for deallocation.
-         * @param p pointer to the block to be deallocated
-         */
-        void operator() ( T * p ) const
-        {
-            p -> ~T();
-            m_mgr . deallocate ( p, sizeof ( T ) );
-        }
-
-    private:
-        MemoryManagerItf & m_mgr; ///< the memory manager instance to be used for deallocation
-    };
+    MemoryMgr getMgr() const { return mgr; }
 
 private:
     /**
@@ -97,8 +81,10 @@ private:
      */
     MemoryBlockItf & operator = ( const MemoryBlockItf & that );
 
-    MemoryManagerItf * mgr; ///< the memory manager instance to be used for deallocation; TODO: convert to shared_ptr?
+    MemoryMgr mgr; ///< the memory manager instance to be used for deallocation
 };
 
 } // namespace VDB3
+
+
 

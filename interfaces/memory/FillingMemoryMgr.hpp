@@ -52,7 +52,8 @@ public:
      * @param fill_byte immediately after allocation, the block will be filled with this value
      * @param trash_byte immediately before dealocation, the block will be filled with this value
     */
-    FillingMemoryMgr( TrackingMemoryManagerItf * base_mgr = nullptr, byte_t fill_byte = DefaultFiller, byte_t trash_byte = DefaultTrash );
+    FillingMemoryMgr( TrackingMemoryMgr base_mgr, byte_t fill_byte = DefaultFiller, byte_t trash_byte = DefaultTrash );
+    FillingMemoryMgr( byte_t fill_byte = DefaultFiller, byte_t trash_byte = DefaultTrash );
 
     virtual ~FillingMemoryMgr();
 

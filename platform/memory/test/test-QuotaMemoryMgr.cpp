@@ -50,7 +50,7 @@ public:
     * @param p_allow_to_extend if true, will allow quota extension
     */
     TestQuotaMemoryMgr ( bool p_allow_to_extend = false )
-    :   QuotaMemoryMgr ( nullptr, Quota ),
+    :   QuotaMemoryMgr ( Quota ),
         allow_to_extend ( p_allow_to_extend )
     {
     }

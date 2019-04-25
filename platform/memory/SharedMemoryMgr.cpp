@@ -31,6 +31,9 @@
 #include <cstring>
 
 #include <memory/PrimordialMemoryMgr.hpp>
+#include <memory/MemoryBlockItf.hpp>
+
+using namespace std;
 
 namespace VDB3
 {
@@ -40,6 +43,39 @@ namespace VDB3
 */
 class SharedMemoryMgr :: SharedMemoryMgr_Internal : public MemoryManagerItf
 {
+
+public: // inherited from MemoryManagerItf
+    virtual void * allocateBlock ( bytes_t bytes )
+    {
+        return allocate ( size_type ( bytes ) );
+    }
+
+    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size )
+    {
+        if ( block == nullptr )
+        {
+            return allocate ( new_size );
+        }
+
+        if ( cur_size == 0 )
+        {
+            deallocate ( block, cur_size );
+            return nullptr;
+        }
+
+        // always create and copy
+        void * ret = allocate ( new_size );
+        memmove ( ret, block, std :: min ( cur_size, new_size ) );
+        deallocate ( block, cur_size );
+
+        return ret;
+    }
+
+    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept
+    {
+        deallocate ( block, size );
+    }
+
 public:
     virtual pointer allocate ( size_type bytes )
     {
@@ -96,10 +132,10 @@ public:
     }
 };
 
-static SharedMemoryMgr :: SharedMemoryMgr_Internal internal;
-
+//TODO: use allocate_shared< SharedMemoryMgr :: SharedMemoryMgr_Internal, MemoryManagerItf> ( pm )
+// where pm is retrieved from ResourceManager
 SharedMemoryMgr :: SharedMemoryMgr()
-: TrackingMemoryManager ( & internal )
+: TrackingMemoryManager ( make_shared < SharedMemoryMgr :: SharedMemoryMgr_Internal > () )
 {
 }
 
@@ -125,22 +161,22 @@ SharedMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
     }
 
     // always create and copy
-    pointer ret = allocate ( new_size );
-    memcpy ( ret, old_ptr, std :: min ( old_size, new_size ) );
+    pointer ret = allocate ( new_size ); // will record the new block's size
+    memmove ( ret, old_ptr, std :: min ( old_size, new_size ) );
     deallocate ( old_ptr, old_size );
 
     return ret;
 }
 
-SharedMemoryMgr :: pointer
-SharedMemoryMgr :: allocate ( size_type bytes, int fd, bool canWrite, off_t offset, bool shared )
-{   // read/write must not conflict with the open mode of the file
-    pointer ret = internal . allocate ( bytes, fd, canWrite );
-    if ( ret != nullptr )
-    {
-        setBlockSize ( ret, bytes );
-    }
-    return ret;
-}
+// SharedMemoryMgr :: pointer
+// SharedMemoryMgr :: allocate ( size_type bytes, int fd, bool canWrite, off_t offset, bool shared )
+// {   // read/write must not conflict with the open mode of the file
+//     pointer ret = getBaseMgr() . allocate ( bytes, fd, canWrite );
+//     if ( ret != nullptr )
+//     {
+//         setBlockSize ( ret, bytes );
+//     }
+//     return ret;
+// }
 
 }

@@ -42,6 +42,17 @@ include $(TOP)/platform/Makefile.test
 
 # project memory
 SRC = \
+	../MemoryBlockItf \
+	../MemoryManagerItf \
+	../TrackingMemoryManagerItf \
+	../FillingMemoryMgr \
+	../PinnedMemoryMgr \
+	../QuotaMemoryMgr \
+	../SharedMemoryMgr \
+	../UniqueRawMemoryBlock \
+	../PrimordialMemoryMgr \
+	../RawMemoryBlock \
+	../TypedMemoryBlock \
 	test-main \
 	test-MemoryManagerItf \
 	test-MemoryBlockItf \
@@ -54,17 +65,7 @@ SRC = \
 	test-UniqueRawMemoryBlock \
 	test-RawMemoryBlock \
 	test-TypedMemoryBlock \
-	../MemoryManagerItf \
-	../TrackingMemoryManagerItf \
-	../MemoryBlockItf \
-	../FillingMemoryMgr \
-	../PinnedMemoryMgr \
-	../QuotaMemoryMgr \
-	../SharedMemoryMgr \
-	../UniqueRawMemoryBlock \
-	../PrimordialMemoryMgr \
-	../RawMemoryBlock \
-	../TypedMemoryBlock
+
 
 OBJ = $(addsuffix .$(OBJX),$(SRC))
 

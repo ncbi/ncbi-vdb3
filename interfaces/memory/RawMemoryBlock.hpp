@@ -31,7 +31,7 @@ namespace VDB3
 {
 
 /**
- *  Raw memory block, a sequence of bytes. Reference-counted.
+ *  Raw memory block, a sequence of bytes. Reference-counted. Non-resizable.
  */
 class RawMemoryBlock : public MemoryBlockItf
 {
@@ -41,7 +41,7 @@ public:
      * @param mgr instance of a memory manager that allocated this block. Will be used for deallocation.
      * @param size size of the block
     */
-    RawMemoryBlock ( MemoryManagerItf & mgr, size_t size );
+    RawMemoryBlock ( MemoryMgr mgr, bytes_t size );
 
     /**
      * Copy constructor.
@@ -52,7 +52,7 @@ public:
     virtual ~RawMemoryBlock();
 
 public: // inherited from MemoryBlockItf
-
+    virtual void * ptr () const { return m_ptr . get (); };
     virtual bytes_t size() const;
 
 public:
@@ -72,19 +72,19 @@ public:
      * Number of references to this block.
      * @return Number of references to this block.
     */
-    unsigned long refcount () const noexcept { return ( unsigned long ) m_ptr . use_count(); }
-
-    /**
-     * Fill the block with specified value.
-     * @param filler vallue to fill the block with
-    */
-    void fill ( byte_t filler );
+    virtual unsigned long refcount () const noexcept { return ( unsigned long ) m_ptr . use_count(); }
 
     /**
      * Create a copy of the block, with reference count 1.
      * @return a copy of the block, with reference count 1.
     */
     RawMemoryBlock clone() const;
+
+    /**
+     * Fill the block with specified value.
+     * @param filler vallue to fill the block with
+    */
+    void fill ( byte_t filler );
 
 protected:
     /**
@@ -112,7 +112,9 @@ private:
     */
     RawMemoryBlock & operator = ( const RawMemoryBlock & that );
 
-    size_t m_size;  ///< size of the block, in bytes
+    class Deleter;
+
+    bytes_t m_size;  ///< size of the block, in bytes
     PtrType m_ptr;  ///< pointer to the underlying bytes
 };
 

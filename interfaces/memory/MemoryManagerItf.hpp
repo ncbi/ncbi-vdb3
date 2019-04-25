@@ -36,9 +36,12 @@ typedef byte    byte_t;
 typedef size_t  bytes_t;
 
 class MemoryBlockItf;
+class MemoryManagerItf;
+
+typedef std :: shared_ptr < MemoryManagerItf > MemoryMgr;
 
 /**
- *  Interface for a memory manager, providing allocation/deallocation for untyped memory blocks.
+ *  Interface for a memory manager, providing allocation/deallocation for reference counted memory blocks.
  *
  *  Provides declarations that satisfy STL requirements for an Allocator:
  *      typedef size_type;
@@ -52,6 +55,42 @@ class MemoryBlockItf;
  */
 class MemoryManagerItf
 {
+public:
+    virtual ~MemoryManagerItf() = 0;
+
+// VDB-facing API
+public:
+
+    /* These methods operate on assumption that the underlying implementation knows the size of the memory block being managed */
+
+    /**
+     * Allocate a block of given size
+     *
+     * @param bytes requested block size in bytes. Can be 0.
+     * @return handle to the allocated block
+     * @exception TODO: ??? if insufficient memory
+     */
+    virtual void * allocateBlock ( bytes_t bytes ) = 0;
+
+    /**
+     * Change the size of a block, possibly reallocating it.
+     *
+     * @param block handle to the block being reallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated.
+     * @param new_size requested new block size in bytes. Can be 0, resulting in deallocaiton of the block.
+     * @return handle to the reallocated block. May be different from the original block. If the block has been moved, the area pointed to by the original will be deallocated. ? if the specified size was 0. The contents of the original block are bitwise copied over to the new block.
+     * @exception TODO: ??? if insufficient memory. The original block is left untouched; it is not freed or moved.
+     */
+    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size ) = 0;
+
+    /**
+     * Release a block.
+     *
+     * @param ptr pointer to the block being deallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated. Can be nullptr, which is ignored.
+     * @param bytes block size in bytes. Must match the value previously passed to allocate.
+     */
+    virtual void deallocateBlock ( void * block, bytes_t bytes ) noexcept = 0;
+
+// STL-facing API
 public:
     /**
      * Size of a memory block, in bytes.
@@ -74,8 +113,6 @@ public:
     template < typename T > class allocator;
 
 public:
-    virtual ~MemoryManagerItf() = 0;
-
     /**
      * Allocate a block of given size
      *
@@ -90,7 +127,7 @@ public:
      *
      * @param ptr pointer to the block being reallocated. Can be nullptr, in which case a new block of size 'bytes' will be allocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated.
      * @param new_size requested new block size in bytes. Can be 0, resulting in deallocaiton of the block.
-     * @return pointer to the reallocated block. May be different from ptr. If the block has been moved, the area pointed to by ptr will be deallocated. nullptr if the specified size was 0.
+     * @return pointer to the reallocated block. May be different from ptr. If the block has been moved, the area pointed to by ptr will be deallocated. nullptr if the specified size was 0. The contents of the original block are bitwise copied over to the new block.
      * @exception TODO: ??? if insufficient memory. The original block is left untouched; it is not freed or moved.
      */
     virtual pointer reallocate ( pointer ptr, size_type new_size ) = 0;
@@ -98,7 +135,7 @@ public:
     /**
      * Deallocate a block.
      *
-     * @param ptr pointer to the block being reallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated. Can be nullptr, which is ignored.
+     * @param ptr pointer to the block being deallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated. Can be nullptr, which is ignored.
      * @param bytes block size in bytes. Must match the value previously passed to allocate.
      */
     virtual void deallocate ( pointer ptr, size_type bytes ) noexcept = 0;
@@ -196,7 +233,6 @@ public:
 private:
     MemoryManagerItf & m_mgr; ///< Memory manager instance to forward calls to
 };
-
 
 } // namespace VDB3
 

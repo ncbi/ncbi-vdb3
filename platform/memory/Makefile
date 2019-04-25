@@ -44,9 +44,9 @@ build:
 #
 
 SRC = \
+	MemoryBlockItf \
 	MemoryManagerItf \
 	TrackingMemoryManagerItf \
-	MemoryBlockItf \
 	FillingMemoryMgr \
 	PinnedMemoryMgr \
 	QuotaMemoryMgr \

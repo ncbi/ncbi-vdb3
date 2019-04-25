@@ -46,12 +46,12 @@ INSTANTIATE_TYPED_TEST_SUITE_P(PinnedMemoryMgr_TrackingItfConformance, TrackingM
 
 TEST ( PinnedMemoryMgr, Instantiate )
 {
-    PinnedMemoryMgr mgr ( nullptr );
+    PinnedMemoryMgr mgr;
 }
 
 TEST ( PinnedMemoryMgr, Allocate )
 {
-    PinnedMemoryMgr mgr ( nullptr );
+    PinnedMemoryMgr mgr;
     MemoryManagerItf::pointer p = mgr.allocate(1);
     ASSERT_NE ( nullptr, p );
     mgr.deallocate(p, 1);
@@ -92,7 +92,7 @@ public:
 TEST ( PinnedMemoryMgr, CustomLocker_Pin )
 {
     TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
+    PinnedMemoryMgr mgr ( & tl );
     MemoryManagerItf :: pointer p = mgr . allocate ( 1 );
     ASSERT_EQ ( 1, tl . blocks [ p ] );
 
@@ -102,7 +102,7 @@ TEST ( PinnedMemoryMgr, CustomLocker_Pin )
 TEST ( PinnedMemoryMgr, CustomLocker_Unpin )
 {
     TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
+    PinnedMemoryMgr mgr ( & tl );
     MemoryManagerItf :: pointer p = mgr . allocate ( 1 );
 
     mgr . deallocate ( p, 1 );
@@ -112,7 +112,7 @@ TEST ( PinnedMemoryMgr, CustomLocker_Unpin )
 TEST ( PinnedMemoryMgr, CustomLocker_Alloc_0_size )
 {
     TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
+    PinnedMemoryMgr mgr ( & tl );
     MemoryManagerItf :: pointer p = mgr . allocate ( 0 );
     ASSERT_EQ ( nullptr, p );
     ASSERT_EQ ( 0, tl . blocks . size () );
@@ -121,11 +121,11 @@ TEST ( PinnedMemoryMgr, CustomLocker_Alloc_0_size )
 TEST ( PinnedMemoryMgr, CustomLocker_Realloc )
 {
     TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
+    PinnedMemoryMgr mgr ( & tl );
     MemoryManagerItf :: pointer p1 = mgr . allocate ( 1 );
 
     // should call unlock(p1, 1), lock(p2, 100)
-    const size_t NewSize = 100;
+    const MemoryManagerItf :: size_type NewSize = 100;
     MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, NewSize );
     ASSERT_NE ( p1, p2 );
     ASSERT_EQ ( NewSize, tl . blocks [ p2 ] );
@@ -138,7 +138,7 @@ TEST ( PinnedMemoryMgr, CustomLocker_Realloc )
 TEST ( PinnedMemoryMgr, CustomLocker_Realloc_0_size )
 {
     TestLocker tl;
-    PinnedMemoryMgr mgr ( nullptr, & tl );
+    PinnedMemoryMgr mgr ( & tl );
     MemoryManagerItf :: pointer p1 = mgr . allocate ( 1 );
     MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, 0 );
     ASSERT_EQ ( nullptr, p2 );
@@ -165,9 +165,9 @@ public:
 TEST ( PinnedMemoryMgr, CustomLocker_Realloc_same_size )
 {
     TestLocker tl;
-    NoMoveReallocMgr nmm;
-    PinnedMemoryMgr mgr ( &nmm, & tl );
-    const size_t Size = 100;
+    auto nmm = make_shared < NoMoveReallocMgr > ();
+    PinnedMemoryMgr mgr ( nmm, & tl );
+    const MemoryManagerItf :: size_type Size = 100;
     MemoryManagerItf :: pointer p1 = mgr . allocate ( Size );
     MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, Size );
     ASSERT_EQ ( p1, p2 );
@@ -180,10 +180,10 @@ TEST ( PinnedMemoryMgr, CustomLocker_Realloc_same_size )
 TEST ( PinnedMemoryMgr, CustomLocker_Realloc_shrink )
 {
     TestLocker tl;
-    NoMoveReallocMgr nmm;
-    PinnedMemoryMgr mgr ( &nmm, & tl );
+    auto nmm = make_shared < NoMoveReallocMgr > ();
+    PinnedMemoryMgr mgr ( nmm, & tl );
     MemoryManagerItf :: pointer p1 = mgr . allocate ( 100 );
-    const size_t NewSize = 99;
+    const MemoryManagerItf :: size_type NewSize = 99;
     MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, NewSize );
     ASSERT_EQ ( p1, p2 );   // hope the PrimordialHeapMgr did not move the memory block
     ASSERT_EQ ( NewSize, tl . blocks [ p1 ] );

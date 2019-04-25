@@ -27,6 +27,7 @@
 #include <memory/UniqueRawMemoryBlock.hpp>
 
 #include <memory/PrimordialMemoryMgr.hpp>
+#include <memory/QuotaMemoryMgr.hpp>
 
 #include <gtest/gtest.h>
 
@@ -40,23 +41,30 @@ class UniqueRawMemoryBlock_Fixture : public ::testing::Test
 {
 protected:
 
-    const size_t Size = 13; ///< common block size
+    const bytes_t Size = 13; ///< common block size
     const byte_t Filler1 = byte_t ( 0x5a ); ///< a filler byte
     const byte_t Filler2 = byte_t ( 0x25 ); ///< another filler byte
 
-    VDB3::PrimordialMemoryMgr pm;   ///< the underlying memory manager
+    MemoryMgr pm = make_shared < PrimordialMemoryMgr > ();   ///< the underlying memory manager
 };
 
 // UniqueRawMemoryBlock
 
-TEST_F ( UniqueRawMemoryBlock_Fixture, UniqueRaw_Allocate_Deallocate_Size )
+TEST_F ( UniqueRawMemoryBlock_Fixture, Allocate_Deallocate_Size )
 {
     UniqueRawMemoryBlock rmb ( pm, Size );
     ASSERT_NE ( nullptr, rmb . data() );
     ASSERT_EQ ( Size, rmb . size() );
 }
 
-TEST_F ( UniqueRawMemoryBlock_Fixture, UniqueRaw_Clone_Fill )
+TEST_F ( UniqueRawMemoryBlock_Fixture, Resize )
+{
+    UniqueRawMemoryBlock rmb ( pm, Size );
+    rmb.resize( Size + 1 );
+    ASSERT_EQ ( Size + 1, rmb . size() );
+}
+
+TEST_F ( UniqueRawMemoryBlock_Fixture, Clone_Fill )
 {
     UniqueRawMemoryBlock rmb1 ( pm, Size );
     auto rmb2 = rmb1 . clone();
@@ -66,4 +74,16 @@ TEST_F ( UniqueRawMemoryBlock_Fixture, UniqueRaw_Clone_Fill )
     ASSERT_EQ ( Filler2, rmb2.data() [ 0 ] );
     ASSERT_EQ ( Filler2, rmb2.data() [ 1 ] );
 }
+
+TEST_F ( UniqueRawMemoryBlock_Fixture, NoTracking )
+{   // when using a size-tracking memory manager, tracking on this block is not done,
+    // since it knows its size itself
+    auto tmm = make_shared < TrackingMemoryManager > ( pm );
+    MemoryMgr qmm = make_shared < QuotaMemoryMgr > ( tmm, 100000 );
+    {
+        UniqueRawMemoryBlock rmb ( qmm, Size );
+        ASSERT_THROW( tmm -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+    }
+}
+
 

@@ -27,6 +27,7 @@
 #include <memory/RawMemoryBlock.hpp>
 
 #include <memory/PrimordialMemoryMgr.hpp>
+#include <memory/QuotaMemoryMgr.hpp>
 
 #include <gtest/gtest.h>
 
@@ -40,11 +41,11 @@ class RawMemoryBlock_Fixture : public ::testing::Test
 {
 protected:
 
-    const size_t Size = 13; ///< common block size
+    const bytes_t Size = 13; ///< common block size
     const byte_t Filler1 = byte_t ( 0x5a ); ///< a filler byte
     const byte_t Filler2 = byte_t ( 0x25 ); ///< another filler byte
 
-    VDB3::PrimordialMemoryMgr pm;   ///< the underlying memory manager
+    MemoryMgr pm = make_shared < PrimordialMemoryMgr > ();   ///< the underlying memory manager
 };
 
 // RawMemoryBlock
@@ -89,4 +90,32 @@ TEST_F ( RawMemoryBlock_Fixture, Raw_RefCount )
         ASSERT_EQ ( 2, rmb2 . refcount () );
     }
     ASSERT_EQ ( 1, rmb1 . refcount () );
+}
+
+TEST_F ( RawMemoryBlock_Fixture, STL )
+{   // use as an element in an STL container
+    RawMemoryBlock rmb1 ( pm, Size );
+    RawMemoryBlock rmb2 ( pm, Size + 1 );
+    {
+        std::vector<RawMemoryBlock> v;
+        v.push_back(rmb1);
+        v.push_back(rmb2);
+        ASSERT_EQ ( 2, rmb1 . refcount () );
+        ASSERT_EQ ( 2, rmb2 . refcount () );
+        ASSERT_EQ ( Size, v[0] . size () );
+        ASSERT_EQ ( Size + 1, v[1] . size () );
+    }
+    ASSERT_EQ ( 1, rmb1 . refcount () );
+    ASSERT_EQ ( 1, rmb2 . refcount () );
+}
+
+TEST_F ( RawMemoryBlock_Fixture, NoTracking )
+{   // when using a size-tracking memory manager, tracking on this block is not done,
+    // since it knows its size itself
+    auto tmm = make_shared < TrackingMemoryManager > ( pm );
+    MemoryMgr qmm = make_shared < QuotaMemoryMgr > ( tmm, 100000 );
+    {
+        RawMemoryBlock rmb ( qmm, Size );
+        ASSERT_THROW( tmm -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+    }
 }

@@ -27,6 +27,7 @@
 #include <memory/TypedMemoryBlock.hpp>
 
 #include <memory/PrimordialMemoryMgr.hpp>
+#include <memory/QuotaMemoryMgr.hpp>
 
 #include <gtest/gtest.h>
 
@@ -39,7 +40,7 @@ using namespace VDB3;
 class TypedMemoryBlock_Fixture : public ::testing::Test
 {
 protected:
-    VDB3::PrimordialMemoryMgr pm;   ///< the underlying memory manager
+    MemoryMgr pm = make_shared < PrimordialMemoryMgr > ();   ///< the underlying memory manager
 };
 
 // TypedMemoryBlock
@@ -121,4 +122,15 @@ TEST_F ( TypedMemoryBlock_Fixture, Typed_Clone )
         ASSERT_EQ ( 1, tmb2 . data() . mem1 ); // did not change
     }
     ASSERT_EQ ( 2, C :: dtor_called ); // 2 Cs existed
+}
+
+TEST_F ( TypedMemoryBlock_Fixture, NoTracking )
+{   // when using a size-tracking memory manager, tracking on this block is not done,
+    // since it knows its size itself
+    auto tmm = make_shared < TrackingMemoryManager > ( pm );
+    MemoryMgr qmm = make_shared < QuotaMemoryMgr > ( tmm, 100000 );
+    {
+        TypedMemoryBlock<C> tmb ( qmm, 1, 2.3f );
+        ASSERT_THROW( tmm -> getBlockSize( tmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+    }
 }

@@ -31,14 +31,41 @@
 
 using namespace VDB3;
 
+/////////////// RawMemoryBlock :: Deleter
+
+/**
+*  Deleter class, used to wrap MemoryBlockItf in "allocator" classes passed to STL.
+*/
+class RawMemoryBlock :: Deleter
+{
+public:
+    /**
+     * Constructor.
+     * @param p_mgr instance of memory manager to be used for deallocation
+     */
+    Deleter ( MemoryMgr p_mgr, bytes_t p_size ) : m_mgr ( p_mgr ), m_size ( p_size ) {}
+
+    /**
+     * Deallocate a memory block using its associated memory manager.
+     * @param p the block to be deallocated
+     */
+    void operator() ( byte_t * p ) const
+    {
+        m_mgr -> deallocateBlock ( p, m_size );
+    }
+
+private:
+    MemoryMgr m_mgr; ///< the memory manager instance to be used for deallocation
+    size_t m_size;
+};
+
 /////////////// RawMemoryBlock
 
-RawMemoryBlock :: RawMemoryBlock ( MemoryManagerItf & p_mgr, size_t p_size )
+RawMemoryBlock :: RawMemoryBlock ( MemoryMgr p_mgr, bytes_t p_size )
 :   MemoryBlockItf ( p_mgr ),
-    m_size ( p_size )
+    m_size ( p_size ),
+    m_ptr ( ( byte_t * ) p_mgr -> allocateBlock ( m_size ), Deleter( p_mgr, m_size ) )
 {
-    auto ptr = ( byte_t * ) getMgr() . allocate ( m_size );
-    m_ptr . reset ( ptr, Deleter<byte_t>( getMgr() ) );
 }
 
 RawMemoryBlock :: RawMemoryBlock( const RawMemoryBlock & that )

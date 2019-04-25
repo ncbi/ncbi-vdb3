@@ -42,9 +42,9 @@ public:
      * @param p_mgr instance of a memory manager to allocate this block. Will also be used for deallocation.
      * @param p_args arguments to be passed to T's constructor
     */
-    template<typename... Args> TypedMemoryBlock( MemoryManagerItf & p_mgr, const Args&& ... p_args )
+    template<typename... Args> TypedMemoryBlock( MemoryMgr p_mgr, const Args&& ... p_args )
     :   MemoryBlockItf ( p_mgr ),
-        m_ptr ( ( T * ) getMgr() . allocate ( sizeof ( T ) ), Deleter<T> ( getMgr() ) )
+        m_ptr ( ( T * ) getMgr() -> allocateBlock ( sizeof ( T ) ), Deleter ( getMgr() ) )
     {
         new ( m_ptr.get() ) T ( p_args ...);
     }
@@ -64,7 +64,7 @@ public:
     }
 
 public: // inherited from MemoryBlockItf
-
+    virtual void * ptr () const { return m_ptr . get (); };
     virtual bytes_t size() const { return sizeof ( T ); }
 
 public:
@@ -94,6 +94,12 @@ public:
     const T& data() const noexcept { return * m_ptr . get (); }
 
     /**
+     * Number of references to this block.
+     * @return Number of references to this block.
+    */
+    virtual unsigned long refcount () const noexcept { return ( unsigned long ) m_ptr . use_count(); }
+
+    /**
      * Copy-construct a new typed value with reference count of 1.
      * T is required to define a copy constructor
      * @return a copy with reference count of 1.
@@ -102,6 +108,36 @@ public:
     TypedMemoryBlock clone() const
     {
         return TypedMemoryBlock ( getMgr(), std::forward<const T>( data() ) );
+    };
+
+public:
+    /**
+    *  Deleter class, passed to std::shared_ptr.
+    */
+    class Deleter
+    {
+    public:
+        /**
+         * Constructor.
+         * @param p_mgr instance of memory manager to be used for deallocation
+         */
+        Deleter ( MemoryMgr p_mgr ) : m_mgr ( p_mgr ) {}
+
+        /**
+         * Destroy the object and deallocate its memory block using its associated memory manager.
+         * @param p the block to be deallocated
+         */
+        void operator() ( T * p ) const
+        {
+            if ( p != nullptr )
+            {
+                p -> ~T();
+            }
+            m_mgr -> deallocateBlock ( p, sizeof ( T ) );
+        }
+
+    private:
+        MemoryMgr m_mgr; ///< the memory manager instance to be used for deallocation
     };
 
 private:

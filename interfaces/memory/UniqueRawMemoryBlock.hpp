@@ -31,7 +31,7 @@ namespace VDB3
 {
 
 /**
- *  A raw memory block with exactly one owner.
+ *  A raw memory block with exactly one owner. Resizable.
  */
 class UniqueRawMemoryBlock : public MemoryBlockItf
 {
@@ -41,7 +41,7 @@ public:
      * @param mgr instance of a memory manager that allocated this block. Will be used for deallocation.
      * @param size size of the block
     */
-    UniqueRawMemoryBlock ( MemoryManagerItf & mgr, size_t size );
+    UniqueRawMemoryBlock ( MemoryMgr mgr, bytes_t size );
 
     /**
      * Move constructor.
@@ -53,7 +53,9 @@ public:
 
 public: // inherited from MemoryBlockItf
 
+    virtual void * ptr () const { return m_ptr . get (); };
     virtual bytes_t size () const;
+    virtual unsigned long refcount () const noexcept { return 1; }
 
 public:
 
@@ -91,9 +93,35 @@ public:
 
 protected:
     /**
-     * Uniquely owned pointer to the sequence bytes
+    *  Deleter class, passed to std::unique_ptr.
     */
-    typedef std :: unique_ptr < byte_t, Deleter < byte_t > > PtrType;
+    class Deleter
+    {
+    public:
+        /**
+         * Constructor.
+         * @param p_mgr instance of memory manager to be used for deallocation
+         */
+        Deleter ( MemoryMgr p_mgr, bytes_t p_size ) : m_mgr ( p_mgr ), m_size ( p_size ) {}
+
+        /**
+         * Deallocate a memory block using its associated memory manager.
+         * @param p the block to be deallocated
+         */
+        void operator() ( byte_t * p ) const
+        {
+            m_mgr -> deallocateBlock ( p, m_size );
+        }
+
+    private:
+        MemoryMgr m_mgr; ///< the memory manager instance to be used for deallocation
+        size_t m_size;
+    };
+
+    /**
+     * Uniquely owned pointer to a sequence of bytes
+    */
+    typedef std :: unique_ptr < byte_t, Deleter > PtrType;
 
     /**
      * Read/write access to the pointer
@@ -115,7 +143,7 @@ private:
     */
     UniqueRawMemoryBlock & operator = ( const UniqueRawMemoryBlock & that );
 
-    size_t m_size;  ///< size of the block, in bytes
+    bytes_t m_size;  ///< size of the block, in bytes
     PtrType m_ptr;  ///< pointer to the underlying bytes
 };
 

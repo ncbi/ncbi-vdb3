@@ -54,7 +54,7 @@ TYPED_TEST_P ( TrackingMemoryManagerItf_Test, getBlockSize)
     typename TypeParam :: pointer p = mgr . allocate ( SmallSize );
     ASSERT_EQ ( SmallSize, mgr . getBlockSize ( p ) );
 
-    mgr.deallocate ( p, 2 );
+    mgr.deallocate ( p, SmallSize );
 }
 
 TYPED_TEST_P ( TrackingMemoryManagerItf_Test, getBlockSize_postDeallocate)
@@ -96,6 +96,38 @@ TYPED_TEST_P ( TrackingMemoryManagerItf_Test, getBlockSize_postReallocate_To_Shr
     mgr . deallocate ( p2, SmallSize );
 }
 
+// Non-tracking operations
+
+TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateBlock_NoTracking)
+{
+    TypeParam mgr;
+    void * p = mgr . allocateBlock ( SmallSize );
+    ASSERT_THROW ( mgr . getBlockSize ( p ), std :: logic_error ); //TODO: use a VDB3 exception
+
+    mgr.deallocateBlock ( p, SmallSize );
+}
+
+TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateBlock_reallocate)
+{   // reallocate() works only on tracked blocks, use reallocateBlock
+    TypeParam mgr;
+    void * p = mgr . allocateBlock ( SmallSize );
+    ASSERT_THROW ( mgr . reallocate ( p, SmallSize + 1 ), std :: logic_error ); //TODO: use a VDB3 exception
+
+    mgr.deallocateBlock ( p, SmallSize );
+}
+
+TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateBlock_deallocate)
+{   // deallocate() works only on tracked blocks, use deallocateBlock
+    TypeParam mgr;
+    void * p = mgr . allocateBlock ( SmallSize );
+
+    // deallocate() is noexcept, so its failure goes unnoticed
+    mgr . deallocate ( p, SmallSize );
+
+    // still need to call deallocateBlock() to avoid memory leak
+    mgr.deallocateBlock ( p, SmallSize );
+}
+
 REGISTER_TYPED_TEST_SUITE_P(TrackingMemoryManagerItf_Test
     , getBlockSize_NULL
     , getBlockSize
@@ -103,5 +135,8 @@ REGISTER_TYPED_TEST_SUITE_P(TrackingMemoryManagerItf_Test
     , getBlockSize_postReallocate_To_0
     , getBlockSize_postReallocate_ToGrow
     , getBlockSize_postReallocate_To_Shrink
+    , allocateBlock_NoTracking
+    , allocateBlock_reallocate
+    , allocateBlock_deallocate
 );
 
