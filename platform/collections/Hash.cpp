@@ -137,8 +137,6 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
     __m128i h2 = c128_2;
     __m128i h3 = c128_3;
     __m128i h4 = c128_4;
-    __m128i h5 = c128_1;
-    __m128i h6 = c128_2;
 
     if ( UNLIKELY ( len >= 32 ) ) {
         // High throughput mode
@@ -146,22 +144,20 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
             len -= 64;
             const __m128i *s128 = reinterpret_cast<const __m128i *> ( s );
 
-            h3 = _mm_loadu_si128 ( s128 + 0 );
-            h4 = _mm_loadu_si128 ( s128 + 1 );
-            h5 = _mm_loadu_si128 ( s128 + 2 );
-            h6 = _mm_loadu_si128 ( s128 + 3 );
+            h1 *= 9;
+            h2 *= 9;
+            h3 *= 9;
+            h4 *= 9;
 
-            h3 ^= _mm_slli_epi64 ( h4, 1 );
-            h4 ^= _mm_slli_epi64 ( h5, 2 );
-            h5 ^= _mm_slli_epi64 ( h6, 1 );
-            h6 ^= _mm_slli_epi64 ( h3, 3 );
+            auto h5 = _mm_loadu_si128 ( s128 + 0 );
+            auto h6 = _mm_loadu_si128 ( s128 + 1 );
+            auto h7 = _mm_loadu_si128 ( s128 + 2 );
+            auto h8 = _mm_loadu_si128 ( s128 + 3 );
 
-            h1 += h3;
-            h1 ^= h5;
-
-            h2 ^= h4;
+            h1 += h5;
             h2 += h6;
-            h1 += _mm_slli_epi64 ( h2, 4 );
+            h3 += h7;
+            h4 += h8;
 
             s += 64;
         }
@@ -169,18 +165,26 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         if ( len >= 32 ) {
             const __m128i *s128 = reinterpret_cast<const __m128i *> ( s );
             len -= 32;
-            h1 ^= _mm_loadu_si128 ( s128 + 0 );
+            h1 *= 5;
+            h2 *= 9;
+            h1 += _mm_loadu_si128 ( s128 + 0 );
             h2 += _mm_loadu_si128 ( s128 + 1 );
 
             s += 32;
         }
-        h1 = _mm_aesenc_si128 ( h1, h5 );
-        h1 = _mm_aesenc_si128 ( h1, h6 );
+        auto h6 = h1;
+        h1 = _mm_aesenc_si128 ( h1, h2 );
         h2 = _mm_aesenc_si128 ( h2, h3 );
-        h2 = _mm_aesenc_si128 ( h2, h4 );
+        h3 = _mm_aesenc_si128 ( h3, h4 );
+        h4 = _mm_aesenc_si128 ( h4, h6 );
+        h1 = _mm_aesenc_si128 ( h1, h1 );
+        h2 = _mm_aesenc_si128 ( h2, h2 );
+        h3 = _mm_aesenc_si128 ( h3, h3 );
+        h4 = _mm_aesenc_si128 ( h4, h4 );
 
+        h1 = h1 ^ h3;
+        h2 = h2 ^ h4;
         h1 = h1 ^ h2;
-        h1 = _mm_aesenc_si128 ( h1, c128_1 );
 
         h1 ^= _mm_bsrli_si128 ( h1, 8 );
 

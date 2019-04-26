@@ -765,3 +765,39 @@ TEST ( HashTable, Benchmark_HashMap )
     }
     printf ( "\n" );
 }
+
+TEST ( HashTable, Benchmark_Varying )
+{
+    // https://martin.ankerl.com/2019/04/01/hashmap-benchmarks-03-02-result-RandomDistinct2/
+    Random r;
+    double start, elapsed;
+    int checksum = 0;
+    start = stopwatch ();
+    {
+        std::unordered_map<uint64_t, int> map;
+        for ( size_t i = 0; i < 50000000; ++i ) {
+            checksum += ++map[r.randint ( 0, 25000000 )];
+        }
+        map.clear ();
+        elapsed = stopwatch ( start );
+        printf ( "stdmap took %.1f sec\n", elapsed );
+    }
+
+    start = stopwatch ();
+    {
+        HashTable<uint64_t, int> map;
+        for ( size_t i = 0; i < 50000000; ++i ) {
+            uint64_t idx = r.randint ( 0, 25000000 );
+            if ( map.contains ( idx ) ) {
+                int v = map.get ( idx );
+                checksum += v;
+                map.insert ( idx, v + 1 );
+            } else
+                map.insert ( idx, 0 );
+        }
+        map.clear ();
+        elapsed = stopwatch ( start );
+        printf ( "HashTable took %.1f sec\n", elapsed );
+        printf ( "%d\n", checksum );
+    }
+}
