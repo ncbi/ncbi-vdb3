@@ -117,13 +117,13 @@ TEST ( Hash, Unique )
 }
 
 /*
-TEST ( Hash, Locality )
-{
-    for ( uint64_t i = 0; i != 8; ++i ) {
-        printf ( "hash of %lu is %zx\n", i, Hash ( i ) );
-    }
-}
-*/
+   TEST ( Hash, Locality )
+   {
+   for ( uint64_t i = 0; i != 8; ++i ) {
+   printf ( "hash of %lu is %zx\n", i, Hash ( i ) );
+   }
+   }
+   */
 TEST ( Hash, Adjacent )
 {
     uint64_t hash1, hash2;
@@ -135,6 +135,8 @@ TEST ( Hash, Adjacent )
     auto diff = hash2 - hash1;
     ASSERT_LE ( diff, 7 );
 
+    // for (uint64_t i=0; i<20; ++i) fprintf(stderr,"Hash of %lu is %lx\n", i,
+    // Hash(i));
     hash1 = Hash ( reinterpret_cast<char *> ( &val ), 8 );
     ++val;
     hash2 = Hash ( reinterpret_cast<char *> ( &val ), 8 );
@@ -232,6 +234,21 @@ TEST ( Hash, Long )
 
     ASSERT_NE ( str1, str2 );
     ASSERT_NE ( Hash ( str1 ), Hash ( str2 ) );
+
+    std::string str3 ( 256, 'F' );
+    for ( size_t i = 0; i != str3.size (); ++i )
+        for ( size_t j = 0; j != str3.size (); ++j ) {
+            std::string str4 = str3;
+            str4[i] = 'G';
+            str4[j] = 'E';
+            if ( str3 != str4 ) {
+                if ( Hash ( str3 ) == Hash ( str4 ) ) {
+                    fprintf ( stderr, "at %lu, %lu\n", i, j );
+                    fprintf ( stderr, "%s\n%s\n", str3.data (), str4.data () );
+                    ASSERT_NE ( Hash ( str3 ), Hash ( str4 ) );
+                }
+            }
+        }
 }
 
 TEST ( Hash, StrAdjacent )
@@ -421,11 +438,11 @@ TEST ( Hash, Thorough_dump )
 {
     std::string line;
     std::ifstream ifile ( "/tmp/mike_logs/tokens.uniq" );
-#if 0
-        while ( std::getline ( ifile, line ) ) {
-            uint64_t hash = Hash ( line );
-            // std::cerr << hash << "\t" << line.substr(0,20) << "\n";
-            std::cout << hash << "\t" << line.size () << "\t" << line << "\n";
-        }
+#if 1
+    while ( std::getline ( ifile, line ) ) {
+        uint64_t hash = Hash ( line );
+        // std::cerr << hash << "\t" << line.substr(0,20) << "\n";
+        std::cout << hash << "\t" << line.size () << "\t" << line << "\n";
+    }
 #endif
 }

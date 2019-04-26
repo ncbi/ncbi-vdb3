@@ -752,8 +752,10 @@ TEST ( HashTable, Benchmark_HashMap )
 
         start = stopwatch ();
         c = 0;
+        size_t n = benchkeys.size () / 2;
         for ( uint64_t loop = 0; loop != loops; loop++ ) {
-            c += hmap.count ( benchkeys[loop] );
+            c += hmap.count ( benchkeys[n] );
+            ++n;
         }
         elapsed = stopwatch ( start );
         printf ( "Random found %lu,", c );
