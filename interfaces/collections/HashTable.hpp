@@ -25,6 +25,7 @@
  */
 
 #pragma once
+
 #ifdef NDEBUG
 #undef _GLIBCXX_ASSERTIONS
 #undef _FORITFY_SOURCE
@@ -53,13 +54,35 @@ public:
     //    virtual ~HashTable ();
     //    operator ==,!=
 
+    /**
+     * High performance, single threaded hash table
+     */
+
+    /**
+     * Constructor
+     */
     HashTable () { reserve ( 0 ); }
 
+    /**
+     * Possibly prevent resizing
+     * @param capacity
+     */
     void reserve ( size_t capacity ) noexcept { rehash ( capacity ); }
 
+    /**
+     * Is hash table empty
+     * @return bool
+     */
     bool empty () const noexcept ATTRWARNUNUSED { return count_ == 0; }
+
+    /**
+     * Number of non-deleted entries in hash table
+     */
     size_t size () const noexcept ATTRWARNUNUSED { return count_; }
 
+    /**
+     * Empty hash table
+     */
     void clear () noexcept
     {
         size_t sz = size ();
@@ -69,6 +92,11 @@ public:
         load_ = 0;
     }
 
+    /**
+     * Does table contain key
+     * @param k key
+     * @return bool
+     */
     bool contains ( const KEY &k ) const noexcept ATTRPURE ATTRWARNUNUSED
     {
         return ( findbucket ( k ) != ULONG_MAX );
@@ -82,6 +110,12 @@ public:
             return 0;
     }
 
+    /**
+     * Get value for key
+     * @param k key
+     * @return value
+     * @throws std::out_of_range
+     */
     VALUE get ( const KEY &k ) const ATTRWARNUNUSED // can throw
                                                     // std::out_of_range
     {
@@ -89,6 +123,12 @@ public:
         if ( bucketid == ULONG_MAX ) throw std::out_of_range ( "no such key" );
         return buckets_[bucketid].value;
     }
+
+    /**
+     * Insert key with value
+     * @param k key
+     * @param v value
+     */
 
     void insert ( const KEY &k, const VALUE &v ) noexcept
     {
@@ -98,6 +138,11 @@ public:
 
     // insert_or_assign
 
+    /**
+     * Remove key
+     * @param k key
+     * @return bool if deleted
+     */
     bool erase ( const KEY &k ) noexcept
     {
         size_t bucketid = findbucket ( k );

@@ -45,6 +45,13 @@ namespace VDB3 {
 class Random final // Very fast RNG
 {
 public:
+    /**
+     * Fast random number generator
+     */
+
+    /**
+     * Default constructor, securely seeded
+     */
     Random ()
     {
         std::random_device r;
@@ -58,8 +65,16 @@ public:
         next ();
     }
 
+    /**
+     * Seeded constructor, useful if repeatability needed
+     * @param value seed
+     */
     explicit Random ( uint64_t value ) { seed ( value ); }
 
+    /**
+     * Reseed
+     * @param value seed
+     */
     void seed ( uint64_t value )
     {
         state1_ = value;
@@ -67,11 +82,18 @@ public:
         next ();
     }
 
+    /* Return next random value
+     * @return uint64_t
+     */
     uint64_t operator() () { return next (); }
 
-    // Returns start <= randint <= stop
-    // Fast but biased, see http://www.pcg-random.org/posts/bounded-rands.html
-    // Use std::uniform_int_distribution if higher quality is desired
+    /**
+     * Returns start <= randint <= stop
+     * @param start lower bound
+     * @param stop higher bound
+     * Fast but biased, see http://www.pcg-random.org/posts/bounded-rands.html
+     * Use std::uniform_int_distribution if higher quality is desired
+     */
     uint64_t randint ( uint64_t start, uint64_t stop )
     {
         assert ( start <= stop );
@@ -87,6 +109,7 @@ public:
             * ( 1.0 / ( UINT64_C ( 1 ) << 53u ) );
     }
 
+    /// Returns random bytes, not ASCII
     std::string randbytes ( size_t num )
     {
         std::string buf;
@@ -102,6 +125,7 @@ public:
         return buf;
     }
 
+    /// Returns UUID4 string
     std::string uuid4 ()
     {
         std::string uuid; //(36,' ');

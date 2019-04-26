@@ -316,19 +316,19 @@ TEST ( Hash, Thorough_Collide )
 {
     // We fill a buffer with random bytes, and then increment each byte once
     // and verify no collisions occur for all lengths.
-    char buf[97];
+    std::vector<char> buf;
     for ( size_t l = 0; l != sizeof ( buf ); l++ )
-        buf[l] = static_cast<char> ( random () );
+        buf.push_back ( static_cast<char> ( random () ) );
 
     std::map<uint64_t, size_t> map;
 
     size_t inserts = 0;
     size_t collisions = 0;
-    for ( size_t l = 4; l != sizeof ( buf ); l++ )
+    for ( size_t l = 4; l != buf.size (); l++ )
         for ( size_t j = 0; j != l; j++ )
             for ( size_t k = 0; k != 255; k++ ) {
                 buf[j] = static_cast<char> ( buf[j] + 1 );
-                uint64_t hash = Hash ( buf, l );
+                uint64_t hash = Hash ( buf.data (), l );
                 size_t count = map.count ( hash );
 
                 if ( count != 0 ) {

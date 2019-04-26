@@ -34,6 +34,9 @@
 #define ATTRWARNUNUSED __attribute__ ( ( warn_unused_result ) )
 #define ATTRCONST __attribute__ ( ( const ) )
 
+/**
+ * High performance hash function
+ */
 namespace VDB3 {
 uint64_t Hash ( const char *s, size_t len ) noexcept ATTRPUREWARNUNUSED;
 uint64_t Hash ( const std::string &str ) noexcept ATTRPURE;
