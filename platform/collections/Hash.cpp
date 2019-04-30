@@ -144,10 +144,10 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
             len -= 64;
             const __m128i *s128 = reinterpret_cast<const __m128i *> ( s );
 
-            h1 *= 9;
-            h2 *= 9;
-            h3 *= 9;
-            h4 *= 9;
+            h1 *= 7;
+            h2 *= 7;
+            h3 *= 7;
+            h4 *= 7;
 
             auto h5 = _mm_loadu_si128 ( s128 + 0 );
             auto h6 = _mm_loadu_si128 ( s128 + 1 );
@@ -165,8 +165,8 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
         if ( len >= 32 ) {
             const __m128i *s128 = reinterpret_cast<const __m128i *> ( s );
             len -= 32;
-            h1 *= 5;
-            h2 *= 9;
+            h1 = _mm_aesenc_si128 ( h1, h3 );
+            h2 = _mm_aesenc_si128 ( h2, h4 );
             h1 += _mm_loadu_si128 ( s128 + 0 );
             h2 += _mm_loadu_si128 ( s128 + 1 );
 
@@ -196,7 +196,6 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
 
     // Goal is to have only one unpredictable branch and to use the minimum
     // number of cache loads
-    // @FIX: g++ simply won't believe 0<=len<=31
     switch ( len ) {
     case 0: {
         return hash;
