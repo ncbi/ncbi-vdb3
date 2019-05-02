@@ -366,7 +366,7 @@ TEST ( Hash, Thorough_Collide )
                         "%lx: "
                         "%lu elements in map, prev size was %lu\n",
                         j, l, hash, map.size (), map[hash] );
-                    exit ( 1 );
+                    ASSERT_EQ(count, 0);
                 }
                 map[hash] = l;
                 inserts++;

@@ -35,7 +35,6 @@
 #include <climits>
 #include <collections/Hash.hpp>
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
 #include <sys/mman.h>

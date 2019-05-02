@@ -27,17 +27,12 @@
 #pragma once
 
 #include <cassert>
-#include <cmath>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <random>
 #include <string>
 #include <x86intrin.h>
 #define __STDC_FORMAT_MACROS
 #include <cinttypes>
-#include <fstream>
 
 #undef memcpy // Code never copies overlapping regions
 
@@ -114,10 +109,10 @@ public:
     {
         std::string buf;
         buf.reserve ( num );
-        while ( num >= 8 ) {
+        while ( num >= sizeof ( uint64_t ) ) {
             uint64_t r = next ();
             buf.append ( reinterpret_cast<const char *> ( &r ), sizeof ( r ) );
-            num -= 8;
+            num -= sizeof ( uint64_t );
         }
 
         while ( num-- ) { buf.push_back ( static_cast<char> ( next () ) ); }
