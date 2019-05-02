@@ -40,10 +40,15 @@ class QuotaMemoryMgr : public TrackingBypassMemoryManager
 public:
     /**
      * Constructor
-     * @param base_mgr optional pointer to a memory manager to handle allocation and deallocation. If nullptr, a default manager will be used.
+     * @param base_mgr pointer to a memory manager to handle allocation and deallocation. If nullptr, a default manager will be used.
      * @param quota maximum number of bytes to be allocated by this instance at any given time
     */
     QuotaMemoryMgr( TrackingMemoryMgr base_mgr, bytes_t quota );
+
+    /**
+     * Constructor. Uses a default manager to handle allocation and deallocation.
+     * @param quota maximum number of bytes to be allocated by this instance at any given time
+    */
     QuotaMemoryMgr( bytes_t quota );
 
     virtual ~QuotaMemoryMgr();
@@ -60,7 +65,7 @@ public: // inherited from MemoryManagerItf
 
     virtual pointer reallocate ( pointer ptr, size_type new_size );
 
-    virtual pointer reallocateUntracked ( void * ptr, size_type old_size, size_type new_size );
+    virtual void * reallocateUntracked ( void * ptr, size_type old_size, size_type new_size );
 
 protected:
     virtual void onAllocate ( void * ptr, size_type bytes );

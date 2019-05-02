@@ -65,29 +65,30 @@ public: // VDB-facing API
     /**
      * Allocate a block of given size
      *
-     * @param bytes requested block size in bytes. Can be 0.
+     * @param size requested block size in bytes. Can be 0.
      * @return handle to the allocated block
      * @exception TODO: ??? if insufficient memory
      */
-    virtual void * allocateUntracked ( bytes_t bytes ) = 0;
+    virtual void * allocateUntracked ( bytes_t size ) = 0;
 
     /**
      * Change the size of a block, possibly reallocating it.
      *
-     * @param block handle to the block being reallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated.
+     * @param ptr handle to the block being reallocated. The pointer must have been returned by allocateUntracked() on the same instance of MemoryManagerItf and not previously deallocated.
+     * @param cur_size the current size of the block pointed to by ptr, in bytes.
      * @param new_size requested new block size in bytes. Can be 0, resulting in deallocaiton of the block.
      * @return handle to the reallocated block. May be different from the original block. If the block has been moved, the area pointed to by the original will be deallocated. ? if the specified size was 0. The contents of the original block are bitwise copied over to the new block.
      * @exception TODO: ??? if insufficient memory. The original block is left untouched; it is not freed or moved.
      */
-    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size ) = 0;
+    virtual void * reallocateUntracked ( void * ptr, bytes_t cur_size, bytes_t new_size ) = 0;
 
     /**
      * Release a block.
      *
-     * @param ptr pointer to the block being deallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated. Can be nullptr, which is ignored.
-     * @param bytes block size in bytes. Must match the value previously passed to allocate.
+     * @param ptr pointer to the block being deallocated. The pointer must have been returned by allocateUntracked() or reallocateUntracked() on the same instance of MemoryManagerItf and not previously deallocated. Can be nullptr, which is ignored.
+     * @param size block size in bytes. Must match the value previously passed to allocate.
      */
-    virtual void deallocateUntracked ( void * block, bytes_t bytes ) noexcept = 0;
+    virtual void deallocateUntracked ( void * ptr, bytes_t size ) noexcept = 0;
 
 public: // STL-facing API
     /**
@@ -114,11 +115,11 @@ public:
     /**
      * Allocate a block of given size
      *
-     * @param bytes requested block size in bytes. Can be 0.
+     * @param size requested block size in bytes. Can be 0.
      * @return pointer to the allocated block. nullptr if the specified size was 0
      * @exception TODO: ??? if insufficient memory
      */
-    virtual pointer allocate ( size_type bytes ) = 0;
+    virtual pointer allocate ( size_type size ) = 0;
 
     /**
      * Change the size of a block, possibly reallocating it.
@@ -134,9 +135,9 @@ public:
      * Deallocate a block.
      *
      * @param ptr pointer to the block being deallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated. Can be nullptr, which is ignored.
-     * @param bytes block size in bytes. Must match the value previously passed to allocate.
+     * @param size block size in bytes. Must match the value previously passed to allocate.
      */
-    virtual void deallocate ( pointer ptr, size_type bytes ) noexcept = 0;
+    virtual void deallocate ( pointer ptr, size_type size ) noexcept = 0;
 };
 
 /**

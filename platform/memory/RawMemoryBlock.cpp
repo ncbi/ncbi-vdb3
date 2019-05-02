@@ -42,6 +42,7 @@ public:
     /**
      * Constructor.
      * @param p_mgr instance of memory manager to be used for deallocation
+     * @param p_size size of the block, in bytes
      */
     Deleter ( MemoryMgr p_mgr, bytes_t p_size ) : m_mgr ( p_mgr ), m_size ( p_size ) {}
 
@@ -56,7 +57,7 @@ public:
 
 private:
     MemoryMgr m_mgr; ///< the memory manager instance to be used for deallocation
-    size_t m_size;
+    size_t m_size; ///< size of the block, in bytes
 };
 
 /////////////// RawMemoryBlock

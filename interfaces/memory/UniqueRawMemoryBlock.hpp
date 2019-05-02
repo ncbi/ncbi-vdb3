@@ -53,7 +53,7 @@ public:
 
 public: // inherited from MemoryBlockItf
 
-    virtual void * ptr () const { return m_ptr . get (); };
+    virtual const void * ptr () const { return m_ptr . get (); };
     virtual bytes_t size () const;
     virtual unsigned long refcount () const noexcept { return 1; }
 
@@ -101,6 +101,7 @@ protected:
         /**
          * Constructor.
          * @param p_mgr instance of memory manager to be used for deallocation
+         * @param p_self a reference to the object to be deallocated
          */
         Deleter ( MemoryMgr p_mgr, UniqueRawMemoryBlock & p_self ) : m_mgr ( p_mgr ), m_self ( p_self ) {}
 
@@ -115,7 +116,7 @@ protected:
 
     private:
         MemoryMgr m_mgr; ///< the memory manager instance to be used for deallocation
-        UniqueRawMemoryBlock & m_self;
+        UniqueRawMemoryBlock & m_self; ///< reference to the object to be deallocated
     };
 
     /**

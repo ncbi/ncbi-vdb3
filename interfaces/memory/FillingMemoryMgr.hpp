@@ -53,6 +53,12 @@ public:
      * @param trash_byte immediately before dealocation, the block will be filled with this value
     */
     FillingMemoryMgr( TrackingMemoryMgr base_mgr, byte_t fill_byte = DefaultFiller, byte_t trash_byte = DefaultTrash );
+
+    /**
+     * Constructor. Uses a default memory manager to handle allocation/deallocation and keep track of block sizes.
+     * @param fill_byte immediately after allocation, the block will be filled with this value
+     * @param trash_byte immediately before dealocation, the block will be filled with this value
+    */
     FillingMemoryMgr( byte_t fill_byte = DefaultFiller, byte_t trash_byte = DefaultTrash );
 
     virtual ~FillingMemoryMgr();

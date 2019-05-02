@@ -52,7 +52,7 @@ public:
     virtual ~RawMemoryBlock();
 
 public: // inherited from MemoryBlockItf
-    virtual void * ptr () const { return m_ptr . get (); };
+    virtual const void * ptr () const { return m_ptr . get (); };
     virtual bytes_t size() const;
 
 public:

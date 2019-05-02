@@ -145,7 +145,7 @@ TrackingMemoryManager :: deallocate( pointer ptr, size_type size ) noexcept
 }
 
 TrackingMemoryManager :: size_type
-TrackingMemoryManager :: getBlockSize( const_pointer ptr ) const
+TrackingMemoryManager :: getBlockSize( const void * ptr ) const
 {
     auto it = m_blocks . find(ptr);
     if ( it == m_blocks . end () )
@@ -159,7 +159,7 @@ TrackingMemoryManager :: getBlockSize( const_pointer ptr ) const
 }
 
 void
-TrackingMemoryManager :: setBlockSize( const_pointer ptr, size_type size )
+TrackingMemoryManager :: setBlockSize( const void * ptr, size_type size )
 {
     m_blocks [ ptr ] = size;
 }
@@ -232,13 +232,13 @@ TrackingBypassMemoryManager :: deallocate( pointer ptr, size_type size ) noexcep
 }
 
 TrackingBypassMemoryManager :: size_type
-TrackingBypassMemoryManager :: getBlockSize( const_pointer ptr ) const
+TrackingBypassMemoryManager :: getBlockSize( const void * ptr ) const
 {
     return m_baseMgr -> getBlockSize( ptr );
 }
 
 void
-TrackingBypassMemoryManager :: setBlockSize( const_pointer ptr, size_type size )
+TrackingBypassMemoryManager :: setBlockSize( const void * ptr, size_type size )
 {
     m_baseMgr -> setBlockSize( ptr, size );
 }

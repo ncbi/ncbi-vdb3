@@ -47,18 +47,29 @@ public:
      * @return size of the memory block, in bytes
      * @exception ??? if the block is not tracked by this instance
      */
-    virtual size_type getBlockSize ( const_pointer ptr ) const = 0;
+    virtual size_type getBlockSize ( const void * ptr ) const = 0;
 
     /**
      * Set/update size of a memory block. Will add the block if it is not present.
      * @param ptr pointer to the memory block
      * @param size memory block's size in bytes
      */
-    virtual void setBlockSize ( const_pointer ptr, size_type size ) = 0;
+    virtual void setBlockSize ( const void * ptr, size_type size ) = 0;
 
 protected:
-    virtual void onAllocate ( void * ptr, size_type bytes ) {} //TODO: make pure
-    virtual void onDeallocate ( void * ptr, size_type bytes ) {} //TODO: make pure
+    /**
+     * Do memory manager specific post-processing of a newly allocated memory block
+     * @param ptr pointer to the memory block
+     * @param size of the block
+    */
+    virtual void onAllocate ( void * ptr, size_type size ) = 0;
+
+    /**
+     * Do memory manager specific pre-processing of a memory block about to be deallocated
+     * @param ptr pointer to the memory block
+     * @param size of the block
+    */
+    virtual void onDeallocate ( void * ptr, size_type size ) = 0;
 };
 
 /**
@@ -78,19 +89,23 @@ public:
 public: // inherited from MemoryManagerItf
     // VDB3-facing API
     // calls to these methods are forwarded to the base manager, block sizes are not tracked
-    virtual void * allocateUntracked ( bytes_t bytes );
-    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size );
-    virtual void deallocateUntracked ( void * block, bytes_t size ) noexcept;
+    virtual void * allocateUntracked ( bytes_t size );
+    virtual void * reallocateUntracked ( void * ptr, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateUntracked ( void * ptr, bytes_t size ) noexcept;
 
 public: // inherited from MemoryManagerItf
     // STL facing API
-    virtual pointer allocate ( size_type bytes );
-    virtual pointer reallocate ( pointer ptr, size_type new_size) ;
-    virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
+    virtual pointer allocate ( size_type size );
+    virtual pointer reallocate ( void * ptr, size_type new_size);
+    virtual void deallocate ( void * ptr, size_type size ) noexcept;
 
 public: // inherited from TrackingMemoryManagerItf
-    virtual size_type getBlockSize ( const_pointer ptr ) const;
-    virtual void setBlockSize ( const_pointer ptr, size_type size ); // adds if necessary
+    virtual size_type getBlockSize ( const void * ptr ) const;
+    virtual void setBlockSize ( const void * ptr, size_type size ); // adds if necessary
+
+protected:
+    virtual void onAllocate ( void * ptr, size_type size ) {}
+    virtual void onDeallocate ( void * ptr, size_type size ) {}
 
 private:
     /**
@@ -126,19 +141,23 @@ public:
 public: // inherited from MemoryManagerItf
     // VDB3-facing API
     // calls to these methods are forwarded to the base manager, block sizes are not tracked
-    virtual void * allocateUntracked ( bytes_t bytes );
-    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size );
-    virtual void deallocateUntracked ( void * block, bytes_t size ) noexcept;
+    virtual void * allocateUntracked ( bytes_t size );
+    virtual void * reallocateUntracked ( void * ptr, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateUntracked ( void * ptr, bytes_t size ) noexcept;
 
 public: // inherited from MemoryManagerItf
     // STL facing API
-    virtual pointer allocate ( size_type bytes );
+    virtual pointer allocate ( size_type size );
     virtual pointer reallocate ( pointer ptr, size_type new_size) ;
-    virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
+    virtual void deallocate ( pointer ptr, size_type size ) noexcept;
 
 public: // inherited from TrackingMemoryManagerItf
-    virtual size_type getBlockSize ( const_pointer ptr ) const;
-    virtual void setBlockSize ( const_pointer ptr, size_type size ); // adds if necessary
+    virtual size_type getBlockSize ( const void * ptr ) const;
+    virtual void setBlockSize ( const void * ptr, size_type size ); // adds if necessary
+
+protected:
+    virtual void onAllocate ( void * ptr, size_type size ) {}
+    virtual void onDeallocate ( void * ptr, size_type size ) {}
 
 protected:
     /**

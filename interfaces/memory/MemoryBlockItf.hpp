@@ -36,8 +36,11 @@ namespace VDB3
 class MemoryBlockItf
 {
 public:
-    // for memory management purposes only; to access the object uise data() in the subclasses
-    virtual void * ptr () const = 0;
+    /**
+     * Retrieve a pointer to the block's allocated memory segment. Used for memory management purposes only; to access the object use data() in the subclasses.
+     * @return pointer to the block's allocated memory segment
+     */
+    virtual const void * ptr () const = 0;
 
     /**
      * Size of the memory block, in bytes.
