@@ -45,6 +45,8 @@
 
 using namespace VDB3;
 
+static double stopwatch ( double start = 0.0 ) ATTRWARNUNUSED;
+
 TEST ( Hash, Basic )
 {
     const char *str = "Tu estas probando este hoy, no manana";
@@ -116,15 +118,9 @@ TEST ( Hash, Unique )
     ASSERT_NE ( hash1, hash2 );
 }
 
-/*
-   TEST ( Hash, Locality )
-   {
-   for ( uint64_t i = 0; i != 8; ++i ) {
-   printf ( "hash of %lu is %zx\n", i, Hash ( i ) );
-   }
-   }
-   */
-TEST ( Hash, Adjacent )
+// Hash attempts to keep strings/ints that only differ by last few bits in same
+// cache line, but without requiring excessive probing.
+TEST ( Hash, LocalityPreserving)
 {
     uint64_t hash1, hash2;
 
@@ -157,7 +153,7 @@ TEST ( Hash, Adjacent )
     }
 }
 
-TEST ( Hash, Collisision )
+TEST ( Hash, Collision )
 {
     std::string str1 = "31S15M1D10M2D79M";
     std::string str2 = "34S27M1D14M1D76M";
@@ -389,7 +385,6 @@ TEST ( Hash, bigcoll )
 }
 
 
-static double stopwatch ( double start = 0.0 ) ATTRWARNUNUSED;
 static double stopwatch ( double start )
 {
     struct timeval tv_cur = {};
