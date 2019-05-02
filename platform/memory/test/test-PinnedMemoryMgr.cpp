@@ -31,6 +31,8 @@
 #include <gtest/gtest.h>
 
 #include <memory/PrimordialMemoryMgr.hpp>
+#include <memory/RawMemoryBlock.hpp>
+#include <memory/UniqueRawMemoryBlock.hpp>
 
 #include "MemoryManagerItf_Test.hpp"
 #include "TrackingMemoryManagerItf_Test.hpp"
@@ -185,10 +187,62 @@ TEST ( PinnedMemoryMgr, CustomLocker_Realloc_shrink )
     MemoryManagerItf :: pointer p1 = mgr . allocate ( 100 );
     const MemoryManagerItf :: size_type NewSize = 99;
     MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, NewSize );
-    ASSERT_EQ ( p1, p2 );   // hope the PrimordialHeapMgr did not move the memory block
+    ASSERT_EQ ( p1, p2 );
     ASSERT_EQ ( NewSize, tl . blocks [ p1 ] );
 
     mgr . deallocate ( p2, NewSize ); // or could be p1
     ASSERT_EQ ( 0, tl . blocks . size () );
 }
 
+// functionality is not lost when using the VDB-facing (no tracking) API
+
+TEST ( PinnedMemoryMgr, Alloc_NoTracking )
+{
+    TestLocker tl;
+    auto mgr = make_shared < PinnedMemoryMgr > ( & tl );
+
+    // block sizes are not tracked by the manager but filling on allocation still occurs
+    RawMemoryBlock rmb ( mgr, 1 );  // uses mgr -> allocateNoTracking()
+
+    // is not tracked by mgr
+    ASSERT_THROW( mgr -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+    // is pinned
+    ASSERT_EQ ( 1, tl . blocks [ rmb . ptr () ] );
+}
+
+TEST ( PinnedMemoryMgr, Dealloc_NoTracking )
+{
+    TestLocker tl;
+    auto mgr = make_shared < PinnedMemoryMgr > ( & tl );
+
+    const byte_t * ptr;
+    {   // block sizes are not tracked by the manager but trashing on deallocation still occurs
+        RawMemoryBlock rmb ( mgr, 2 );
+        ptr = rmb . data();
+    }   // the destructor uses mgr -> deallocateUntracked()
+
+    // is unpinned
+    ASSERT_EQ ( tl . blocks. end (), tl . blocks . find ( MemoryManagerItf :: pointer ( ptr ) ) );
+}
+
+TEST ( PinnedMemoryMgr, Realloc_NoTracking )
+{
+    TestLocker tl;
+    auto mgr = make_shared < PinnedMemoryMgr > ( & tl );
+
+    // block sizes are not tracked by the manager but filling/trashing on reallocation still occurs
+    UniqueRawMemoryBlock rmb ( mgr, 2 ); // UniqueRawMemoryBlock is resizeable
+    const byte_t * p1 = rmb . data();
+
+    const MemoryManagerItf :: size_type NewSize = 100;
+    rmb . resize ( NewSize );
+
+    const byte_t * p2 = rmb . data();
+
+    // the block got moved
+    ASSERT_NE ( p1, p2 );
+    // the new block is pinned
+    ASSERT_EQ ( NewSize, tl . blocks [ MemoryManagerItf :: pointer ( p2 ) ] );
+    // the old block is unpinned
+    ASSERT_EQ ( tl . blocks . end (), tl . blocks . find ( MemoryManagerItf :: pointer ( p1 ) ) );
+}

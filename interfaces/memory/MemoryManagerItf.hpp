@@ -58,10 +58,9 @@ class MemoryManagerItf
 public:
     virtual ~MemoryManagerItf() = 0;
 
-// VDB-facing API
-public:
+public: // VDB-facing API
 
-    /* These methods operate on assumption that the underlying implementation knows the size of the memory block being managed */
+    /* These 3 methods operate on assumption that the caller, not the manager, keeps track of the logical size of the memory blocks (the physical size is determined by the manager) */
 
     /**
      * Allocate a block of given size
@@ -70,7 +69,7 @@ public:
      * @return handle to the allocated block
      * @exception TODO: ??? if insufficient memory
      */
-    virtual void * allocateBlock ( bytes_t bytes ) = 0;
+    virtual void * allocateUntracked ( bytes_t bytes ) = 0;
 
     /**
      * Change the size of a block, possibly reallocating it.
@@ -80,7 +79,7 @@ public:
      * @return handle to the reallocated block. May be different from the original block. If the block has been moved, the area pointed to by the original will be deallocated. ? if the specified size was 0. The contents of the original block are bitwise copied over to the new block.
      * @exception TODO: ??? if insufficient memory. The original block is left untouched; it is not freed or moved.
      */
-    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size ) = 0;
+    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size ) = 0;
 
     /**
      * Release a block.
@@ -88,10 +87,9 @@ public:
      * @param ptr pointer to the block being deallocated. The pointer must have been returned by the same instance of MemoryManagerItf and not previously deallocated. Can be nullptr, which is ignored.
      * @param bytes block size in bytes. Must match the value previously passed to allocate.
      */
-    virtual void deallocateBlock ( void * block, bytes_t bytes ) noexcept = 0;
+    virtual void deallocateUntracked ( void * block, bytes_t bytes ) noexcept = 0;
 
-// STL-facing API
-public:
+public: // STL-facing API
     /**
      * Size of a memory block, in bytes.
      */

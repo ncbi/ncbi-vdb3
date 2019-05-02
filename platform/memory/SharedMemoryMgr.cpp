@@ -45,12 +45,12 @@ class SharedMemoryMgr :: SharedMemoryMgr_Internal : public MemoryManagerItf
 {
 
 public: // inherited from MemoryManagerItf
-    virtual void * allocateBlock ( bytes_t bytes )
+    virtual void * allocateUntracked ( bytes_t bytes )
     {
         return allocate ( size_type ( bytes ) );
     }
 
-    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size )
+    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size )
     {
         if ( block == nullptr )
         {
@@ -71,7 +71,7 @@ public: // inherited from MemoryManagerItf
         return ret;
     }
 
-    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept
+    virtual void deallocateUntracked ( void * block, bytes_t size ) noexcept
     {
         deallocate ( block, size );
     }

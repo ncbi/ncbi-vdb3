@@ -26,6 +26,9 @@
 
 #include <memory/FillingMemoryMgr.hpp>
 
+#include <memory/RawMemoryBlock.hpp>
+#include <memory/UniqueRawMemoryBlock.hpp>
+
 #include "MemoryManagerItf_Test.hpp"
 #include "TrackingMemoryManagerItf_Test.hpp"
 
@@ -38,6 +41,9 @@ using namespace VDB3;
 INSTANTIATE_TYPED_TEST_SUITE_P(FillingMemoryMgr_ItfConformance, MemoryManagerItf_Test, FillingMemoryMgr);
 INSTANTIATE_TYPED_TEST_SUITE_P(FillingMemoryMgr_TrackingItfConformance, TrackingMemoryManagerItf_Test, FillingMemoryMgr);
 
+const byte_t Filler = byte_t ( 0x5a );
+const byte_t Trash = byte_t ( 0xde );
+
 TEST ( FillingMemoryMgr, InstantiateDefaults_fillByte_trashByte )
 {
     FillingMemoryMgr mgr;
@@ -47,8 +53,6 @@ TEST ( FillingMemoryMgr, InstantiateDefaults_fillByte_trashByte )
 
 TEST ( FillingMemoryMgr, Instantiate )
 {
-    const byte_t Filler = byte_t ( 1 );
-    const byte_t Trash = byte_t ( 2 );
     FillingMemoryMgr mgr ( Filler, Trash );
     ASSERT_EQ ( Filler, mgr.fillByte() );
     ASSERT_EQ ( Trash, mgr.trashByte() );
@@ -56,7 +60,6 @@ TEST ( FillingMemoryMgr, Instantiate )
 
 TEST ( FillingMemoryMgr, Allocate_WithFill )
 {
-    const byte_t Filler = byte_t ( 0x5a );
     FillingMemoryMgr mgr ( Filler );
 
     auto ptr = mgr.allocate ( 2 );
@@ -69,7 +72,6 @@ TEST ( FillingMemoryMgr, Allocate_WithFill )
 
 TEST ( FillingMemoryMgr, Rellocate_GrowWithFill )
 {
-    const byte_t Filler = byte_t ( 0x5a );
     FillingMemoryMgr mgr ( Filler );
 
     auto ptr = mgr.allocate ( 2 );
@@ -96,9 +98,9 @@ public:
     FreeOnceMgr( bytes_t p_size ) : memory ( ( byte_t *) malloc ( p_size ) ), size ( p_size ), next_free ( 0 ) {}
     virtual ~FreeOnceMgr() { free ( memory ); }
 
-    virtual void * allocateBlock ( bytes_t bytes ) { return nullptr; }
-    virtual void * reallocateBlock ( void* block, bytes_t cur_size, bytes_t new_size )  { return nullptr; }
-    virtual void deallocateBlock ( void* block, bytes_t size ) noexcept {};
+    virtual void * allocateUntracked ( bytes_t bytes ) { return allocate(bytes); }
+    virtual void * reallocateUntracked ( void* block, bytes_t cur_size, bytes_t new_size )  { assert(false); }
+    virtual void deallocateUntracked ( void* block, bytes_t size ) noexcept {};
 
     virtual pointer allocate ( size_type bytes )
     {
@@ -117,16 +119,14 @@ public:
 
 TEST ( FillingMemoryMgr, Rellocate_ShrinkWithTrash )
 {
-    const byte_t Filler = byte_t ( 0x5a );
-    const byte_t Trash = byte_t ( 0xde );
-
     auto fom = make_shared < FreeOnceMgr > ( 1000 );
     auto tm = make_shared < TrackingMemoryManager > ( fom );
     FillingMemoryMgr mgr ( tm, Filler, Trash );
 
     auto ptr = mgr.allocate ( 4 );
     auto new_ptr = mgr.reallocate( ptr, 2 );
-    // this while block may be deallocated, or trailing portion trashed in place
+    ASSERT_EQ ( Filler, * ( ( byte_t * ) new_ptr ) );
+    ASSERT_EQ ( Filler, * ( ( byte_t * ) new_ptr + 1 ) );
     ASSERT_EQ ( Trash, * ( ( byte_t * ) ptr + 2 ) );
     ASSERT_EQ ( Trash, * ( ( byte_t * ) ptr + 3 ) );
 
@@ -135,16 +135,13 @@ TEST ( FillingMemoryMgr, Rellocate_ShrinkWithTrash )
 
 TEST ( FillingMemoryMgr, Rellocate_MoveWithTrash )
 {
-    const byte_t Filler = byte_t ( 0x5a );
-    const byte_t Trash = byte_t ( 0xde );
-
     auto fom = make_shared < FreeOnceMgr > ( 1000 );
     auto tm = make_shared < TrackingMemoryManager > ( fom );
     FillingMemoryMgr mgr ( tm, Filler, Trash );
 
     auto ptr = mgr.allocate ( 2 );
     auto new_ptr = mgr.reallocate( ptr, 4 ); // this will always move the block
-    ASSERT_NE ( ptr, new_ptr ); // make sure move
+    ASSERT_NE ( ptr, new_ptr ); // make sure it has been moved
     ASSERT_EQ ( Trash, * ( ( byte_t * ) ptr ) );
     ASSERT_EQ ( Trash, * ( ( byte_t * ) ptr + 1 ) );
 
@@ -153,9 +150,6 @@ TEST ( FillingMemoryMgr, Rellocate_MoveWithTrash )
 
 TEST ( FillingMemoryMgr, Deallocate_WithTrash )
 {
-    const byte_t Filler = byte_t ( 0x5a );
-    const byte_t Trash = byte_t ( 0xde );
-
     auto fom = make_shared < FreeOnceMgr > ( 1000 );
     auto tm = make_shared < TrackingMemoryManager > ( fom );
     FillingMemoryMgr mgr ( tm, Filler, Trash );
@@ -164,4 +158,65 @@ TEST ( FillingMemoryMgr, Deallocate_WithTrash )
     mgr . deallocate ( ptr, 2 );
     ASSERT_EQ ( Trash, * ( byte_t * ) ptr );
     ASSERT_EQ ( Trash, * ( ( byte_t * ) ptr + 1 ) );
+}
+
+// functionality is not lost when using the VDB-facing (no tracking) API
+
+TEST ( FillingMemoryMgr, Alloc_NoTracking )
+{
+    auto mgr = make_shared < FillingMemoryMgr > ( Filler, Trash );
+
+    {   // block sizes are not tracked by the manager but filling on allocation still occurs
+        RawMemoryBlock rmb ( mgr, 2 );  // uses mgr -> allocateNoTracking()
+        ASSERT_THROW( mgr -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+        ASSERT_NE ( nullptr, rmb . data() );
+        ASSERT_EQ ( Filler, * rmb . data() );
+        ASSERT_EQ ( Filler, * ( rmb . data() + 1 ) );
+    }
+}
+
+TEST ( FillingMemoryMgr, Dealloc_NoTracking )
+{
+    auto fom = make_shared < FreeOnceMgr > ( 1000 );
+    auto tm = make_shared < TrackingMemoryManager > ( fom );
+    auto mgr = make_shared < FillingMemoryMgr > ( tm, Filler, Trash );
+
+    const byte_t * ptr;
+    {   // block sizes are not tracked by the manager but trashing on deallocation still occurs
+        RawMemoryBlock rmb ( mgr, 2 );
+        ptr = rmb . data();
+    }   // the destructor uses mgr -> deallocateNoTracking()
+
+    ASSERT_EQ ( Trash, * ( byte_t * ) ptr );
+    ASSERT_EQ ( Trash, * ( ( byte_t * ) ptr + 1 ) );
+}
+
+TEST ( FillingMemoryMgr, Realloc_NoTracking )
+{
+    auto fom = make_shared < FreeOnceMgr > ( 1000 );
+    auto tm = make_shared < TrackingMemoryManager > ( fom );
+    auto mgr = make_shared < FillingMemoryMgr > ( tm, Filler, Trash );
+
+    const byte_t * ptr;
+    {   // block sizes are not tracked by the manager but filling/trashing on reallocation still occurs
+        UniqueRawMemoryBlock rmb ( mgr, 2 ); // UniqueRawMemoryBlock is resizeable
+        ptr = rmb . data();
+        ASSERT_NE ( nullptr, rmb . data() );
+        ASSERT_EQ ( Filler, * rmb . data() );
+        ASSERT_EQ ( Filler, * ( rmb . data() + 1 ) );
+        rmb . data () [0] = byte_t ( 0 );
+        rmb . data () [1] = byte_t ( 1 );
+
+        rmb . resize ( 3 );
+        // the block has been moved, filled
+        ASSERT_NE ( nullptr, rmb . data() );
+        ASSERT_NE ( ptr, rmb . data() );
+        ASSERT_EQ ( byte_t ( 0 ), * rmb . data() );
+        ASSERT_EQ ( byte_t ( 1 ), * ( rmb . data() + 1 ) );
+        ASSERT_EQ ( Filler, * ( rmb . data() + 2 ) );
+
+        // old block trashed
+        ASSERT_EQ ( Trash, * ( byte_t * ) ptr );
+        ASSERT_EQ ( Trash, * ( ( byte_t * ) ptr + 1 ) );
+    }
 }

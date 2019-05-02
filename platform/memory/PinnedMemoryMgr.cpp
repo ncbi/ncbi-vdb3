@@ -43,7 +43,7 @@ PinnedMemoryMgr :: MemoryLockerItf :: ~MemoryLockerItf ()
 class PosixMemoryPinner : public PinnedMemoryMgr :: MemoryLockerItf
 {
 public:
-    PosixMemoryPinner(){}
+    PosixMemoryPinner() {}
     virtual ~PosixMemoryPinner () {}
     /**
      * Locks memory in the address range starting at ptr and continuing for bytes.
@@ -92,15 +92,49 @@ PinnedMemoryMgr :: ~PinnedMemoryMgr()
 {
 }
 
-PinnedMemoryMgr :: pointer
-PinnedMemoryMgr :: allocate ( size_type bytes )
+void
+PinnedMemoryMgr :: onAllocate ( void * ptr, size_type size )
 {
-    pointer ret = baseMgr () -> allocate ( bytes );
-    if ( ret != nullptr ) // nullptr can happen if bytes == 0
+    if ( ptr != nullptr )
     {
-        m_locker . lock ( ret, bytes );
+        m_locker . lock( ptr, size );
     }
-    return ret;
+}
+
+void
+PinnedMemoryMgr :: onDeallocate ( void * ptr, size_type size )
+{
+    if ( ptr != nullptr )
+    {
+        m_locker . unlock( ptr, size );
+    }
+}
+
+void *
+PinnedMemoryMgr :: reallocateUntracked( void * old_ptr, bytes_t old_size, bytes_t new_size )
+{
+    if ( old_ptr == nullptr )
+    {
+        return allocateUntracked ( new_size );
+    }
+    if ( new_size == 0 )
+    {
+        deallocateUntracked ( old_ptr, old_size );
+        return nullptr;
+    }
+
+    pointer new_ptr =  baseMgr () -> reallocateUntracked( old_ptr, old_size, new_size );
+    if ( old_ptr != new_ptr )
+    {   // unpin the old block
+        onDeallocate ( old_ptr, old_size );
+    }
+
+    if ( new_ptr != nullptr )
+    {   // pin the new block
+        onAllocate ( new_ptr, new_size );
+    }
+
+    return new_ptr;
 }
 
 PinnedMemoryMgr :: pointer
@@ -111,38 +145,18 @@ PinnedMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
         return allocate ( new_size );
     }
 
-    size_t old_size = baseMgr () -> getBlockSize ( old_ptr ); // will throw if bad block
-
-    pointer new_ptr =  baseMgr () -> reallocate ( old_ptr, new_size );
-    if ( old_ptr != new_ptr )
-    {   // unpin the old block
-        m_locker . unlock ( old_ptr, old_size );
+    size_t old_size = baseMgr () -> getBlockSize( old_ptr ); // will throw if bad block
+    if ( new_size == 0 )
+    {
+        deallocate ( old_ptr, old_size );
+        return nullptr;
     }
 
-    if ( new_ptr != nullptr )
-    {   // pin the new block
-        m_locker . lock ( new_ptr, new_size );
-    }
+    pointer new_ptr =  baseMgr () -> reallocate( old_ptr, new_size );
+
+    onDeallocate ( old_ptr, old_size );
+    onAllocate ( new_ptr, new_size );
 
     return new_ptr;
 }
 
-void
-PinnedMemoryMgr :: deallocate ( pointer ptr, size_type bytes ) noexcept
-{
-    if ( ptr == nullptr )
-    {
-        return;
-    }
-
-    try // this method is noexcept as required by the interface
-    {
-        size_t size = baseMgr () -> getBlockSize ( ptr ); // will throw if bad block
-        m_locker . unlock ( ptr, size );
-        baseMgr () -> deallocate ( ptr, size );
-    }
-    catch (...)
-    {
-        //TODO: log and ignore
-    }
-}

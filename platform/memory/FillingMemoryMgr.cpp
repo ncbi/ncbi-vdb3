@@ -54,15 +54,47 @@ FillingMemoryMgr :: ~FillingMemoryMgr()
 {
 }
 
-FillingMemoryMgr :: pointer
-FillingMemoryMgr :: allocate ( size_type bytes )
+void
+FillingMemoryMgr :: onAllocate ( void * ptr, size_type bytes )
 {
-    pointer ret = TrackingBypassMemoryManager :: allocate ( bytes );
-    if ( ret != nullptr ) // nullptr can happen if bytes == 0
+    if ( ptr != nullptr )
     {
-        memset( ret, int ( m_fillByte ), bytes );
+        memset( ptr, int ( m_fillByte ), bytes );
     }
-    return ret;
+}
+
+void
+FillingMemoryMgr :: onDeallocate ( void * ptr, size_type bytes )
+{
+    if ( ptr != nullptr )
+    {
+        memset( ptr, int ( m_trashByte ), bytes );
+    }
+}
+
+void *
+FillingMemoryMgr :: reallocateUntracked( void * old_ptr, bytes_t old_size, bytes_t new_size )
+{
+    if ( old_ptr == nullptr )
+    {
+        return allocateUntracked ( new_size );
+    }
+    if ( new_size == 0 )
+    {
+        deallocateUntracked ( old_ptr, old_size );
+        return nullptr;
+    }
+
+    // cannot not rely on the underlying manager's reallocate() since we need control over
+    // position and size of the block in order to fill/trash properly
+
+    // Always move the block since we need to trash the original block
+    // and by the time the underlying manager is done reallocating, the original block may be inaccessible.
+    void * new_ptr = allocateUntracked ( new_size );
+    memmove ( new_ptr, old_ptr, std :: min ( old_size, new_size ) );
+    deallocateUntracked ( old_ptr, old_size );
+
+    return new_ptr;
 }
 
 FillingMemoryMgr :: pointer
@@ -89,24 +121,7 @@ FillingMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
     pointer new_ptr = allocate ( new_size );
     memmove ( new_ptr, old_ptr, std :: min ( old_size, new_size ) );
     deallocate ( old_ptr, old_size );
+
     return new_ptr;
 }
 
-void
-FillingMemoryMgr :: deallocate ( pointer ptr, size_type bytes ) noexcept
-{
-    if ( ptr == nullptr )
-    {
-        return;
-    }
-
-    try
-    {   // getBlockSize() throws on an untracked block
-        memset( ptr, int ( m_trashByte ), getBlockSize ( ptr ) );
-    }
-    catch (...)
-    {
-    }
-
-    TrackingBypassMemoryManager :: deallocate ( ptr, bytes );
-}

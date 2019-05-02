@@ -102,7 +102,7 @@ protected:
          * Constructor.
          * @param p_mgr instance of memory manager to be used for deallocation
          */
-        Deleter ( MemoryMgr p_mgr, bytes_t p_size ) : m_mgr ( p_mgr ), m_size ( p_size ) {}
+        Deleter ( MemoryMgr p_mgr, UniqueRawMemoryBlock & p_self ) : m_mgr ( p_mgr ), m_self ( p_self ) {}
 
         /**
          * Deallocate a memory block using its associated memory manager.
@@ -110,12 +110,12 @@ protected:
          */
         void operator() ( byte_t * p ) const
         {
-            m_mgr -> deallocateBlock ( p, m_size );
+            m_mgr -> deallocateUntracked ( p, m_self . size() );
         }
 
     private:
         MemoryMgr m_mgr; ///< the memory manager instance to be used for deallocation
-        size_t m_size;
+        UniqueRawMemoryBlock & m_self;
     };
 
     /**

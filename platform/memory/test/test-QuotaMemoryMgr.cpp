@@ -28,9 +28,13 @@
 
 #include <gtest/gtest.h>
 
+#include <memory/RawMemoryBlock.hpp>
+#include <memory/UniqueRawMemoryBlock.hpp>
+
 #include "MemoryManagerItf_Test.hpp"
 #include "TrackingMemoryManagerItf_Test.hpp"
 
+using namespace std;
 using namespace VDB3;
 
 // QuotaMemoryMgr
@@ -174,4 +178,48 @@ TEST ( QuotaMemoryMgr, Instantiate_realloc_quota_exceeded_extended )
     ASSERT_NO_THROW ( p = mgr . reallocate ( p, NewSize ) );
 
     mgr.deallocate( p, NewSize );
+}
+
+// functionality is not lost when using the VDB-facing (no tracking) API
+
+TEST ( QuotaMemoryMgr, Alloc_NoTracking )
+{
+    auto mgr = make_shared < TestQuotaMemoryMgr > ();
+
+    // block sizes are not tracked by the manager but quota is updated on allocation
+    RawMemoryBlock rmb ( mgr, 1 );  // uses mgr -> allocateNoTracking()
+
+    // is not tracked by mgr
+    ASSERT_THROW( mgr -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+
+    // quota updated
+    ASSERT_EQ ( rmb . size(), mgr -> total_used () );
+}
+
+TEST ( QuotaMemoryMgr, Dealloc_NoTracking )
+{
+    auto mgr = make_shared < TestQuotaMemoryMgr > ();
+
+    {
+        RawMemoryBlock rmb ( mgr, 1 );  // uses mgr -> allocateNoTracking()
+    }
+
+    // quota restored
+    ASSERT_EQ ( 0, mgr -> total_used () );
+}
+
+TEST ( QuotaMemoryMgr, Realloc_NoTracking )
+{
+    auto mgr = make_shared < TestQuotaMemoryMgr > ();
+
+    // block sizes are not tracked by the manager but quota is updated on reallocation
+    UniqueRawMemoryBlock rmb ( mgr, 2 ); // UniqueRawMemoryBlock is resizeable
+
+    // is not tracked by mgr
+    ASSERT_THROW( mgr -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+    ASSERT_EQ ( rmb . size(), mgr -> total_used () );
+    rmb . resize ( 100 );
+
+    // quota updated
+    ASSERT_EQ ( rmb . size(), mgr -> total_used () );
 }

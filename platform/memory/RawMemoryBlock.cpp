@@ -51,7 +51,7 @@ public:
      */
     void operator() ( byte_t * p ) const
     {
-        m_mgr -> deallocateBlock ( p, m_size );
+        m_mgr -> deallocateUntracked ( p, m_size );
     }
 
 private:
@@ -64,7 +64,7 @@ private:
 RawMemoryBlock :: RawMemoryBlock ( MemoryMgr p_mgr, bytes_t p_size )
 :   MemoryBlockItf ( p_mgr ),
     m_size ( p_size ),
-    m_ptr ( ( byte_t * ) p_mgr -> allocateBlock ( m_size ), Deleter( p_mgr, m_size ) )
+    m_ptr ( ( byte_t * ) p_mgr -> allocateUntracked ( m_size ), Deleter( p_mgr, m_size ) )
 {
 }
 

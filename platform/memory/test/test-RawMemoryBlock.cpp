@@ -117,5 +117,6 @@ TEST_F ( RawMemoryBlock_Fixture, NoTracking )
     {
         RawMemoryBlock rmb ( qmm, Size );
         ASSERT_THROW( tmm -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
+        //TODO: verify quota updated
     }
 }

@@ -70,13 +70,8 @@ public:
     byte_t trashByte () const { return m_trashByte; }
 
 public: // inherited from MemoryManagerItf
-    /**
-     * Allocate a block of given size and fill it with fill_byte
-     * @param bytes see MemoryManagerItf
-     * @return see MemoryManagerItf
-     * @exception see MemoryManagerItf
-     */
-    virtual pointer allocate ( size_type bytes );
+
+    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size );
 
     /**
      * Change the size of a block, possibly reallocating it. Any extra bytes will be filled with fill_byte.
@@ -91,12 +86,9 @@ public: // inherited from MemoryManagerItf
      */
     virtual pointer reallocate ( pointer ptr, size_type new_size );
 
-    /**
-     * Deallocate a block. Before deallocation the block will be filled with trash_byte.
-     * @param ptr see MemoryManagerItf
-     * @param bytes see MemoryManagerItf
-     */
-    virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
+protected:
+    virtual void onAllocate ( void * ptr, size_type bytes );
+    virtual void onDeallocate ( void * ptr, size_type bytes );
 
 private:
     byte_t m_fillByte;    ///< byte value to fill new blocks with

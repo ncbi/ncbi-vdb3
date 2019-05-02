@@ -72,17 +72,13 @@ public:
 
 public: // inherited from MemoryManagerItf
 
-    /**
-     * Allocate a non-swappable memory block.
-     * @param bytes see MemoryManagerItf
-     * @return see MemoryManagerItf
-     * @exception see MemoryManagerItf
-     */
-    virtual pointer allocate ( size_type bytes );
+    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size );
 
     virtual pointer reallocate ( pointer ptr, size_type new_size );
 
-    virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
+protected:
+    virtual void onAllocate ( void * ptr, size_type bytes );
+    virtual void onDeallocate ( void * ptr, size_type bytes );
 
 private:
     MemoryLockerItf &   m_locker; ///< memory locking object

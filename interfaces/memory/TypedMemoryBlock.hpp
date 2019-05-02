@@ -44,7 +44,7 @@ public:
     */
     template<typename... Args> TypedMemoryBlock( MemoryMgr p_mgr, const Args&& ... p_args )
     :   MemoryBlockItf ( p_mgr ),
-        m_ptr ( ( T * ) getMgr() -> allocateBlock ( sizeof ( T ) ), Deleter ( getMgr() ) )
+        m_ptr ( ( T * ) getMgr() -> allocateUntracked ( sizeof ( T ) ), Deleter ( getMgr() ) )
     {
         new ( m_ptr.get() ) T ( p_args ...);
     }
@@ -133,7 +133,7 @@ public:
             {
                 p -> ~T();
             }
-            m_mgr -> deallocateBlock ( p, sizeof ( T ) );
+            m_mgr -> deallocateUntracked ( p, sizeof ( T ) );
         }
 
     private:

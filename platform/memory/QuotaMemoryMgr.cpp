@@ -49,6 +49,18 @@ QuotaMemoryMgr :: ~QuotaMemoryMgr()
 {
 }
 
+void
+QuotaMemoryMgr :: onAllocate ( void * ptr, size_type bytes )
+{
+    m_used += bytes;
+}
+
+void
+QuotaMemoryMgr :: onDeallocate ( void * ptr, size_type bytes )
+{
+    m_used -= bytes;
+}
+
 QuotaMemoryMgr :: pointer
 QuotaMemoryMgr :: allocate ( size_type bytes )
 {
@@ -57,12 +69,38 @@ QuotaMemoryMgr :: allocate ( size_type bytes )
         handle_quota_update ( m_used + bytes - m_quota );
         // will not return if fails
     }
-    pointer ret = baseMgr () -> allocate ( bytes );
-    if ( ret != nullptr ) // nullptr can happen if bytes == 0
+    return TrackingBypassMemoryManager :: allocate ( bytes );
+}
+
+void *
+QuotaMemoryMgr :: reallocateUntracked ( void * old_ptr, size_type old_size, size_type new_size )
+{
+    if ( old_ptr == nullptr )
     {
-        m_used += bytes;
+        return allocateUntracked ( new_size );
     }
-    return ret;
+    if ( new_size == 0 )
+    {
+        deallocateUntracked ( old_ptr, old_size );
+        return nullptr;
+    }
+
+    if ( new_size > old_size )
+    {
+        size_type new_total = m_used + new_size - old_size;
+        if ( new_total > m_quota )
+        {
+            handle_quota_update ( new_total - m_quota );
+            // will not return if fails
+        }
+    }
+
+    pointer new_ptr = baseMgr () -> reallocateUntracked ( old_ptr, old_size, new_size );
+
+    onDeallocate ( old_ptr, old_size );
+    onAllocate ( new_ptr, new_size );
+
+    return new_ptr;
 }
 
 QuotaMemoryMgr :: pointer
@@ -74,6 +112,13 @@ QuotaMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
     }
 
     size_type old_size = getBlockSize ( old_ptr );
+
+    if ( new_size == 0 )
+    {
+        deallocate ( old_ptr, old_size );
+        return nullptr;
+    }
+
     if ( new_size > old_size )
     {
         size_type new_total = m_used + new_size - old_size;
@@ -86,28 +131,10 @@ QuotaMemoryMgr :: reallocate ( pointer old_ptr, size_type new_size )
 
     pointer new_ptr = baseMgr () -> reallocate ( old_ptr, new_size );
 
-    // discount the old block size
-    m_used -= old_size;
-
-    if ( new_ptr != nullptr ) // can be if new_size == 0
-    {
-        m_used += new_size;
-    }
+    onDeallocate ( old_ptr, old_size );
+    onAllocate ( new_ptr, new_size );
 
     return new_ptr;
-}
-
-void
-QuotaMemoryMgr :: deallocate ( pointer ptr, size_type bytes ) noexcept
-{
-    if ( ptr == nullptr )
-    {
-        return;
-    }
-
-    baseMgr () -> deallocate ( ptr, bytes );
-
-    m_used -= bytes;
 }
 
 void

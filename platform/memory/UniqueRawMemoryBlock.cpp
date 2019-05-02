@@ -36,7 +36,7 @@ using namespace VDB3;
 UniqueRawMemoryBlock :: UniqueRawMemoryBlock ( MemoryMgr p_mgr, bytes_t p_size )
 :   MemoryBlockItf ( p_mgr ),
     m_size ( p_size ),
-    m_ptr ( ( byte_t * ) p_mgr -> allocateBlock ( m_size ), Deleter ( p_mgr, p_size ) )
+    m_ptr ( ( byte_t * ) p_mgr -> allocateUntracked ( m_size ), Deleter ( p_mgr, * this ) )
 {
 }
 
@@ -66,6 +66,6 @@ void
 UniqueRawMemoryBlock :: resize ( bytes_t new_size )
 {
     byte_t * ptr = m_ptr . release ();
-    m_ptr . reset ( ( byte_t * ) getMgr() -> reallocateBlock ( ptr, size (), new_size ) );
+    m_ptr . reset ( ( byte_t * ) getMgr() -> reallocateUntracked ( ptr, size (), new_size ) );
     m_size = new_size;
 }

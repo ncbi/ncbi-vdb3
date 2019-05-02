@@ -42,9 +42,9 @@ public:
 
 public: // inherited from MemoryManagerItf
     // VDB3-facing API
-    virtual void * allocateBlock ( bytes_t bytes );
-    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size );
-    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept;
+    virtual void * allocateUntracked ( bytes_t bytes );
+    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateUntracked ( void * block, bytes_t size ) noexcept;
 
 public: // inherited from MemoryManagerItf
     // STL facing API

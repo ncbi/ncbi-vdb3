@@ -55,6 +55,10 @@ public:
      * @param size memory block's size in bytes
      */
     virtual void setBlockSize ( const_pointer ptr, size_type size ) = 0;
+
+protected:
+    virtual void onAllocate ( void * ptr, size_type bytes ) {} //TODO: make pure
+    virtual void onDeallocate ( void * ptr, size_type bytes ) {} //TODO: make pure
 };
 
 /**
@@ -74,9 +78,9 @@ public:
 public: // inherited from MemoryManagerItf
     // VDB3-facing API
     // calls to these methods are forwarded to the base manager, block sizes are not tracked
-    virtual void * allocateBlock ( bytes_t bytes );
-    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size );
-    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept;
+    virtual void * allocateUntracked ( bytes_t bytes );
+    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateUntracked ( void * block, bytes_t size ) noexcept;
 
 public: // inherited from MemoryManagerItf
     // STL facing API
@@ -122,9 +126,9 @@ public:
 public: // inherited from MemoryManagerItf
     // VDB3-facing API
     // calls to these methods are forwarded to the base manager, block sizes are not tracked
-    virtual void * allocateBlock ( bytes_t bytes );
-    virtual void * reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size );
-    virtual void deallocateBlock ( void * block, bytes_t size ) noexcept;
+    virtual void * allocateUntracked ( bytes_t bytes );
+    virtual void * reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size );
+    virtual void deallocateUntracked ( void * block, bytes_t size ) noexcept;
 
 public: // inherited from MemoryManagerItf
     // STL facing API

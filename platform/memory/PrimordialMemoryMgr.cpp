@@ -41,19 +41,19 @@ PrimordialMemoryMgr::~PrimordialMemoryMgr()
 }
 
 void *
-PrimordialMemoryMgr::allocateBlock ( bytes_t bytes )
+PrimordialMemoryMgr::allocateUntracked ( bytes_t bytes )
 {
     return allocate ( bytes );
 }
 
 void *
-PrimordialMemoryMgr::reallocateBlock ( void * block, bytes_t cur_size, bytes_t new_size )
+PrimordialMemoryMgr::reallocateUntracked ( void * block, bytes_t cur_size, bytes_t new_size )
 {
     return reallocate ( block, new_size );
 }
 
 void
-PrimordialMemoryMgr::deallocateBlock ( void * block, bytes_t size ) noexcept
+PrimordialMemoryMgr::deallocateUntracked ( void * block, bytes_t size ) noexcept
 {
     return deallocate ( block, size );
 }

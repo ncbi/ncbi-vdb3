@@ -98,34 +98,34 @@ TYPED_TEST_P ( TrackingMemoryManagerItf_Test, getBlockSize_postReallocate_To_Shr
 
 // Non-tracking operations
 
-TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateBlock_NoTracking)
+TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateUntracked_NoTracking)
 {
     TypeParam mgr;
-    void * p = mgr . allocateBlock ( SmallSize );
+    void * p = mgr . allocateUntracked ( SmallSize );
     ASSERT_THROW ( mgr . getBlockSize ( p ), std :: logic_error ); //TODO: use a VDB3 exception
 
-    mgr.deallocateBlock ( p, SmallSize );
+    mgr.deallocateUntracked ( p, SmallSize );
 }
 
-TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateBlock_reallocate)
-{   // reallocate() works only on tracked blocks, use reallocateBlock
+TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateUntracked_reallocate)
+{   // reallocate() works only on tracked blocks, use reallocateUntracked
     TypeParam mgr;
-    void * p = mgr . allocateBlock ( SmallSize );
+    void * p = mgr . allocateUntracked ( SmallSize );
     ASSERT_THROW ( mgr . reallocate ( p, SmallSize + 1 ), std :: logic_error ); //TODO: use a VDB3 exception
 
-    mgr.deallocateBlock ( p, SmallSize );
+    mgr.deallocateUntracked ( p, SmallSize );
 }
 
-TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateBlock_deallocate)
-{   // deallocate() works only on tracked blocks, use deallocateBlock
+TYPED_TEST_P ( TrackingMemoryManagerItf_Test, allocateUntracked_deallocate)
+{   // deallocate() works only on tracked blocks, use deallocateUntracked
     TypeParam mgr;
-    void * p = mgr . allocateBlock ( SmallSize );
+    void * p = mgr . allocateUntracked ( SmallSize );
 
     // deallocate() is noexcept, so its failure goes unnoticed
     mgr . deallocate ( p, SmallSize );
 
-    // still need to call deallocateBlock() to avoid memory leak
-    mgr.deallocateBlock ( p, SmallSize );
+    // still need to call deallocateUntracked() to avoid memory leak
+    mgr.deallocateUntracked ( p, SmallSize );
 }
 
 REGISTER_TYPED_TEST_SUITE_P(TrackingMemoryManagerItf_Test
@@ -135,8 +135,8 @@ REGISTER_TYPED_TEST_SUITE_P(TrackingMemoryManagerItf_Test
     , getBlockSize_postReallocate_To_0
     , getBlockSize_postReallocate_ToGrow
     , getBlockSize_postReallocate_To_Shrink
-    , allocateBlock_NoTracking
-    , allocateBlock_reallocate
-    , allocateBlock_deallocate
+    , allocateUntracked_NoTracking
+    , allocateUntracked_reallocate
+    , allocateUntracked_deallocate
 );
 

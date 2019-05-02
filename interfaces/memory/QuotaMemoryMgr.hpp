@@ -60,7 +60,11 @@ public: // inherited from MemoryManagerItf
 
     virtual pointer reallocate ( pointer ptr, size_type new_size );
 
-    virtual void deallocate ( pointer ptr, size_type bytes ) noexcept;
+    virtual pointer reallocateUntracked ( void * ptr, size_type old_size, size_type new_size );
+
+protected:
+    virtual void onAllocate ( void * ptr, size_type bytes );
+    virtual void onDeallocate ( void * ptr, size_type bytes );
 
 public:
     /**
