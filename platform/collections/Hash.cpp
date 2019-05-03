@@ -285,11 +285,6 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
     case 8: { // locality preserving for 64 bit ints
         uint64_t ll1;
         memcpy ( &ll1, s, sizeof ( ll1 ) );
-#if 0
-        uint64_t ll2;
-        ll2 = ( ll1 & 0xFCFFFFFFFFFFFFFCU );
-        hash ^= rotr ( ll2 * k1, 47 );
-#endif
         hash ^= rotr ( hash * k2, 31 );
         hash += ( ll1 << 1 );
         hash += ( ll1 >> 56 );
@@ -372,37 +367,16 @@ uint64_t Hash ( const char *s, size_t len ) noexcept
     }
     default: // Shouldn't be able to reach this
         __builtin_unreachable ();
-        break;
+        return 0;
     }
     __builtin_unreachable ();
+    return 0;
 }
 
 uint64_t Hash ( const std::string &str ) noexcept
 {
     return Hash ( str.data (), str.size () );
 }
-
-#if 0
-uint64_t Hash ( int i ) noexcept
-{
-    return Hash ( reinterpret_cast<const char *> ( &i ), sizeof ( i ) );
-}
-
-uint64_t Hash ( long int i ) noexcept
-{
-    return Hash ( reinterpret_cast<const char *> ( &i ), sizeof ( i ) );
-}
-
-uint64_t Hash ( unsigned long long l ) noexcept
-{
-    return Hash ( reinterpret_cast<const char *> ( &l ), sizeof ( l ) );
-}
-
-uint64_t Hash ( uint64_t l ) noexcept
-{
-    return Hash ( reinterpret_cast<const char *> ( &l ), sizeof ( l ) );
-}
-#endif
 
 uint64_t Hash ( float f ) noexcept
 {
