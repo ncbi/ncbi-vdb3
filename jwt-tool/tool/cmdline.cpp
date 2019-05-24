@@ -295,7 +295,7 @@ namespace ncbi
             NULTerminatedString zlong_name ( long_name );
             NULTerminatedString zparam_name ( param_name );
             
-            throw InvalidArgument (
+            throw LogicException (
                 XP ( XLOC )
                 << "option '--"
                 << zlong_name . c_str ()
@@ -550,7 +550,7 @@ namespace ncbi
     {
         if ( ( size_t ) mode -> required_params <= mode -> formal_params . size () )
         {
-            throw InvalidArgument (
+            throw LogicException (
                 XP ( XLOC )
                 << "optional param index already set to "
                 << mode -> required_params );
@@ -558,7 +558,7 @@ namespace ncbi
 
         if ( mode -> max_last_param != 0 )
         {
-            throw InvalidArgument (
+            throw LogicException (
                 XP ( XLOC )
                 << "last repeating params have already been set"
                 );
@@ -572,12 +572,12 @@ namespace ncbi
     {
         // there must be a max repeat count, even if it is max(U32)
         if ( max == 0 )
-            throw InvalidArgument ( XP ( XLOC ) << "invalid max count for repeating parameter: 0" );
+            throw LogicException ( XP ( XLOC ) << "invalid max count for repeating parameter: 0" );
 
         // min must be <= max
         if ( min > max )
         {
-            throw InvalidArgument (
+            throw LogicException (
                 XP ( XLOC )
                 << "invalid min count for repeating parameter: "
                 << min
@@ -587,7 +587,7 @@ namespace ncbi
         }
 
         if ( mode -> max_last_param != 0 )
-            throw InvalidArgument ( XP ( XLOC ) << "last parameter has already been set" );
+            throw LogicException ( XP ( XLOC ) << "last parameter has already been set" );
 
         // store the repeating positional parameter capture object
         Param * param = new RepeatingParam < T > ( value, name, help );
@@ -717,10 +717,10 @@ namespace ncbi
     {
         NULTerminatedString zcmd_name ( cmd_name );
         if ( zcmd_name . isEmpty () )
-            throw InvalidArgument ( XP ( XLOC ) << "empty command name" );
+            throw LogicException ( XP ( XLOC ) << "empty command name" );
 
         if ( mode -> trailing_command != 0 )
-            throw InvalidArgument ( XP ( XLOC ) << "attempt to add multiple trailing commands" );
+            throw LogicException ( XP ( XLOC ) << "attempt to add multiple trailing commands" );
 
         mode -> trailing_command = new Command ( args, cmd_name, help );
     }
@@ -761,7 +761,7 @@ namespace ncbi
         if ( i == modes . end () )
         {
             NULTerminatedString zname ( name );
-            throw InvalidArgument (
+            throw LogicException (
                 XP ( XLOC )
                 << "no known mode named '"
                 << zname . c_str ()
@@ -1546,7 +1546,7 @@ namespace ncbi
         if ( mode -> max_last_param != 0 )
         {
             NULTerminatedString zname ( param -> name );
-            throw InvalidArgument (
+            throw LogicException (
                 XP ( XLOC )
                 << "cannot add param '"
                 << zname . c_str ()
@@ -1561,10 +1561,10 @@ namespace ncbi
     void Cmdline :: addOption ( Option * opt )
     {
         if ( opt == 0 )
-            throw InvalidArgument ( XP ( XLOC ) <<  "attempt to add null formal option" );
+            throw LogicException ( XP ( XLOC ) <<  "attempt to add null formal option" );
 
         if ( opt -> long_name . isEmpty () && opt -> short_name . isEmpty () )
-            throw InvalidArgument ( XP ( XLOC ) << "attempt to add formal option with empty names" );
+            throw LogicException ( XP ( XLOC ) << "attempt to add formal option with empty names" );
 
         // attempt to insert into long name map
         if ( ! opt -> long_name . isEmpty () )
