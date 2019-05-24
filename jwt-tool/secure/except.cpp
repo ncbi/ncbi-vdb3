@@ -40,6 +40,7 @@
 #include <string.h>
 #include <errno.h>
 #include <execinfo.h>
+#include <cassert>
 
 namespace ncbi
 {
@@ -431,7 +432,7 @@ namespace ncbi
         if ( status < 0 )
             status = strlen ( strcpy ( buffer, "<BAD format() PARAMETERS>" ) );
 
-        else if ( status >= sizeof buffer )
+        else if ( ( size_t ) status >= sizeof buffer )
         {
             strcpy ( & buffer [ sizeof buffer - 4 ], "..." );
             status = sizeof buffer - 1;

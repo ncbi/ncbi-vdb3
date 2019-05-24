@@ -1801,16 +1801,16 @@ namespace ncbi
         xright = left + len;                  \
     } while ( 0 )
 
-#define STRING_IT_FIND_DECLARE_VARS_1( ... )  \
-    size_t pos;                               \
-    __VA_ARGS__;                              \
-    do {                                      \
-        if ( str == nullptr )                 \
-            return false;                     \
-        if ( len == 0 || idx >= cnt )         \
-            return false;                     \
-        left = idx;                           \
-        STRING_IT_FIND_CALC_VARS_1 ();        \
+#define STRING_IT_FIND_DECLARE_VARS_1( ... )      \
+    size_t pos;                                   \
+    __VA_ARGS__;                                  \
+    do {                                          \
+        if ( str == nullptr )                     \
+            return false;                         \
+        if ( len == 0 || ( count_t ) idx >= cnt ) \
+            return false;                         \
+        left = idx;                               \
+        STRING_IT_FIND_CALC_VARS_1 ();            \
     } while ( 0 )
 
 #define STRING_IT_FIND_CALC_VARS_2()          \
@@ -1822,18 +1822,18 @@ namespace ncbi
         assert ( left <= xright );            \
     } while ( 0 )
 
-#define STRING_IT_FIND_DECLARE_VARS_2( ... )  \
-    size_t pos;                               \
-    __VA_ARGS__;                              \
-    do {                                      \
-        DETECT_MISMATCHED_STRINGS ( xend );   \
-        if ( idx >= xend . idx )              \
-            return false;                     \
-        if ( xend . idx <= 0 || idx >= cnt )  \
-            return false;                     \
-        left = idx;                           \
-        xright = xend . idx;                  \
-        STRING_IT_FIND_CALC_VARS_2 ();        \
+#define STRING_IT_FIND_DECLARE_VARS_2( ... )             \
+    size_t pos;                                          \
+    __VA_ARGS__;                                         \
+    do {                                                 \
+        DETECT_MISMATCHED_STRINGS ( xend );              \
+        if ( idx >= xend . idx )                         \
+            return false;                                \
+        if ( xend . idx <= 0 || ( count_t ) idx >= cnt ) \
+            return false;                                \
+        left = idx;                                      \
+        xright = xend . idx;                             \
+        STRING_IT_FIND_CALC_VARS_2 ();                   \
     } while ( 0 )
     
 #define STRING_IT_FIND_DECLARE_VARS_3( meth, query, ... )    \

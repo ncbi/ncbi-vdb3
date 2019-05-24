@@ -29,6 +29,7 @@
 #include <ncbi/jwt.hpp>
 #include <ncbi/jws.hpp>
 
+#include <climits>
 #include <cassert>
 
 namespace ncbi

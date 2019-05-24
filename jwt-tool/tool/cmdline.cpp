@@ -26,10 +26,10 @@
  *
  */
 
-#pragma once
-
 #define __STDC_LIMIT_MACROS 1
 #include <stdint.h>
+
+#include <ncbi/secure/except.hpp>
 
 #include "cmdline.hpp"
 
@@ -46,6 +46,9 @@
 #define environ (*_NSGetEnviron())
 #endif
 
+#define TRACE( lvl, ... ) /* ignore */
+int dbg_trace_level = 0;
+
 namespace ncbi
 {
     template < class T >
@@ -59,7 +62,12 @@ namespace ncbi
             if ( ( ( const unsigned char * ) cstr1 ) [ i ] !=
                  :: tolower ( ( ( const unsigned char * ) cstr2 ) [ i ] ) )
             {
-                throw Exception ( rc_param_err, "expected boolean value but found '%s'", cstr2 );
+                throw InvalidArgument (
+                    XP ( XLOC )
+                    << "expected boolean value but found '"
+                    << cstr2
+                    << "'"
+                    );
             }
         }
         return val;
@@ -68,7 +76,8 @@ namespace ncbi
     template < >
     void convertString < bool > ( bool & value, const String & text )
     {
-        const char * cstr2 = text . c_str ();
+        NULTerminatedString ztext ( text );
+        const char * cstr2 = ztext . c_str ();
         switch ( :: tolower ( ( ( const unsigned char * ) cstr2 ) [ 0 ] ) )
         {
         case 't':
@@ -90,7 +99,12 @@ namespace ncbi
             value = prefix_compare ( "0", cstr2, false );
             break;
         default:
-            throw Exception ( rc_param_err, "expected boolean value but found '%s'", cstr2 );
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "expected boolean value but found '"
+                << cstr2
+                << "'"
+                );
         }
     }
 
@@ -98,12 +112,28 @@ namespace ncbi
     void convertString < I32 > ( I32 & value, const String & text )
     {
         char * end;
-        const char * start = text . c_str ();
+        NULTerminatedString ztext ( text );
+        const char * start = ztext . c_str ();
         I64 i64 = :: strtol ( start, & end, 0 );
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
-            throw Exception ( rc_param_err, "expected integer value but found '%s'", start );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "expected integer value but found '"
+                << start
+                << "'"
+                );
+        }
+
         if ( i64 > INT32_MAX || i64 < INT32_MIN )
-            throw Exception ( rc_param_err, "integer value exceeds 32-bit bounds: %ld", i64 );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "integer value exceeds 32-bit bounds: "
+                << i64
+                );
+        }
+
         value = ( I32 ) i64;
     }
 
@@ -111,12 +141,27 @@ namespace ncbi
     void convertString < U32 > ( U32 & value, const String & text )
     {
         char * end;
-        const char * start = text . c_str ();
+        NULTerminatedString ztext ( text );
+        const char * start = ztext . c_str ();
         U64 u64 = :: strtoul ( start, & end, 0 );
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
-            throw Exception ( rc_param_err, "expected natural integer value but found '%s'", start );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "expected natural integer value but found '"
+                << start
+                << "'"
+                );
+        }
+        
         if ( u64 > UINT32_MAX )
-            throw Exception ( rc_param_err, "natural integer value exceeds 32-bit bounds: %lu", u64 );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "natural integer value exceeds 32-bit bounds: "
+                << u64
+                );
+        }
         value = ( U32 ) u64;
     }
 
@@ -124,37 +169,62 @@ namespace ncbi
     void convertString < I64 > ( I64 & value, const String & text )
     {
         char * end;
-        const char * start = text . c_str ();
+        NULTerminatedString ztext ( text );
+        const char * start = ztext . c_str ();
         value = :: strtol ( start, & end, 0 );
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
-            throw Exception ( rc_param_err, "expected integer value but found '%s'", start );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "expected integer value but found '"
+                << start
+                << "'"
+                );
+        }
     }
 
     template < >
     void convertString < U64 > ( U64 & value, const String & text )
     {
         char * end;
-        const char * start = text . c_str ();
+        NULTerminatedString ztext ( text );
+        const char * start = ztext . c_str ();
         value = :: strtoul ( start, & end, 0 );
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
-            throw Exception ( rc_param_err, "expected natural integer value but found '%s'", start );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "expected natural integer value but found '"
+                << start
+                << "'"
+                );
+        }
     }
 
     template < >
     void convertString < F64 > ( F64 & value, const String & text )
     {
         char * end;
-        const char * start = text . c_str ();
+        NULTerminatedString ztext ( text );
+        const char * start = ztext . c_str ();
         value = :: strtod ( start, & end );
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
-            throw Exception ( rc_param_err, "expected real value but found '%s'", start );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "expected real value but found '"
+                << start
+                << "'"
+                );
+        }
 #pragma message "TBD - check for NaN, INF, etc."
     }
 
     template < >
     void convertString < String > ( String & value, const String & text )
     {
-        value . assign ( text );
+        value = text;
+        //value . assign ( text );
     }
 
     Cmdline :: Param :: Param ( const String & _name, const String & _help )
@@ -221,7 +291,19 @@ namespace ncbi
     void Cmdline :: Option :: addParamName ( const String & param_name, char _separator )
     {
         if ( separator != 0 )
-            throw Exception ( rc_logic_err, "option '--%s' cannot accept parameter '%s': already a list", long_name . c_str (), param_name . c_str () );
+        {
+            NULTerminatedString zlong_name ( long_name );
+            NULTerminatedString zparam_name ( param_name );
+            
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "option '--"
+                << zlong_name . c_str ()
+                << "' cannot accept parameter '"
+                << zparam_name . c_str ()
+                << "': already a list"
+                );
+        }
         param_names . push_back ( param_name );
         separator = _separator;
     }
@@ -321,7 +403,16 @@ namespace ncbi
         {
             U32 count = ( U32 ) list . size ();
             if ( count >= max )
-                throw Exception ( rc_param_err, "count for list option '--%s' exceeds maximum of %u", long_name . c_str (), max );
+            {
+                NULTerminatedString zlong_name ( long_name );
+                throw InvalidArgument (
+                    XP ( XLOC )
+                    << "count for list option '--"
+                    << zlong_name . c_str ()
+                    << "' exceeds maximum of "
+                    << max
+                    );
+            }
 
             T elem;
             convertString ( elem, text );
@@ -341,14 +432,14 @@ namespace ncbi
 
                 if ( sep != 0 )
                 {
-                    elem = text . substr ( start, sep - start );
+                    elem = text . subString ( start, sep - start );
                     handleElement ( elem );
                 }
 
                 start = sep + 1;
             }
 
-            elem = text . substr ( start );
+            elem = text . subString ( start );
             handleElement ( elem );
         }
 
@@ -458,10 +549,20 @@ namespace ncbi
     void Cmdline :: startOptionalParams ()
     {
         if ( ( size_t ) mode -> required_params <= mode -> formal_params . size () )
-            throw Exception ( rc_logic_err, "optional param index already set to %u", mode -> required_params );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "optional param index already set to "
+                << mode -> required_params );
+        }
 
         if ( mode -> max_last_param != 0 )
-            throw Exception ( rc_logic_err, "last repeating params have already been set" );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "last repeating params have already been set"
+                );
+        }
 
         mode -> required_params = ( U32 ) mode -> formal_params . size ();
     }
@@ -471,14 +572,22 @@ namespace ncbi
     {
         // there must be a max repeat count, even if it is max(U32)
         if ( max == 0 )
-            throw Exception ( rc_logic_err, "invalid max count for repeating parameter: 0" );
+            throw InvalidArgument ( XP ( XLOC ) << "invalid max count for repeating parameter: 0" );
 
         // min must be <= max
         if ( min > max )
-            throw Exception ( rc_logic_err, "invalid min count for repeating parameter: %u > %u", min, max );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "invalid min count for repeating parameter: "
+                << min
+                << ">"
+                << max
+                );
+        }
 
         if ( mode -> max_last_param != 0 )
-            throw Exception ( rc_logic_err, "last parameter has already been set" );
+            throw InvalidArgument ( XP ( XLOC ) << "last parameter has already been set" );
 
         // store the repeating positional parameter capture object
         Param * param = new RepeatingParam < T > ( value, name, help );
@@ -606,11 +715,12 @@ namespace ncbi
     void Cmdline :: addTrailingCmd ( std :: vector < String > & args,
         const String & cmd_name, const String & help )
     {
-        if ( cmd_name . empty () )
-            throw Exception ( rc_logic_err, "empty command name" );
+        NULTerminatedString zcmd_name ( cmd_name );
+        if ( zcmd_name . isEmpty () )
+            throw InvalidArgument ( XP ( XLOC ) << "empty command name" );
 
         if ( mode -> trailing_command != 0 )
-            throw Exception ( rc_logic_err, "attempt to add multiple trailing commands" );
+            throw InvalidArgument ( XP ( XLOC ) << "attempt to add multiple trailing commands" );
 
         mode -> trailing_command = new Command ( args, cmd_name, help );
     }
@@ -649,7 +759,15 @@ namespace ncbi
         std :: map < String, Mode * > :: const_iterator i
             = modes . find ( name );
         if ( i == modes . end () )
-            throw Exception ( rc_logic_err, "no known mode named '%s'", name . c_str () );
+        {
+            NULTerminatedString zname ( name );
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "no known mode named '"
+                << zname . c_str ()
+                << "'"
+                );
+        }
         mode = i -> second;
     }
 
@@ -750,7 +868,7 @@ namespace ncbi
             if ( mode_name . compare ( argv [ 1 ] ) != 0 )
             {
                 TRACE ( TRACE_GEEK, "mode param should be '%s'!!! - correcting!!!\n", argv [ 1 ] );
-                mode_name . assign ( argv [ 1 ] );
+                mode_name = argv [ 1 ];
             }
 
             TRACE ( TRACE_GEEK, "looking for mode '%s'\n", mode_name . c_str () );
@@ -765,7 +883,13 @@ namespace ncbi
                     exit ( 0 );
                 }
 
-                throw Exception ( rc_param_err, "unrecognized keyword: '%s'", mode_name . c_str () );
+                NULTerminatedString zmode_name ( mode_name );
+                throw InvalidArgument (
+                    XP ( XLOC )
+                    << "unrecognized keyword: '"
+                    << zmode_name . c_str ()
+                    << "'"
+                    );
             }
 
             mode = i -> second;
@@ -795,7 +919,16 @@ namespace ncbi
                     continue;
 
                 if ( num_params >= max_params )
-                    throw Exception ( rc_param_err, "unexpected parameter[%u]: '%s'", num_params, arg );
+                {
+                    throw InvalidArgument (
+                        XP ( XLOC )
+                        << "unexpected parameter["
+                        << num_params
+                        << "]: '"
+                        << arg
+                        << "'"
+                        );
+                }
 
                 // this is taken as a positional parameter
                 Param * param;
@@ -840,7 +973,14 @@ namespace ncbi
                     std :: map < String, Option * > :: const_iterator i
                         = mode -> long_opt_map . find ( & arg [ 2 ] );
                     if ( i == mode -> long_opt_map . end () )
-                        throw Exception ( rc_param_err, "unrecognized option: '%s'", arg );
+                    {
+                        throw InvalidArgument (
+                            XP ( XLOC )
+                            << "unrecognized option: '"
+                            << arg
+                            << "'"
+                            );
+                    }
 
                     // call the option handler
                     Option * opt = i -> second;
@@ -906,7 +1046,14 @@ namespace ncbi
 
                     // if short name was not found, blow exception
                     if ( ! found )
-                        throw Exception ( rc_param_err, "unrecognized option: '-%s'", arg );
+                    {
+                        throw InvalidArgument (
+                            XP ( XLOC )
+                            << "unrecognized option: '-"
+                            << arg
+                            << "'"
+                            );
+                    }
                 }
                 while ( arg [ 0 ] != 0 );
             }
@@ -914,10 +1061,15 @@ namespace ncbi
 
         // our only check is for the minimum number of parameters
         if ( ! pre_parse && num_params < mode -> required_params )
-            throw Exception ( rc_param_err, "insufficient parameters: expected %u but observed %u"
-                              , mode -> required_params
-                              , num_params
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "insufficient parameters: expected "
+                << mode -> required_params
+                << "but observed "
+                << num_params
                 );
+        }
     }
 
     String Cmdline :: nextArg ()
@@ -929,7 +1081,7 @@ namespace ncbi
         if ( val [ 0 ] == 0 )
         {
             if ( ++ argx == argc )
-                throw Exception ( rc_param_err, "incomplete command line - expected parameter" );
+                throw InvalidArgument ( XP ( XLOC ) << "incomplete command line - expected parameter" );
 
             val = argv [ argx ];
             TRACE ( TRACE_USR, "argx is %u, param is '%s'\n", argx, val );
@@ -954,11 +1106,11 @@ namespace ncbi
             if ( sep == String :: npos )
                 break;
             std :: cout
-                << help_str . substr ( 0, sep )
+                << help_str . subString ( 0, sep )
                 << '\n'
                 ;
                         
-            help_str = help_str . substr ( sep + 1 );
+            help_str = help_str . subString ( sep + 1 );
             help_width = right_edge - help_start - 2;
 
             std :: cout . fill ( ' ' );
@@ -1141,7 +1293,7 @@ namespace ncbi
             {
                 size_t chars = 2;
                 Option * opt = mode -> formal_opts [ i ];
-                if ( opt -> short_name . empty () )
+                if ( opt -> short_name . isEmpty () )
                 {
                     std :: cout . fill ( ' ' );
                     std :: cout . width ( short_name_field_width );
@@ -1153,7 +1305,7 @@ namespace ncbi
                         ;
                     chars += short_name_field_width + opt -> long_name . size () + 2;
                 }
-                else if ( opt -> long_name . empty () )
+                else if ( opt -> long_name . isEmpty () )
                 {
                     std :: cout
                         << "  -"
@@ -1309,7 +1461,7 @@ namespace ncbi
             << '"'
             ;
 
-        if ( ! vers . empty () )
+        if ( ! vers . isEmpty () )
         {
             std :: cout
                 << " version "
@@ -1332,9 +1484,15 @@ namespace ncbi
         , num_params ( 0 )
     {
         if ( _argc <= 0 )
-            throw Exception ( rc_param_err, "illegal argument count - %d", _argc );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "illegal argument count - "
+                << _argc
+                );
+        }
         if ( argv == 0 )
-            throw Exception ( rc_param_err, "null argument vector" );
+            throw InvalidArgument ( XP ( XLOC ) << "null argument vector" );
     }
 
     Cmdline :: Cmdline ( int _argc, char * _argv [], const String & _vers )
@@ -1347,9 +1505,15 @@ namespace ncbi
         , num_params ( 0 )
     {
         if ( _argc <= 0 )
-            throw Exception ( rc_param_err, "illegal argument count - %d", _argc );
+        {
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "illegal argument count - "
+                << _argc
+                );
+        }
         if ( argv == 0 )
-            throw Exception ( rc_param_err, "null argument vector" );
+            throw InvalidArgument ( XP ( XLOC ) << "null argument vector" );
     }
 
     Cmdline :: ~ Cmdline ()
@@ -1376,11 +1540,19 @@ namespace ncbi
     void Cmdline :: addParam ( Param * param )
     {
         if ( param == 0 )
-            throw Exception ( rc_logic_err, "attempt to add null formal parameter" );
+            throw LogicException ( XP ( XLOC ) <<  "attempt to add null formal parameter" );
 
         // if any repeating param has been set, it's last
         if ( mode -> max_last_param != 0 )
-            throw Exception ( rc_logic_err, "cannot add param '%s' after repeating parameter", param -> name . c_str () );
+        {
+            NULTerminatedString zname ( param -> name );
+            throw InvalidArgument (
+                XP ( XLOC )
+                << "cannot add param '"
+                << zname . c_str ()
+                << "' after repeating parameter"
+                );
+        }
 
         // store the repeating positional parameter capture object
         mode -> formal_params . push_back ( param );
@@ -1389,29 +1561,45 @@ namespace ncbi
     void Cmdline :: addOption ( Option * opt )
     {
         if ( opt == 0 )
-            throw Exception ( rc_logic_err, "attempt to add null formal option" );
+            throw InvalidArgument ( XP ( XLOC ) <<  "attempt to add null formal option" );
 
-        if ( opt -> long_name . empty () && opt -> short_name . empty () )
-            throw Exception ( rc_logic_err, "attempt to add formal option with empty names" );
+        if ( opt -> long_name . isEmpty () && opt -> short_name . isEmpty () )
+            throw InvalidArgument ( XP ( XLOC ) << "attempt to add formal option with empty names" );
 
         // attempt to insert into long name map
-        if ( ! opt -> long_name . empty () )
+        if ( ! opt -> long_name . isEmpty () )
         {
             std :: pair < String, Option * > long_pair ( opt -> long_name, opt );
             std :: pair < std :: map < String, Option * > :: iterator, bool > long_found
                 = mode -> long_opt_map . insert ( long_pair );
             if ( ! long_found . second )
-                throw Exception ( rc_logic_err, "formal option '--%s' already exists", opt -> long_name . c_str () );
+            {
+                NULTerminatedString zlong_name ( opt -> long_name );
+                throw LogicException (
+                    XP ( XLOC )
+                    <<  "formal option '--"
+                    << zlong_name . c_str ()
+                    << "' already exists"
+                    );
+            }
         }
 
-        if ( ! opt -> short_name . empty () )
+        if ( ! opt -> short_name . isEmpty () )
         {
             // attempt to insert into short name map
             std :: pair < String, Option * > short_pair ( opt -> short_name, opt );
             std :: pair < std :: map < String, Option * > :: iterator, bool > short_found
                 = mode -> short_opt_map . insert ( short_pair );
             if ( ! short_found . second )
-                throw Exception ( rc_logic_err, "formal option '-%s' already exists", opt -> short_name . c_str () );
+            {
+                NULTerminatedString zshort_name ( opt -> short_name );
+                throw LogicException (
+                    XP ( XLOC )
+                    <<  "formal option '-"
+                    << zshort_name . c_str ()
+                    << "' already exists"
+                    );
+            }
 
             // test to see if short name is confusable with any other by prefix
             const String & oshort = opt -> short_name;
@@ -1420,17 +1608,39 @@ namespace ncbi
             {
                 const Option * prior = mode -> formal_opts [ i ];
                 const String & pshort = prior -> short_name;
-                if ( pshort . empty () )
+                if ( pshort . isEmpty () )
                     continue;
                 if ( pshort . size () < oshort . size () )
                 {
                     if ( memcmp ( pshort . data (), oshort . data (), pshort . size () ) == 0 )
-                        throw Exception ( rc_logic_err, "formal option '-%s' conflicts with '-%s'", oshort . c_str (), pshort . c_str () );
+                    {
+                        NULTerminatedString zoshort ( oshort );
+                        NULTerminatedString zpshort ( pshort );
+                        throw LogicException (
+                            XP ( XLOC )
+                            << "formal option '-"
+                            << zoshort . c_str ()
+                            << "' conflicts with '-"
+                            << zpshort . c_str ()
+                            << "'"
+                            );
+                    }
                 }
                 else
                 {
                     if ( memcmp ( pshort . data (), oshort . data (), oshort . size () ) == 0 )
-                        throw Exception ( rc_logic_err, "formal option '-%s' conflicts with '-%s'", oshort . c_str (), pshort . c_str () );
+                    {
+                        NULTerminatedString zoshort ( oshort );
+                        NULTerminatedString zpshort ( pshort );
+                        throw LogicException (
+                            XP ( XLOC )
+                            << "formal option '-"
+                            << zoshort . c_str ()
+                            << "' conflicts with '-"
+                            << zpshort . c_str ()
+                            << "'"
+                            );
+                    }
                 }
             }
         }
@@ -1476,7 +1686,16 @@ namespace ncbi
         {
             U32 count = ( U32 ) list . size ();
             if ( count >= max )
-                throw Exception ( rc_param_err, "count for list variable '%s' exceeds maximum of %u", name . c_str (), max );
+            {
+                NULTerminatedString zname ( name );
+                throw InvalidArgument (
+                    XP ( XLOC )
+                    << "count for list variable '"
+                    << zname . c_str ()
+                    << "' exceeds maximum of "
+                    << max
+                    );
+            }
 
             T elem;
             convertString ( elem, text );
@@ -1642,17 +1861,25 @@ namespace ncbi
     void EnvImport :: addParam ( Import * import )
     {
         if ( import == 0 )
-            throw Exception ( rc_logic_err, "attempt to add null env param" );
+            throw LogicException ( XP ( XLOC ) << "attempt to add null env param" );
 
-        if ( import -> name . empty () )
-            throw Exception ( rc_logic_err, "attempt to add env param with empty name" );
+        if ( import -> name . isEmpty () )
+            throw LogicException ( XP ( XLOC ) << "attempt to add env param with empty name" );
 
         // attempt to insert into name map
         std :: pair < String, Import * > pair ( import -> name, import );
         std :: pair < std :: map < String, Import * > :: iterator, bool > found
                 = name_map . insert ( pair );
         if ( ! found . second )
-            throw Exception ( rc_logic_err, "env param '%s' already exists", import -> name . c_str () );
+        {
+            NULTerminatedString zname ( import -> name );
+            throw LogicException (
+                XP ( XLOC )
+                << "env param '"
+                << zname . c_str ()
+                << "' already exists"
+                );
+        }
 
         // accept it
         imports . push_back ( import );

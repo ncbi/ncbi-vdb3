@@ -35,6 +35,9 @@
 
 #include <sys/time.h>
 #include <ctype.h>
+#include <cassert>
+
+#include <string.h>
 
 namespace ncbi
 {

@@ -32,9 +32,11 @@
 
 #include <ncbi/secure/base64.hpp>
 
+#include <climits>
 #include <cassert>
 
 #include <sys/time.h>
+#include <string.h>
 
 namespace ncbi
 {

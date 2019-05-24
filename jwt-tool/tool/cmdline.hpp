@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <ncbi/secure/except.hpp>
 #include <ncbi/secure/string.hpp>
 
 #include <vector>
@@ -167,5 +168,10 @@ namespace ncbi
 
         U32 num_params;
     };
+
+    /*=====================================================*
+     *                     EXCEPTIONS                      *
+     *=====================================================*/
+
 
 }

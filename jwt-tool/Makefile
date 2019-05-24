@@ -10,7 +10,10 @@ ALL_LIBS =      \
 	ncbi-jwt    \
 #	ncbi-token  \
 
-all: $(ALL_LIBS)
+ALL_TOOLS =     \
+	jwt-tool
+
+all: $(ALL_LIBS) $(ALL_TOOLS)
 
 fuzz: ncbi-oauth-fuzz
 
@@ -29,11 +32,13 @@ ifeq (Darwin, $(UNAME))
 	OS = mac
 	CFLAGS += -DMAC -DBSD -DUNIX
 	UUIDLIB =
+	PTHREADLIB =
 endif
 ifeq (Linux, $(UNAME))
 	OS = linux
 	CFLAGS += -DLINUX -DUNIX
 	UUIDLIB = -luuid
+	PTHREADLIB = -lpthread
 endif
 
 # only for Linux and MacOS
@@ -186,6 +191,16 @@ $(OBJDIR)/%.tst.dbg.$(LOBX): token/%.cpp
 $(OBJDIR)/%.dbg.$(OBJX): ncbi-oauth-test/%.cpp
 	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Incbi-oauth-test -Iinc -Igoogletest/googletest/include -MD -Wall
 
+$(OBJDIR)/%.dbg.$(OBJX): tool/%.cpp
+	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Itool -Iinc -Igoogletest/googletest/include -MD -Wall
+$(OBJDIR)/%.tst.dbg.$(OBJX): tool/%.cpp
+	$(GPP) -g -c $< -DJWT_TOOL_TESTING -o $@ $(CFLAGS) -D_DEBUGGING -Itool -Iinc -MD -Wall
+
+$(OBJDIR)/%.rel.$(OBJX): tool/%.cpp
+	$(GPP) -O3 -c $< -o $@ $(CFLAGS) -Itool -Iinc -Igoogletest/googletest/include -MD -Wall
+$(OBJDIR)/%.tst.rel.$(OBJX): tool/%.cpp
+	$(GPP) -O3 -c $< -DJWT_TOOL_TESTING -o $@ $(CFLAGS) -Itool -Iinc -MD -Wall
+
 # include dependencies
 include $(wildcard $(OBJDIR)/*.d)
 
@@ -237,7 +252,9 @@ TESTLIBS =       \
 	-lmbedcrypto \
 	-lmbedx509   \
 	-lmbedtls    \
-	-lutf8proc
+	-lutf8proc   \
+	$(UUIDLIB)   \
+	$(PTHREADLIB)
 
 ## ncbi-secure
 LIBSECSRC =      \
@@ -652,6 +669,60 @@ ncbi-token: $(LIBDIR) $(LIBDIR)/libncbi-token.a
 $(LIBDIR)/libncbi-token.a: $(OBJDIR) $(LIBTOKOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBTOKOBJ)
 
+## jwt-tool
+JWTTOOLSRC =            \
+	cmdline
+
+JWTTOOLDBGOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWTTOOLSRC)))
+
+JWTTOOLRELOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(OBJX),$(JWTTOOLSRC)))
+
+jwt-tool: $(BINDIR) $(BINDIR)/jwt-tool-dbg $(BINDIR)/jwt-tool-rel
+
+JWTTOOLTESTS =                        \
+	$(TSTDIR)/jwt-tool-test.passed    \
+
+$(BINDIR)/jwt-tool-dbg: $(OBJDIR) $(JWTTOOLDBGOBJ) $(MAKEFILE)
+	$(GPP) -g -o $@ $(JWTTOOLDBGOBJ)
+
+$(BINDIR)/jwt-tool-rel: $(OBJDIR) $(JWTTOOLRELOBJ) $(MAKEFILE)
+	$(GPP) -O3 -o $@ $(JWTTOOLRELOBJ)
+
+JWT_TSTSRC =  \
+	gtest-all
+
+JWT_TSTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWT_TSTSRC)))
+
+JWTTESTDEPLIBS =                   \
+	$(TESTDEPLIBS)                 \
+	$(LIBDIR)/libncbi-secure-dbg.a \
+	$(LIBDIR)/libncbi-json-dbg.a   \
+	$(LIBDIR)/libncbi-jwa-dbg.a    \
+	$(LIBDIR)/libncbi-jwk-dbg.a    \
+	$(LIBDIR)/libncbi-jws-dbg.a    \
+	$(LIBDIR)/libncbi-jwe-dbg.a    \
+	$(LIBDIR)/libncbi-jwt-dbg.a
+
+JWTTESTLIBS =         \
+	-L$(LIBDIR)       \
+	-lncbi-jwt-dbg    \
+	-lncbi-jwe-dbg    \
+	-lncbi-jws-dbg    \
+	-lncbi-jwk-dbg    \
+	-lncbi-jwa-dbg    \
+	-lncbi-json-dbg   \
+	-lncbi-secure-dbg \
+	$(TESTLIBS)
+
+$(TSTDIR)/jwt-tool-test: $(TSTDIR) $(OBJDIR) $(JWTTESTDEPLIBS) $(JWT_TSTOBJ) $(MAKEFILE)
+	$(GPP) -g -o $@ $(JWT_TSTOBJ) $(JWTTESTLIBS)
+
+$(TSTDIR)/jwt-tool-test.passed: $(TSTDIR)/jwt-tool-test
+	$< > $<.result && touch $@ || ( cat $<.result && false )
+
 ## ncbi-oauth-fuzz
 #
 # requires clang 7
@@ -698,4 +769,4 @@ clean:
 	$(MAKE) -C utf8proc clean
 	$(MAKE) -C mbedtls clean
 
-.PHONY: default all ncbi-json ncbi-jwt ncbi-token mbedtls utf8proc
+.PHONY: default all ncbi-json ncbi-jwt ncbi-token jwt-tool mbedtls utf8proc
