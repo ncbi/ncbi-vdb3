@@ -32,6 +32,7 @@
 #include <ncbi/secure/except.hpp>
 
 #include "cmdline.hpp"
+#include "env.hpp"
 
 #include <iostream>
 
