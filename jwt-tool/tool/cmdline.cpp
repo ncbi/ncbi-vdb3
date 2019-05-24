@@ -1713,12 +1713,12 @@ namespace ncbi
                 if ( sep == String :: npos )
                     break;
 
-                elem = text . substr ( start, sep - start );
+                elem = text . subString ( start, sep - start );
                 handleElement ( elem );
                 start = sep + 1;
             }
 
-            elem = text . substr ( start );
+            elem = text . subString ( start );
             handleElement ( elem );
         }
 
