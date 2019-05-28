@@ -26,6 +26,9 @@
  *
  */
 
+#include "cmdline.hpp"
+#include "logging.hpp"
+
 namespace ncbi
 {
         struct ParamBlock
