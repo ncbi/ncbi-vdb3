@@ -671,8 +671,13 @@ $(LIBDIR)/libncbi-token.a: $(OBJDIR) $(LIBTOKOBJ) $(MAKEFILE)
 
 ## jwt-tool
 JWTTOOLSRC =            \
+	main                \
 	env                 \
-	cmdline
+	cmdline             \
+	log                 \
+	log-local           \
+	logger              \
+	fmt
 
 JWTTOOLDBGOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWTTOOLSRC)))
