@@ -26,6 +26,8 @@
  *
  */
 
+#include <ncbi/secure/except.hpp>
+
 #include "env.hpp"
 
 #include <unistd.h>
@@ -38,6 +40,8 @@
 #include <crt_externs.h>
 #define environ (*_NSGetEnviron())
 #endif
+
+#define TRACE( lvl, ... ) /* ignore */
 
 namespace ncbi
 {
@@ -73,7 +77,7 @@ namespace ncbi
                     , name . c_str ()
                     , result . first -> second . c_str ()
                 );
-            result . first -> second . assign ( val );
+            result . first -> second = val;
         }
     }
 
@@ -96,8 +100,10 @@ namespace ncbi
                     , name . c_str ()
                     , result . first -> second . c_str ()
                 );
-            result . first -> second . append ( 1, sep );
-            result . first -> second . append ( val );
+
+            StringBuffer newVal;
+            newVal . append ( result . first -> second ) . append ( sep ) . append ( val );
+            result . first -> second = newVal . stealString ();
         }
     }
 
@@ -143,7 +149,10 @@ namespace ncbi
     {
         size_t bytes = prefix . size () + name . size () + val . size () + 2;
         slot = new char [ bytes ];
-        snprintf ( slot, bytes, "%s%s=%s", prefix . c_str (), name . c_str (), val . c_str () );
+        snprintf ( slot, bytes, "%s%s=%s",
+                   NULTerminatedString ( prefix  ) . c_str (),
+                   NULTerminatedString ( name ) . c_str (),
+                   NULTerminatedString ( val ) . c_str () );
     }
 
     static
@@ -152,8 +161,10 @@ namespace ncbi
         if ( env -> dad != 0 )
         {
             make_prefix ( prefix, env -> dad );
-            prefix . append ( env -> scope );
-            prefix . append ( 1, '_' );
+
+            StringBuffer newVal;
+            newVal . append ( prefix ) . append ( env -> scope ) . append ( '_' );
+            prefix = newVal . stealString ();
         }
     }
 
@@ -163,11 +174,13 @@ namespace ncbi
         size_t cnt = count ();
         if ( cnt >= size )
         {
+#if log_avail            
             log . msg ( LOG_ERR )
                 << "ERROR: insufficient environment slots"
                 << endm
                 ;
-            throw rc_logic_err;
+            throw LogicException ( XP ( XLOC ) << "ERROR: insufficient environment slots" );
+#endif
         }
 
         String prefix;
@@ -181,11 +194,13 @@ namespace ncbi
 
         if ( it != env . end () )
         {
+#if log_avail
             log . msg ( LOG_ERR )
                 << "ERROR: environment contents changed during processing"
                 << endm
                 ;
-            throw rc_logic_err;
+            throw LogicException ( XP ( XLOC ) << "ERROR: environment contents changed during processing" );
+#endif
         }
 
         envp [ i ] = 0;
@@ -212,11 +227,13 @@ namespace ncbi
     {
         if ( dad != 0 )
         {
+#if log_avail
             log . msg ( LOG_ERR )
                 << "ERROR: sub-environment already linked"
                 << endm
                 ;
-            throw rc_logic_err;
+            throw LogicException ( XP ( XLOC ) << "ERROR: sub-environment already linked" );
+#endif
         }
 
         dad = _dad;

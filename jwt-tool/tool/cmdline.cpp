@@ -1798,12 +1798,13 @@ namespace ncbi
     {
         if ( environ != 0 )
         {
+            /*
 #if _DEBUGGING
             add_default_param ( * this, new TypedImport < int > ( dbg_trace_fd, "dbg_trace_fd" ) );
             add_default_param ( * this, new TypedImport < int > ( dbg_dedicated_log, "dedicated_log" ) );
             add_default_param ( * this, new TypedImport < unsigned int > ( dbg_trace_level, "dbg_trace_level" ) );
 #endif
-
+            */
             const char *pfx = 0;
             size_t psz = prefix . size ();
             if ( psz != 0 )
