@@ -103,10 +103,11 @@ namespace ncbi
                     {
                         log . msg ( LOG_ERR )
                             << "EXIT: exception - "
-                            << x . msg
+                            << x . what ()
                             << endm
                             ;
-                        return x . status;
+                        //return x . status;
+                        return 99;
                     }
                     catch ( std :: exception & x )
                     {

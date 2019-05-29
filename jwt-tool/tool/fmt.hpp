@@ -230,4 +230,13 @@ namespace ncbi
 #endif
     inline Fmt & operator << ( Fmt & f, const FmtErrno & e )
     { f . sysError ( e . status ); return f; }
+
+#if HAVE_SECURE_EXCEPT
+    //!< support for XMsg and std::ostream
+    inline Fmt & operator << ( Fmt & f, const XMsg & m )
+    { return f << m . zmsg; }
+
+    //!< support for XBackTrace and std::ostream
+    Fmt & operator << ( Fmt & f, const XBackTrace & bt );
+#endif
 }
