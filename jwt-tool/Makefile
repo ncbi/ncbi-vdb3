@@ -33,12 +33,14 @@ ifeq (Darwin, $(UNAME))
 	CFLAGS += -DMAC -DBSD -DUNIX
 	UUIDLIB =
 	PTHREADLIB =
+	LQUADMATH =
 endif
 ifeq (Linux, $(UNAME))
 	OS = linux
 	CFLAGS += -DLINUX -DUNIX
 	UUIDLIB = -luuid
 	PTHREADLIB = -lpthread
+	LQUADMATH = -lquadmath
 endif
 
 # only for Linux and MacOS
@@ -254,7 +256,8 @@ TESTLIBS =       \
 	-lmbedtls    \
 	-lutf8proc   \
 	$(UUIDLIB)   \
-	$(PTHREADLIB)
+	$(PTHREADLIB)\
+	$(LQUADMATH)
 
 ## ncbi-secure
 LIBSECSRC =      \
@@ -685,24 +688,7 @@ JWTTOOLDBGOBJ = \
 JWTTOOLRELOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(OBJX),$(JWTTOOLSRC)))
 
-jwt-tool: $(BINDIR) $(BINDIR)/jwt-tool-dbg $(BINDIR)/jwt-tool-rel
-
-JWTTOOLTESTS =                        \
-	$(TSTDIR)/jwt-tool-test.passed    \
-
-$(BINDIR)/jwt-tool-dbg: $(OBJDIR) $(JWTTOOLDBGOBJ) $(MAKEFILE)
-	$(GPP) -g -o $@ $(JWTTOOLDBGOBJ)
-
-$(BINDIR)/jwt-tool-rel: $(OBJDIR) $(JWTTOOLRELOBJ) $(MAKEFILE)
-	$(GPP) -O3 -o $@ $(JWTTOOLRELOBJ)
-
-JWT_TSTSRC =  \
-	gtest-all
-
-JWT_TSTOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWT_TSTSRC)))
-
-JWTTESTDEPLIBS =                   \
+JWTTOOLDBGDEPLIBS =                \
 	$(TESTDEPLIBS)                 \
 	$(LIBDIR)/libncbi-secure-dbg.a \
 	$(LIBDIR)/libncbi-json-dbg.a   \
@@ -712,7 +698,7 @@ JWTTESTDEPLIBS =                   \
 	$(LIBDIR)/libncbi-jwe-dbg.a    \
 	$(LIBDIR)/libncbi-jwt-dbg.a
 
-JWTTESTLIBS =         \
+JWTTOOLDBGLIBS =      \
 	-L$(LIBDIR)       \
 	-lncbi-jwt-dbg    \
 	-lncbi-jwe-dbg    \
@@ -722,6 +708,44 @@ JWTTESTLIBS =         \
 	-lncbi-json-dbg   \
 	-lncbi-secure-dbg \
 	$(TESTLIBS)
+
+JWTTOOLRELDEPLIBS =                \
+	$(TESTDEPLIBS)                 \
+	$(LIBDIR)/libncbi-secure-rel.a \
+	$(LIBDIR)/libncbi-json-rel.a   \
+	$(LIBDIR)/libncbi-jwa-rel.a    \
+	$(LIBDIR)/libncbi-jwk-rel.a    \
+	$(LIBDIR)/libncbi-jws-rel.a    \
+	$(LIBDIR)/libncbi-jwe-rel.a    \
+	$(LIBDIR)/libncbi-jwt-rel.a
+
+JWTTOOLRELLIBS =      \
+	-L$(LIBDIR)       \
+	-lncbi-jwt-rel    \
+	-lncbi-jwe-rel    \
+	-lncbi-jws-rel    \
+	-lncbi-jwk-rel    \
+	-lncbi-jwa-rel    \
+	-lncbi-json-rel   \
+	-lncbi-secure-rel \
+	$(TESTLIBS)
+
+jwt-tool: $(BINDIR) $(BINDIR)/jwt-tool-dbg $(BINDIR)/jwt-tool-rel
+
+JWTTOOLTESTS =                        \
+	$(TSTDIR)/jwt-tool-test.passed    \
+
+$(BINDIR)/jwt-tool-dbg: $(OBJDIR) $(JWTTOOLDBGOBJ) $(JWTTOOLDBGDEPLIBS) $(MAKEFILE)
+	$(GPP) -g -o $@ $(JWTTOOLDBGOBJ) $(JWTTOOLDBGLIBS)
+
+$(BINDIR)/jwt-tool-rel: $(OBJDIR) $(JWTTOOLRELOBJ) $(JWTTOOLRELDEPLIBS) $(MAKEFILE)
+	$(GPP) -O3 -o $@ $(JWTTOOLRELOBJ) $(JWTTOOLRELLIBS)
+
+JWT_TSTSRC =  \
+	gtest-all
+
+JWT_TSTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWT_TSTSRC)))
 
 $(TSTDIR)/jwt-tool-test: $(TSTDIR) $(OBJDIR) $(JWTTESTDEPLIBS) $(JWT_TSTOBJ) $(MAKEFILE)
 	$(GPP) -g -o $@ $(JWT_TSTOBJ) $(JWTTESTLIBS)
