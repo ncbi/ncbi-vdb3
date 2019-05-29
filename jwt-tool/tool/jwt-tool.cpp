@@ -31,114 +31,117 @@
 
 namespace ncbi
 {
-        struct ParamBlock
+    static LocalLogger local_logger;
+    Log log ( local_logger );
+    
+    struct ParamBlock
+    {
+        void validate ()
         {
-            void validate ()
-                {
-                }
-
-            ParamBlock ()
-                {
-                }
-
-            ~ ParamBlock () {}
-        };
-
-        static
-        void handle_params ( ParamBlock & params, int argc, char * argv [] )
-        {
-            Cmdline cmdline ( argc, argv );
-
-            #if 0
-            cmdline . addOption ( params . on_temp, & params . on_temp_count,
-                                  "U", "upper", "deg-celsius", "set upper temperature threshold" );
-            cmdline . addOption ( params . off_temp, & params . off_temp_count,
-                                  "L", "lower", "deg-celsius", "set lower temperature threshold" );
-            cmdline . addOption ( params . poll_interval, 0,
-                                  "I", "poll-interval", "seconds", "time to wait between samples" );
-            cmdline . addOption ( params . max_on_time, 0,
-                                  "", "max-on-time", "seconds", "the maximum seconds to keep compressor on" );
-            cmdline . addOption ( params . min_on_time, 0,
-                                  "", "min-on-time", "seconds", "the minimum seconds to keep compressor on" );
-            cmdline . addOption ( params . min_off_time, 0,
-                                  "", "min-off-time", "seconds", "the minimum seconds to keep compressor off" );
-            #endif
-            // pre-parse to look for any configuration file path
-            cmdline . parse ( true );
-
-            // configure params from file
-
-            // normal parse
-            cmdline . parse ();
-
-            params . validate ();
         }
 
-        static
-        int run ( int argc, char * argv [] )
+        ParamBlock ()
         {
-                    try
-                    {
-                        #if 0
-                        // enable local logging to stderr
-                        local_logger . init ( argv [ 0 ] );
-                        #endif
-
-                        // create params
-                        ParamBlock params;
-                        handle_params ( params, argc, argv );
-
-                        #if 0
-                        // run the task object
-                        KeezerTask keezer ( params, gpio );
-                        keezer . run ();
-
-                        log . msg ( LOG_INFO )
-                            << "exiting. "
-                            << endm
-                            ;
-                        #endif
-                    }
-                    catch ( Exception & x )
-                    {
-                        log . msg ( LOG_ERR )
-                            << "EXIT: exception - "
-                            << x . what ()
-                            << endm
-                            ;
-                        //return x . status;
-                        return 99;
-                    }
-                    catch ( std :: exception & x )
-                    {
-                        log . msg ( LOG_ERR )
-                            << "EXIT: exception - "
-                            << x . what ()
-                            << endm
-                            ;
-                        throw;
-                    }
-                    #if 0
-                    catch ( ReturnCodes x )
-                    {
-                        log . msg ( LOG_NOTICE )
-                            << "EXIT: due to exception"
-                            << endm
-                            ;
-                        return x;
-                    }
-                    #endif
-                    catch ( ... )
-                    {
-                        log . msg ( LOG_ERR )
-                            << "EXIT: unknown exception"
-                            << endm
-                            ;
-                        throw;
-                    }
-
-                    return 0;
         }
+
+        ~ ParamBlock ()
+        {
+        }
+    };
+
+    static
+    void handle_params ( ParamBlock & params, int argc, char * argv [] )
+    {
+        Cmdline cmdline ( argc, argv );
+
+#if 0
+        cmdline . addOption ( params . on_temp, & params . on_temp_count,
+                              "U", "upper", "deg-celsius", "set upper temperature threshold" );
+        cmdline . addOption ( params . off_temp, & params . off_temp_count,
+                              "L", "lower", "deg-celsius", "set lower temperature threshold" );
+        cmdline . addOption ( params . poll_interval, 0,
+                              "I", "poll-interval", "seconds", "time to wait between samples" );
+        cmdline . addOption ( params . max_on_time, 0,
+                              "", "max-on-time", "seconds", "the maximum seconds to keep compressor on" );
+        cmdline . addOption ( params . min_on_time, 0,
+                              "", "min-on-time", "seconds", "the minimum seconds to keep compressor on" );
+        cmdline . addOption ( params . min_off_time, 0,
+                              "", "min-off-time", "seconds", "the minimum seconds to keep compressor off" );
+#endif
+        // pre-parse to look for any configuration file path
+        cmdline . parse ( true );
+
+        // configure params from file
+
+        // normal parse
+        cmdline . parse ();
+
+        params . validate ();
+    }
+
+    static
+    int run ( int argc, char * argv [] )
+    {
+        try
+        {
+            // enable local logging to stderr
+            local_logger . init ( argv [ 0 ] );
+
+            // create params
+            ParamBlock params;
+            handle_params ( params, argc, argv );
+
+#if 0
+            // run the task object
+            KeezerTask keezer ( params, gpio );
+            keezer . run ();
+#endif
+
+            log . msg ( LOG_INFO )
+                << "exiting. "
+                << endm
+                ;
+        }
+        catch ( Exception & x )
+        {
+            log . msg ( LOG_ERR )
+                << "EXIT: exception - "
+                << x . what ()
+                << endm
+                ;
+            //return x . status;
+            return 99;
+        }
+        catch ( std :: exception & x )
+        {
+            log . msg ( LOG_ERR )
+                << "EXIT: exception - "
+                << x . what ()
+                << endm
+                ;
+            throw;
+        }
+#if 0
+        catch ( ReturnCodes x )
+        {
+            log . msg ( LOG_NOTICE )
+                << "EXIT: due to exception"
+                << endm
+                ;
+            return x;
+        }
+#endif
+        catch ( ... )
+        {
+            log . msg ( LOG_ERR )
+                << "EXIT: unknown exception"
+                << endm
+                ;
+            throw;
+        }
+        
+        return 0;
+    }
 }
 
 extern "C"
@@ -155,21 +158,21 @@ extern "C"
              or perhaps directly as a child of init
         */
 
-                try
-                {
-                    // run the tool within namespace
-                    status = ncbi :: run ( argc, argv );
-                }
-                #if 0
-                catch ( ReturnCodes x )
-                {
-                    status = x;
-                }
-                #endif
-                catch ( ... )
-                {
-                }
-
-                return status;
+        try
+        {
+            // run the tool within namespace
+            status = ncbi :: run ( argc, argv );
+        }
+#if 0
+        catch ( ReturnCodes x )
+        {
+            status = x;
+        }
+#endif
+        catch ( ... )
+        {
+        }
+        
+        return status;
     }
 }
