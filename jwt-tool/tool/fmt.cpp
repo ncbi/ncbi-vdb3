@@ -32,7 +32,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#if HAVE_F128
 #include <quadmath.h>
+#endif
 
 namespace ncbi
 {
