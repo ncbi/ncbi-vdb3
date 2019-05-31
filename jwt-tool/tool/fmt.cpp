@@ -886,4 +886,22 @@ namespace ncbi
         return f;
     }
 
+#if HAVE_SECURE_EXCEPT
+    Fmt & operator << ( Fmt & f, const XBackTrace & bt )
+    {
+        if ( bt . isValid () )
+        {
+            do
+            {
+                f
+                    << bt . getName ()
+                    << '\n'
+                    ;
+            }
+            while ( bt . up () );
+        }
+
+        return f;
+    }
+#endif
 }
