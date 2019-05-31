@@ -29,6 +29,7 @@
 #include <ncbi/secure/except.hpp>
 
 #include "env.hpp"
+#include "logging.hpp"
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -174,13 +175,11 @@ namespace ncbi
         size_t cnt = count ();
         if ( cnt >= size )
         {
-#if log_avail            
             log . msg ( LOG_ERR )
                 << "ERROR: insufficient environment slots"
                 << endm
                 ;
             throw LogicException ( XP ( XLOC ) << "ERROR: insufficient environment slots" );
-#endif
         }
 
         String prefix;
@@ -194,13 +193,11 @@ namespace ncbi
 
         if ( it != env . end () )
         {
-#if log_avail
             log . msg ( LOG_ERR )
                 << "ERROR: environment contents changed during processing"
                 << endm
                 ;
             throw LogicException ( XP ( XLOC ) << "ERROR: environment contents changed during processing" );
-#endif
         }
 
         envp [ i ] = 0;
@@ -227,13 +224,11 @@ namespace ncbi
     {
         if ( dad != 0 )
         {
-#if log_avail
             log . msg ( LOG_ERR )
                 << "ERROR: sub-environment already linked"
                 << endm
                 ;
             throw LogicException ( XP ( XLOC ) << "ERROR: sub-environment already linked" );
-#endif
         }
 
         dad = _dad;
