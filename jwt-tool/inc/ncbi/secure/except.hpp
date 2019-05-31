@@ -52,6 +52,22 @@ namespace ncbi
 
 
     /*=====================================================*
+     *                     ReturnCodes                     *
+     *=====================================================*/
+
+    enum ReturnCodes
+    {
+        rc_okay,
+        rc_param_err,
+        rc_init_err,
+        rc_logic_err,
+        rc_runtime_err,
+        rc_input_err,
+        rc_protocol_err,
+        rc_test_err
+    };
+    
+    /*=====================================================*
      *                        XMsg                         *
      *=====================================================*/
     
@@ -132,6 +148,12 @@ namespace ncbi
          */
         const XMsg function () const noexcept;
 
+        /**
+         * status
+         * @return ReturnCodes for process exit status
+         */
+        ReturnCodes status () const noexcept;
+
 
         /*=================================================*
          *                    C++ STUFF                    *
@@ -191,6 +213,7 @@ namespace ncbi
         const ASCII * func_name;
         unsigned int lineno;
         int stack_frames;
+        ReturnCodes rc;
 
         friend class XBackTrace;
     };
@@ -247,6 +270,7 @@ namespace ncbi
 
         void sysError ( int status );
         void cryptError ( int status );
+        void setStatus ( ReturnCodes status );
 
         void useProblem ();
         void useContext ();
@@ -255,7 +279,8 @@ namespace ncbi
 
         XP ( const UTF8 * file_name,
              const ASCII * func_name,
-             unsigned int lineno );
+             unsigned int lineno,
+             ReturnCodes status = rc_runtime_err );
 
         XP & operator = ( const XP & xp ) = delete;
         XP & operator = ( const XP && xp ) = delete;
@@ -278,6 +303,7 @@ namespace ncbi
         unsigned int lineno;
         unsigned int radix;
         int stack_frames;
+        ReturnCodes rc;
 
         friend class Exception;
     };
@@ -359,6 +385,12 @@ namespace ncbi
     inline XPRadix radix ( unsigned int val ) { XPRadix r; r . radix = val; return r; }
     inline XP & operator << ( XP & xp, const XPRadix & r )
     { xp . setRadix ( r . radix ); return xp; }
+
+    //!< set exit status
+    struct XPStatus { ReturnCodes rc; };
+    inline XPStatus xstatus ( ReturnCodes rc ) { XPStatus s; s . rc = rc; return s; }
+    inline XP & operator << ( XP & xp, const XPStatus & s )
+    { xp . setStatus ( s . rc ); return xp; }
 
     //!< support for system errors
     struct XPSysErr { int status; };
