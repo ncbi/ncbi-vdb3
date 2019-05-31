@@ -141,6 +141,11 @@ namespace ncbi
         return copyXMsg ( func_name );
     }
 
+    ReturnCodes Exception :: status () const noexcept
+    {
+        return rc;
+    }
+
     static
     const UTF8 * string_rchr ( const UTF8 * str, int ch, const UTF8 * from )
     {
@@ -166,6 +171,7 @@ namespace ncbi
         file_name = x . file_name;
         func_name = x . func_name;
         lineno = x . lineno;
+        rc = x . rc;
 
         return * this;
     }
@@ -179,6 +185,7 @@ namespace ncbi
         , func_name ( x . func_name )
         , lineno ( x . lineno )
         , stack_frames ( x . stack_frames )
+        , rc ( x . rc )
     {
         for ( int i = 0; i < x . stack_frames; ++ i )
             callstack [ i ] = x . callstack [ i ];
@@ -198,6 +205,7 @@ namespace ncbi
         , func_name ( p . func_name )
         , lineno ( p . lineno )
         , stack_frames ( p . stack_frames - num_stack_frames_to_skip )
+        , rc ( p . rc )
     {
         for ( int i = 0; i < stack_frames; ++ i )
             callstack [ i ] = p . callstack [ i + num_stack_frames_to_skip ];
@@ -349,6 +357,11 @@ namespace ncbi
             radix = r;
     }
 
+    void XP :: setStatus ( ReturnCodes status )
+    {
+        rc = status;
+    }
+
     void XP :: sysError ( int status )
     {
         * which += :: strerror ( status );
@@ -386,13 +399,14 @@ namespace ncbi
         radix = 10;
     }
 
-    XP :: XP ( const UTF8 * file, const ASCII * func, unsigned int line )
+    XP :: XP ( const UTF8 * file, const ASCII * func, unsigned int line, ReturnCodes status )
         : which ( & problem )
         , file_name ( file )
         , func_name ( func )
         , lineno ( line )
         , radix ( 10 )
         , stack_frames ( -1 )
+        , rc ( status )
     {
         // capture stack
         stack_frames = backtrace ( callstack, sizeof callstack / sizeof callstack [ 0 ] );
