@@ -120,8 +120,7 @@ namespace ncbi
                 << x . what ()
                 << endm
                 ;
-            //return x . status;
-            return 99;
+            return x . status ();
         }
         catch ( std :: exception & x )
         {
@@ -132,7 +131,6 @@ namespace ncbi
                 ;
             throw;
         }
-#if 0
         catch ( ReturnCodes x )
         {
             log . msg ( LOG_NOTICE )
@@ -141,7 +139,6 @@ namespace ncbi
                 ;
             return x;
         }
-#endif
         catch ( ... )
         {
             log . msg ( LOG_ERR )
