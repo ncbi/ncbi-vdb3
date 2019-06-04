@@ -64,7 +64,7 @@ namespace ncbi
                  :: tolower ( ( ( const unsigned char * ) cstr2 ) [ i ] ) )
             {
                 throw InvalidArgument (
-                    XP ( XLOC )
+                    XP ( XLOC, rc_param_err )
                     << "expected boolean value but found '"
                     << cstr2
                     << "'"
@@ -101,7 +101,7 @@ namespace ncbi
             break;
         default:
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "expected boolean value but found '"
                 << cstr2
                 << "'"
@@ -119,7 +119,7 @@ namespace ncbi
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "expected integer value but found '"
                 << start
                 << "'"
@@ -129,7 +129,7 @@ namespace ncbi
         if ( i64 > INT32_MAX || i64 < INT32_MIN )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "integer value exceeds 32-bit bounds: "
                 << i64
                 );
@@ -148,7 +148,7 @@ namespace ncbi
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "expected natural integer value but found '"
                 << start
                 << "'"
@@ -158,7 +158,7 @@ namespace ncbi
         if ( u64 > UINT32_MAX )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "natural integer value exceeds 32-bit bounds: "
                 << u64
                 );
@@ -176,7 +176,7 @@ namespace ncbi
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "expected integer value but found '"
                 << start
                 << "'"
@@ -194,7 +194,7 @@ namespace ncbi
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "expected natural integer value but found '"
                 << start
                 << "'"
@@ -212,7 +212,7 @@ namespace ncbi
         if ( start == ( const char * ) end || end [ 0 ] != 0 )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "expected real value but found '"
                 << start
                 << "'"
@@ -297,7 +297,7 @@ namespace ncbi
             NULTerminatedString zparam_name ( param_name );
             
             throw LogicException (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "option '--"
                 << zlong_name . c_str ()
                 << "' cannot accept parameter '"
@@ -407,7 +407,7 @@ namespace ncbi
             {
                 NULTerminatedString zlong_name ( long_name );
                 throw InvalidArgument (
-                    XP ( XLOC )
+                    XP ( XLOC, rc_param_err )
                     << "count for list option '--"
                     << zlong_name . c_str ()
                     << "' exceeds maximum of "
@@ -552,7 +552,7 @@ namespace ncbi
         if ( ( size_t ) mode -> required_params <= mode -> formal_params . size () )
         {
             throw LogicException (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "optional param index already set to "
                 << mode -> required_params );
         }
@@ -560,7 +560,7 @@ namespace ncbi
         if ( mode -> max_last_param != 0 )
         {
             throw LogicException (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "last repeating params have already been set"
                 );
         }
@@ -573,13 +573,13 @@ namespace ncbi
     {
         // there must be a max repeat count, even if it is max(U32)
         if ( max == 0 )
-            throw LogicException ( XP ( XLOC ) << "invalid max count for repeating parameter: 0" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) << "invalid max count for repeating parameter: 0" );
 
         // min must be <= max
         if ( min > max )
         {
             throw LogicException (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "invalid min count for repeating parameter: "
                 << min
                 << ">"
@@ -588,7 +588,7 @@ namespace ncbi
         }
 
         if ( mode -> max_last_param != 0 )
-            throw LogicException ( XP ( XLOC ) << "last parameter has already been set" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) << "last parameter has already been set" );
 
         // store the repeating positional parameter capture object
         Param * param = new RepeatingParam < T > ( value, name, help );
@@ -718,10 +718,10 @@ namespace ncbi
     {
         NULTerminatedString zcmd_name ( cmd_name );
         if ( zcmd_name . isEmpty () )
-            throw LogicException ( XP ( XLOC ) << "empty command name" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) << "empty command name" );
 
         if ( mode -> trailing_command != 0 )
-            throw LogicException ( XP ( XLOC ) << "attempt to add multiple trailing commands" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) << "attempt to add multiple trailing commands" );
 
         mode -> trailing_command = new Command ( args, cmd_name, help );
     }
@@ -763,7 +763,7 @@ namespace ncbi
         {
             NULTerminatedString zname ( name );
             throw LogicException (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "no known mode named '"
                 << zname . c_str ()
                 << "'"
@@ -886,7 +886,7 @@ namespace ncbi
 
                 NULTerminatedString zmode_name ( mode_name );
                 throw InvalidArgument (
-                    XP ( XLOC )
+                    XP ( XLOC, rc_param_err )
                     << "unrecognized keyword: '"
                     << zmode_name . c_str ()
                     << "'"
@@ -922,7 +922,7 @@ namespace ncbi
                 if ( num_params >= max_params )
                 {
                     throw InvalidArgument (
-                        XP ( XLOC )
+                        XP ( XLOC, rc_param_err )
                         << "unexpected parameter["
                         << num_params
                         << "]: '"
@@ -976,7 +976,7 @@ namespace ncbi
                     if ( i == mode -> long_opt_map . end () )
                     {
                         throw InvalidArgument (
-                            XP ( XLOC )
+                            XP ( XLOC, rc_param_err )
                             << "unrecognized option: '"
                             << arg
                             << "'"
@@ -1049,7 +1049,7 @@ namespace ncbi
                     if ( ! found )
                     {
                         throw InvalidArgument (
-                            XP ( XLOC )
+                            XP ( XLOC, rc_param_err )
                             << "unrecognized option: '-"
                             << arg
                             << "'"
@@ -1064,7 +1064,7 @@ namespace ncbi
         if ( ! pre_parse && num_params < mode -> required_params )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "insufficient parameters: expected "
                 << mode -> required_params
                 << "but observed "
@@ -1082,7 +1082,7 @@ namespace ncbi
         if ( val [ 0 ] == 0 )
         {
             if ( ++ argx == argc )
-                throw InvalidArgument ( XP ( XLOC ) << "incomplete command line - expected parameter" );
+                throw InvalidArgument ( XP ( XLOC, rc_param_err ) << "incomplete command line - expected parameter" );
 
             val = argv [ argx ];
             TRACE ( TRACE_USR, "argx is %u, param is '%s'\n", argx, val );
@@ -1487,13 +1487,13 @@ namespace ncbi
         if ( _argc <= 0 )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "illegal argument count - "
                 << _argc
                 );
         }
         if ( argv == 0 )
-            throw InvalidArgument ( XP ( XLOC ) << "null argument vector" );
+            throw InvalidArgument ( XP ( XLOC, rc_param_err ) << "null argument vector" );
     }
 
     Cmdline :: Cmdline ( int _argc, char * _argv [], const String & _vers )
@@ -1508,13 +1508,13 @@ namespace ncbi
         if ( _argc <= 0 )
         {
             throw InvalidArgument (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "illegal argument count - "
                 << _argc
                 );
         }
         if ( argv == 0 )
-            throw InvalidArgument ( XP ( XLOC ) << "null argument vector" );
+            throw InvalidArgument ( XP ( XLOC, rc_param_err ) << "null argument vector" );
     }
 
     Cmdline :: ~ Cmdline ()
@@ -1541,14 +1541,14 @@ namespace ncbi
     void Cmdline :: addParam ( Param * param )
     {
         if ( param == 0 )
-            throw LogicException ( XP ( XLOC ) <<  "attempt to add null formal parameter" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) <<  "attempt to add null formal parameter" );
 
         // if any repeating param has been set, it's last
         if ( mode -> max_last_param != 0 )
         {
             NULTerminatedString zname ( param -> name );
             throw LogicException (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "cannot add param '"
                 << zname . c_str ()
                 << "' after repeating parameter"
@@ -1562,10 +1562,10 @@ namespace ncbi
     void Cmdline :: addOption ( Option * opt )
     {
         if ( opt == 0 )
-            throw LogicException ( XP ( XLOC ) <<  "attempt to add null formal option" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) <<  "attempt to add null formal option" );
 
         if ( opt -> long_name . isEmpty () && opt -> short_name . isEmpty () )
-            throw LogicException ( XP ( XLOC ) << "attempt to add formal option with empty names" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) << "attempt to add formal option with empty names" );
 
         // attempt to insert into long name map
         if ( ! opt -> long_name . isEmpty () )
@@ -1577,7 +1577,7 @@ namespace ncbi
             {
                 NULTerminatedString zlong_name ( opt -> long_name );
                 throw LogicException (
-                    XP ( XLOC )
+                    XP ( XLOC, rc_param_err )
                     <<  "formal option '--"
                     << zlong_name . c_str ()
                     << "' already exists"
@@ -1595,7 +1595,7 @@ namespace ncbi
             {
                 NULTerminatedString zshort_name ( opt -> short_name );
                 throw LogicException (
-                    XP ( XLOC )
+                    XP ( XLOC, rc_param_err )
                     <<  "formal option '-"
                     << zshort_name . c_str ()
                     << "' already exists"
@@ -1618,7 +1618,7 @@ namespace ncbi
                         NULTerminatedString zoshort ( oshort );
                         NULTerminatedString zpshort ( pshort );
                         throw LogicException (
-                            XP ( XLOC )
+                            XP ( XLOC, rc_param_err )
                             << "formal option '-"
                             << zoshort . c_str ()
                             << "' conflicts with '-"
@@ -1634,7 +1634,7 @@ namespace ncbi
                         NULTerminatedString zoshort ( oshort );
                         NULTerminatedString zpshort ( pshort );
                         throw LogicException (
-                            XP ( XLOC )
+                            XP ( XLOC, rc_param_err )
                             << "formal option '-"
                             << zoshort . c_str ()
                             << "' conflicts with '-"
@@ -1690,7 +1690,7 @@ namespace ncbi
             {
                 NULTerminatedString zname ( name );
                 throw InvalidArgument (
-                    XP ( XLOC )
+                    XP ( XLOC, rc_param_err )
                     << "count for list variable '"
                     << zname . c_str ()
                     << "' exceeds maximum of "
@@ -1863,10 +1863,10 @@ namespace ncbi
     void EnvImport :: addParam ( Import * import )
     {
         if ( import == 0 )
-            throw LogicException ( XP ( XLOC ) << "attempt to add null env param" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) << "attempt to add null env param" );
 
         if ( import -> name . isEmpty () )
-            throw LogicException ( XP ( XLOC ) << "attempt to add env param with empty name" );
+            throw LogicException ( XP ( XLOC, rc_param_err ) << "attempt to add env param with empty name" );
 
         // attempt to insert into name map
         std :: pair < String, Import * > pair ( import -> name, import );
@@ -1876,7 +1876,7 @@ namespace ncbi
         {
             NULTerminatedString zname ( import -> name );
             throw LogicException (
-                XP ( XLOC )
+                XP ( XLOC, rc_param_err )
                 << "env param '"
                 << zname . c_str ()
                 << "' already exists"
