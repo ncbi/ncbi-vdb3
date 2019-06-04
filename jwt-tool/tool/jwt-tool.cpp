@@ -43,7 +43,7 @@ namespace ncbi
     {
     }
     
-    JWTTool :: ~ JWTTool ()
+    JWTTool :: ~ JWTTool () noexcept
     {
     }
 
