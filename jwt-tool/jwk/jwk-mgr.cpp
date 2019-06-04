@@ -110,7 +110,7 @@ namespace ncbi
     static
     void validateRSA ( const JSONObject & props )
     {
-        const char * pub_props [] = { "d", "e" };
+        const char * pub_props [] = { "n", "e" };
 
         size_t i;
         for ( i = 0; i < sizeof pub_props / sizeof pub_props [ 0 ]; ++ i )

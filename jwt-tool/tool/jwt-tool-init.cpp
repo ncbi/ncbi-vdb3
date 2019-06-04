@@ -27,10 +27,105 @@
  */
 
 #include "jwt-tool.hpp"
+#include "logging.hpp"
+
+#include <fstream>
 
 namespace ncbi
 {
+    static
+    String readTextFile ( const String & path )
+    {
+        // declare String for return
+        String contents;
+        
+        // open the file using the nul-terminated path string
+        std :: ifstream file;
+        file . open ( path . toSTLString () );
+
+        // handle exceptions or file-not-found
+        if ( ! file . is_open () )
+            throw RuntimeException (
+                XP ( XLOC, rc_runtime_err )
+                << "Failed to open file"
+                );
+
+        // measure the size of the file
+        file . seekg ( 0, file . end );
+        size_t size = file . tellg ();
+        file . seekg ( 0, file . beg );
+        
+        // allocate a char[] buffer 
+        char * buf = new char [ size ];
+
+        try
+        {
+            // read file into buffer within try block
+            file . read ( buf, size );
+            
+            file . close ();
+            
+            contents = String ( buf, size );
+        }
+        catch ( ... )
+        {
+            delete [] buf;
+            throw;
+        }
+        
+        delete [] buf;
+
+        return contents;
+    }
+
+    // remember this is a method - has to be class::methodname()
+    void JWTTool :: loadKeySet ( const String & path )
+    {
+        log . msg ( LOG_INFO )
+            << "Attempting to load key sets from '"
+            << path
+            << '\''
+            << endm
+            ;
+
+        // capture String with contents of file
+        String contents = readTextFile ( path );
+        
+        log . msg ( LOG_INFO )
+            << "Parsing keyset JSON '"
+            << contents
+            << '\''
+            << endm
+            ;
+
+        JWKSetRef keySet = JWKMgr :: parseJWKSet ( contents );
+        
+        // if pubKeys is null, just assign it
+        if ( pubKeys == nullptr )
+            pubKeys = keySet;
+        
+        // otherwise, we need to have a method to merge in the keys
+        // with a single path, this won't happen - so wait until later
+    }
+    
     void JWTTool :: init ()
     {
+        // load keysets in keyfilepaths into JWK obj
+        log . msg ( LOG_INFO )
+            << "Attempting to load "
+            << keySetFilePaths . size ()
+            << " keyset files"
+            << endm
+            ;
+
+        for ( auto path : keySetFilePaths )
+            loadKeySet ( path );
+
+        log . msg ( LOG_INFO )
+            << "Successfully loaded "
+            << pubKeys -> count ()
+            << " keys"
+            << endm
+            ;
     }
 }

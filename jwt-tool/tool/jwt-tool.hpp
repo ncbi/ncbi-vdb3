@@ -30,6 +30,7 @@
 
 #include <ncbi/secure/except.hpp>
 #include <ncbi/secure/string.hpp>
+#include <ncbi/jwk.hpp>
 
 #include <vector>
 
@@ -77,13 +78,18 @@ namespace ncbi
         
         
         void run ();
+
+    private:
         void init ();
         void exec ();
         void cleanup () noexcept;
 
-    private:
+        void loadKeySet ( const String & path );
+        
         std :: vector <String> keySetFilePaths;
         std :: vector <String> privKeyFilePath;
         std :: vector <String> inputParams;
+
+        JWKSetRef pubKeys;
     };
 }
