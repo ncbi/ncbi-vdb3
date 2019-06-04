@@ -26,6 +26,8 @@
  *
  */
 
+#include "jwt-tool.hpp"
+
 #include "cmdline.hpp"
 #include "logging.hpp"
 
@@ -33,41 +35,52 @@ namespace ncbi
 {
     static LocalLogger local_logger;
     Log log ( local_logger );
-    
-    struct ParamBlock
+
+    JWTTool :: JWTTool ( const ParamBlock & params )
+        : keySetFilePaths ( params . keySetFilePaths )
+        , privKeyFilePath ( params . privKeyFilePath )
+        , inputParams ( params . inputParams )
     {
-        void validate ()
+    }
+    
+    JWTTool :: ~ JWTTool ()
+    {
+    }
+
+    void JWTTool :: run ()
+    {
+        // initialize and let any exceptions pass out
+        init ();
+
+        // we've been initilized
+        try
         {
+            exec ();
+        }
+        catch ( ... )
+        {
+            cleanup ();
+            throw;
         }
 
-        ParamBlock ()
-        {
-        }
-
-        ~ ParamBlock ()
-        {
-        }
-    };
+        cleanup ();
+    }
 
     static
     void handle_params ( ParamBlock & params, int argc, char * argv [] )
     {
         Cmdline cmdline ( argc, argv );
 
-#if 0
-        cmdline . addOption ( params . on_temp, & params . on_temp_count,
-                              "U", "upper", "deg-celsius", "set upper temperature threshold" );
-        cmdline . addOption ( params . off_temp, & params . off_temp_count,
-                              "L", "lower", "deg-celsius", "set lower temperature threshold" );
-        cmdline . addOption ( params . poll_interval, 0,
-                              "I", "poll-interval", "seconds", "time to wait between samples" );
-        cmdline . addOption ( params . max_on_time, 0,
-                              "", "max-on-time", "seconds", "the maximum seconds to keep compressor on" );
-        cmdline . addOption ( params . min_on_time, 0,
-                              "", "min-on-time", "seconds", "the minimum seconds to keep compressor on" );
-        cmdline . addOption ( params . min_off_time, 0,
-                              "", "min-off-time", "seconds", "the minimum seconds to keep compressor off" );
-#endif
+        // to the cmdline parser, all params are optional
+        // we will enforce their presence manually
+        cmdline . startOptionalParams ();
+
+        // gather all params into a single vector
+        cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
+
+        cmdline . addListOption ( params . keySetFilePaths, ',', 256,
+            "K", "key-sets", "path-to-JWKS", "provide one or more sets of public JWKs" );
+
         // pre-parse to look for any configuration file path
         cmdline . parse ( true );
 
@@ -91,11 +104,9 @@ namespace ncbi
             ParamBlock params;
             handle_params ( params, argc, argv );
 
-#if 0
             // run the task object
-            KeezerTask keezer ( params, gpio );
-            keezer . run ();
-#endif
+            JWTTool jwt_tool ( params );
+            jwt_tool . run ();
 
             log . msg ( LOG_INFO )
                 << "exiting. "
