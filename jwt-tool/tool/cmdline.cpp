@@ -975,6 +975,9 @@ namespace ncbi
                         = mode -> long_opt_map . find ( & arg [ 2 ] );
                     if ( i == mode -> long_opt_map . end () )
                     {
+                        if ( pre_parse )
+                            continue;
+
                         throw InvalidArgument (
                             XP ( XLOC, rc_param_err )
                             << "unrecognized option: '"
@@ -1046,7 +1049,7 @@ namespace ncbi
                     }
 
                     // if short name was not found, blow exception
-                    if ( ! found )
+                    if ( ! found && ! pre_parse )
                     {
                         throw InvalidArgument (
                             XP ( XLOC, rc_param_err )
