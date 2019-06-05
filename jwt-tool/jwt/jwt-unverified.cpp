@@ -188,10 +188,26 @@ namespace ncbi
         return * this;
     }
 
+    UnverifiedJWTClaims & UnverifiedJWTClaims :: operator = ( const UnverifiedJWTClaims && ucs )
+    {
+        jose = std :: move ( ucs . jose );
+        claims = std :: move ( ucs . claims );
+        vkeys = std :: move ( ucs . vkeys );
+
+        return * this;
+    }
+
     UnverifiedJWTClaims :: UnverifiedJWTClaims ( const UnverifiedJWTClaims & ucs )
         : jose ( ucs . jose -> cloneObject () )
         , claims ( ucs . claims -> cloneObject () )
         , vkeys ( ucs . vkeys )
+    {
+    }
+
+    UnverifiedJWTClaims :: UnverifiedJWTClaims ( const UnverifiedJWTClaims && ucs )
+        : jose ( std :: move ( ucs . jose ) )
+        , claims ( std :: move ( ucs . claims ) )
+        , vkeys ( std :: move ( ucs . vkeys ) )
     {
     }
 

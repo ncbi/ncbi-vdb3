@@ -27,7 +27,7 @@
  */
 
 #include "jwt-tool.hpp"
-#include "logging.hpp"
+#include <ncbi/jws.hpp>
 
 #include <fstream>
 
@@ -110,6 +110,19 @@ namespace ncbi
     
     void JWTTool :: init ()
     {
+        JWSMgr :: Policy jwsPolicy = JWSMgr :: getPolicy ();
+
+        // allow ANY JOSE header
+        jwsPolicy . kid_required = false;
+        jwsPolicy . kid_gen = false;
+
+        // unprotected JWS verification - turns off hardening
+        jwsPolicy . require_simple_hdr = false;
+        jwsPolicy . require_prestored_kid = false;
+        jwsPolicy . require_prestored_key = false;
+        
+        JWSMgr :: setPolicy ( jwsPolicy );
+        
         // load keysets in keyfilepaths into JWK obj
         log . msg ( LOG_INFO )
             << "Attempting to load "

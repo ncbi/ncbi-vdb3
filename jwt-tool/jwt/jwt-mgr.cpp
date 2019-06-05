@@ -875,4 +875,8 @@ namespace ncbi
         jti_gen |= p . jti_gen;
     }
 
+    JWTMgr :: Policy :: ~ Policy ()
+    {
+    }
+
 }

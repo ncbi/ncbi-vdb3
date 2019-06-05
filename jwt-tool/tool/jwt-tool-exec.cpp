@@ -28,9 +28,20 @@
 
 #include "jwt-tool.hpp"
 
+#include <iostream>
+
 namespace ncbi
 {
+    void JWTTool :: decodeJWT ( const JWT & jwt )
+    {
+        UnverifiedJWTClaimsRef claimSet = JWTMgr :: inspect ( * pubKeys, jwt );
+
+        std :: cout << claimSet -> readableJSON () << std :: endl;
+    }
+    
     void JWTTool :: exec ()
     {
+        for ( auto jwt : inputParams )
+            decodeJWT ( jwt );
     }
 }
