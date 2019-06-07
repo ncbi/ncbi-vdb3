@@ -78,7 +78,6 @@ namespace ncbi
         return contents;
     }
 
-    // remember this is a method - has to be class::methodname()
     void JWTTool :: loadKeySet ( const String & path )
     {
         log . msg ( LOG_INFO )
@@ -110,35 +109,44 @@ namespace ncbi
     
     void JWTTool :: init ()
     {
-        JWSMgr :: Policy jwsPolicy = JWSMgr :: getPolicy ();
-
-        // allow ANY JOSE header
-        jwsPolicy . kid_required = false;
-        jwsPolicy . kid_gen = false;
-
-        // unprotected JWS verification - turns off hardening
-        jwsPolicy . require_simple_hdr = false;
-        jwsPolicy . require_prestored_kid = false;
-        jwsPolicy . require_prestored_key = false;
-        
-        JWSMgr :: setPolicy ( jwsPolicy );
-        
-        // load keysets in keyfilepaths into JWK obj
-        log . msg ( LOG_INFO )
-            << "Attempting to load "
-            << keySetFilePaths . size ()
-            << " keyset files"
-            << endm
-            ;
-
-        for ( auto path : keySetFilePaths )
-            loadKeySet ( path );
-
-        log . msg ( LOG_INFO )
-            << "Successfully loaded "
-            << pubKeys -> count ()
-            << " keys"
-            << endm
-            ;
+        switch ( jwtMode )
+        {
+        case examine:
+        {
+            JWSMgr :: Policy jwsPolicy = JWSMgr :: getPolicy ();
+            
+            // allow ANY JOSE header
+            jwsPolicy . kid_required = false;
+            jwsPolicy . kid_gen = false;
+            
+            // unprotected JWS verification - turns off hardening
+            jwsPolicy . require_simple_hdr = false;
+            jwsPolicy . require_prestored_kid = false;
+            jwsPolicy . require_prestored_key = false;
+            
+            JWSMgr :: setPolicy ( jwsPolicy );
+            
+            // load keysets in keyfilepaths into JWK obj
+            log . msg ( LOG_INFO )
+                << "Attempting to load "
+                << keySetFilePaths . size ()
+                << " keyset files"
+                << endm
+                ;
+            
+            for ( auto path : keySetFilePaths )
+                loadKeySet ( path );
+            
+            log . msg ( LOG_INFO )
+                << "Successfully loaded "
+                << pubKeys -> count ()
+                << " keys"
+                << endm
+                ;
+            break;
+        }
+        default:
+            break;
+        }
     }
 }

@@ -36,10 +36,11 @@ namespace ncbi
     static LocalLogger local_logger;
     Log log ( local_logger );
 
-    JWTTool :: JWTTool ( const ParamBlock & params )
+    JWTTool :: JWTTool ( const ParamBlock & params, JWTMode mode )
         : keySetFilePaths ( params . keySetFilePaths )
         , privKeyFilePath ( params . privKeyFilePath )
         , inputParams ( params . inputParams )
+        , jwtMode ( mode )
     {
     }
     
@@ -67,29 +68,34 @@ namespace ncbi
     }
 
     static
-    void handle_params ( ParamBlock & params, int argc, char * argv [] )
+    JWTMode handle_params ( ParamBlock & params, int argc, char * argv [] )
     {
         Cmdline cmdline ( argc, argv );
-
+        
+        cmdline . addMode ( "examine", "Examine a JWT without verification" );
+        
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
         cmdline . startOptionalParams ();
-
+        
         // gather all params into a single vector
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
-
+        
         cmdline . addListOption ( params . keySetFilePaths, ',', 256,
-            "K", "key-sets", "path-to-JWKS", "provide one or more sets of public JWKs" );
-
+                                  "K", "key-sets", "path-to-JWKS", "provide one or more sets of public JWKs" );
+        
         // pre-parse to look for any configuration file path
         cmdline . parse ( true );
-
+        
         // configure params from file
-
+        
         // normal parse
         cmdline . parse ();
-
+        
         params . validate ();
+        
+        String mode;
+        return static_cast <JWTMode> ( cmdline . getModeInfo ( mode ) );
     }
 
     static
@@ -102,10 +108,10 @@ namespace ncbi
 
             // create params
             ParamBlock params;
-            handle_params ( params, argc, argv );
+            JWTMode mode = handle_params ( params, argc, argv );
 
             // run the task object
-            JWTTool jwt_tool ( params );
+            JWTTool jwt_tool ( params, mode );
             jwt_tool . run ();
 
             log . msg ( LOG_INFO )

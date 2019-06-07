@@ -32,7 +32,7 @@
 
 namespace ncbi
 {
-    void JWTTool :: decodeJWT ( const JWT & jwt )
+    void JWTTool :: examineJWT ( const JWT & jwt )
     {
         UnverifiedJWTClaimsRef claimSet = JWTMgr :: inspect ( * pubKeys, jwt );
 
@@ -41,7 +41,16 @@ namespace ncbi
     
     void JWTTool :: exec ()
     {
-        for ( auto jwt : inputParams )
-            decodeJWT ( jwt );
+        switch ( jwtMode )
+        {
+        case examine:
+        {
+            for ( auto jwt : inputParams )
+                examineJWT ( jwt );
+            break;
+        }
+        default:
+            break;
+        }
     }
 }

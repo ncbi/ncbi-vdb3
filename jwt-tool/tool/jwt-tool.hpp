@@ -39,6 +39,10 @@
 
 namespace ncbi
 {
+    enum JWTMode
+    {
+        examine
+    };
     
     struct ParamBlock
     {
@@ -76,7 +80,7 @@ namespace ncbi
     class JWTTool
     {
     public:
-        JWTTool ( const ParamBlock & params );
+        JWTTool ( const ParamBlock & params, JWTMode mode );
         ~ JWTTool () noexcept;
         
         
@@ -89,12 +93,13 @@ namespace ncbi
 
         void loadKeySet ( const String & path );
 
-        void decodeJWT ( const JWT & jwt );
+        void examineJWT ( const JWT & jwt );
         
         std :: vector <String> keySetFilePaths;
         std :: vector <String> privKeyFilePath;
         std :: vector <String> inputParams;
 
+        JWTMode jwtMode;
         JWKSetRef pubKeys;
     };
 }
