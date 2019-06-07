@@ -72,8 +72,11 @@ namespace ncbi
     {
         Cmdline cmdline ( argc, argv );
         
+        cmdline . addMode ( "decode", "Extract and verify JWT claims" );
+        cmdline . addMode ( "sign", "Sign a JSON claim set object" );
         cmdline . addMode ( "examine", "Examine a JWT without verification" );
-        
+
+        cmdline . setCurrentMode ( "examine" );
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
         cmdline . startOptionalParams ();
@@ -94,8 +97,8 @@ namespace ncbi
         
         params . validate ();
         
-        String mode;
-        return static_cast <JWTMode> ( cmdline . getModeInfo ( mode ) );
+        String ignore;
+        return static_cast <JWTMode> ( cmdline . getModeInfo ( ignore ) );
     }
 
     static

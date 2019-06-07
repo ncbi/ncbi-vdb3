@@ -41,7 +41,9 @@ namespace ncbi
 {
     enum JWTMode
     {
-        examine = 1
+        decode = 1,
+        sign, 
+        examine
     };
     
     struct ParamBlock
