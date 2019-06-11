@@ -382,6 +382,59 @@ namespace ncbi
     {
     }
 
+    void JWTClaimSetBuilder :: validateExtClaims ( const JSONObject & claims )
+    {
+        // verify "iss" as StringOrURI
+        if ( claims . exists ( "iss" ) )
+            URIMgr :: validateStringOrURI ( claims . getValue ( "iss" ) . toString () );
+
+        // verify "sub"
+        if ( claims . exists ( "sub" ) )
+            URIMgr :: validateStringOrURI ( claims . getValue ( "sub" ) . toString () );
+
+        // verify "aud"
+        if ( claims . exists ( "aud" ) )
+        {
+            const JSONValue & val = claims . getValue ( "aud" );
+
+            if ( ! val . isArray () )
+                URIMgr :: validateStringOrURI ( val . toString () );
+            else
+            {
+                // if it's an array, check each element for StringOrURI
+                const JSONArray & a = val . toArray ();
+                unsigned long i, count = a . count ();
+                for ( i = 0; i < count; ++ i )
+                    URIMgr :: validateStringOrURI ( a [ i ] . toString () );
+            }
+        }
+
+        // verify "exp"
+        if ( claims . exists ( "exp" ) )
+            claims . getValue ( "exp" ) . toInteger ();
+
+        // verify "nbf"
+        if ( claims . exists ( "nbf" ) )
+            claims . getValue ( "nbf" ) . toInteger ();
+
+        // verify "iat"
+        if ( claims . exists ( "iat" ) )
+            claims . getValue ( "iat" ) . toInteger ();
+
+        // verify "jti"
+        if ( claims . exists ( "jti" ) )
+        {
+            String jti = claims . getValue ( "jti" ) . toString ();
+            if ( jti . isEmpty () )
+            {
+                throw JWTInvalidClaims (
+                    XP ( XLOC )
+                    << "JSON has an empty 'jti' claim"
+                    );
+            }
+        }
+    }
+
     JWTClaimSetBuilder :: Reserved JWTClaimSetBuilder :: reserved;
 
 
@@ -394,6 +447,7 @@ namespace ncbi
     {
         return JWSMgr :: hdrReserved ( name );
     }
+
 
     JWTClaimSetBuilder :: Reserved :: Reserved ()
     {

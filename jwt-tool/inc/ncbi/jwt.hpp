@@ -120,7 +120,7 @@ namespace ncbi
         /**
          * @fn makeClaimSetBuilder
          * @brief create an empty JWTClaimSetBuilder object
-         * @return JWTClaimSetRef object reference
+         * @return JWTClaimSetBuilderRef object reference
          *
          * This is a factory function for creating a set of
          * claims that can be converted to a JWT.
@@ -130,7 +130,19 @@ namespace ncbi
          */
         static JWTClaimSetBuilderRef makeClaimSetBuilder ();
 
-
+        /**
+         * @fn makeClaimSetBuilder
+         * @brief create an JWTClaimSetBuilder object from json string
+         * @return JWTClaimSetBuilderRef object reference
+         *
+         * This is a factory function for creating a set of
+         * claims that can be converted to a JWT.
+         *
+         * The set is initially empty and is populated by using
+         * the API of the JWTClaimSetBuilder.
+         */
+        static JWTClaimSetBuilderRef parseClaimSetBuilder ( const String & json_text );
+        
         /*=================================================*
          *                     SIGNING                     *
          *=================================================*/
@@ -1588,6 +1600,8 @@ namespace ncbi
 
     private:
 
+        static void validateExtClaims ( const JSONObject & claims );
+        
         JWTClaimSetBuilder ( const JSONObjectRef & jose, const JSONObjectRef & claims );
 
         JWTClaimSetBuilder () = delete;

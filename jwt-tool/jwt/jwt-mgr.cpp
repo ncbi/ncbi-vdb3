@@ -97,6 +97,22 @@ namespace ncbi
     }
 
     /*------------------------------------------
+     * parseClaimSetBuilder
+     *  create an empty object
+     */
+    JWTClaimSetBuilderRef JWTMgr :: parseClaimSetBuilder ( const String & json_text )
+    {
+        // the claims are not supposed to be related to the header
+        // but there are edge cases to be dealt with...
+        JSONObjectRef jose = JSON :: makeObject ();
+        JSONObjectRef claims = JSON :: parseObject ( json_text );
+
+        JWTClaimSetBuilder :: validateExtClaims ( * claims );
+        // pair the two together
+        return JWTClaimSetBuilderRef ( new JWTClaimSetBuilder ( jose, claims ) );
+    }
+
+    /*------------------------------------------
      * sign
      *  sign a claim set
      */

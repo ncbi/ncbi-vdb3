@@ -36,6 +36,11 @@ namespace ncbi
     static LocalLogger local_logger;
     Log log ( local_logger );
 
+    ParamBlock :: ParamBlock ()
+        : numPrivKeyFilePaths ( 0 )
+    {
+    }
+
     JWTTool :: JWTTool ( const ParamBlock & params, JWTMode mode )
         : keySetFilePaths ( params . keySetFilePaths )
         , privKeyFilePath ( params . privKeyFilePath )
@@ -76,12 +81,18 @@ namespace ncbi
         cmdline . addMode ( "sign", "Sign a JSON claim set object" );
         cmdline . addMode ( "examine", "Examine a JWT without verification" );
 
-        cmdline . setCurrentMode ( "examine" );
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
+
+        // sign
+        cmdline . setCurrentMode ( "sign" );
         cmdline . startOptionalParams ();
-        
-        // gather all params into a single vector
+        cmdline . addParam ( params . inputParams, 0, 256, "JSON", "JSON text to convert into a JWT" );
+        cmdline . addOption ( params . privKeyFilePath, & params . numPrivKeyFilePaths,
+                                  "K", "priv_key", "path-to-private-key", "provide path to private signing key" );
+
+        cmdline . setCurrentMode ( "examine" );
+        cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
         
         cmdline . addListOption ( params . keySetFilePaths, ',', 256,
@@ -94,11 +105,12 @@ namespace ncbi
         
         // normal parse
         cmdline . parse ();
-        
-        params . validate ();
-        
+
         String ignore;
-        return static_cast <JWTMode> ( cmdline . getModeInfo ( ignore ) );
+        JWTMode mode = static_cast <JWTMode> ( cmdline . getModeInfo ( ignore ) );
+        params . validate ( mode );
+        
+        return mode;
     }
 
     static

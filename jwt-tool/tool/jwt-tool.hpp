@@ -30,6 +30,7 @@
 
 #include <ncbi/secure/except.hpp>
 #include <ncbi/secure/string.hpp>
+#include <ncbi/json.hpp>
 #include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 
@@ -48,27 +49,49 @@ namespace ncbi
     
     struct ParamBlock
     {
-        void validate ()
+        void validate ( JWTMode mode )
             {
-                // Params
-                if ( inputParams . empty () )
-                    throw InvalidArgument (
-                        XP ( XLOC, rc_param_err )
-                        << "Missing input parameters"
-                        );
-                
-                
-                // Options
-                if ( keySetFilePaths . empty () )
-                    throw InvalidArgument (
-                        XP ( XLOC, rc_param_err )
-                        << "Required public key set"
-                        );
+                switch ( mode )
+                {
+                case decode:
+                    break;
+                case sign:
+                {
+                    // Params
+                    if ( inputParams . empty () )
+                        throw InvalidArgument (
+                            XP ( XLOC, rc_param_err )
+                            << "Missing input parameters"
+                            );
+                    // Options
+                    if ( privFilePath . empty () )
+                        throw InvalidArgument (
+                            XP ( XLOC, rc_param_err )
+                            << "Required private signing key"
+                            );
+                    break;
+                }
+                case examine:
+                {
+                    // Params
+                    if ( inputParams . empty () )
+                        throw InvalidArgument (
+                            XP ( XLOC, rc_param_err )
+                            << "Missing input parameters"
+                            );
+                    
+                    // Options
+                    if ( keySetFilePaths . empty () )
+                        throw InvalidArgument (
+                            XP ( XLOC, rc_param_err )
+                            << "Required public key set"
+                            );
+                    break;
+                }
+                }
             }
         
-        ParamBlock ()
-            {
-            }
+        ParamBlock ();
         
         ~ ParamBlock ()
             {
@@ -77,6 +100,7 @@ namespace ncbi
         std :: vector <String> keySetFilePaths;
         std :: vector <String> privKeyFilePath;
         std :: vector <String> inputParams;
+        U32 numPrivKeyFilePaths;
     };
     
     class JWTTool
@@ -95,6 +119,7 @@ namespace ncbi
 
         void loadKeySet ( const String & path );
 
+        void createJWT ( const String & json );
         void examineJWT ( const JWT & jwt );
         
         std :: vector <String> keySetFilePaths;
@@ -103,5 +128,6 @@ namespace ncbi
 
         JWTMode jwtMode;
         JWKSetRef pubKeys;
+        JWKRef privKey;
     };
 }

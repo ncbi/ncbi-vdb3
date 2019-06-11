@@ -32,17 +32,34 @@
 
 namespace ncbi
 {
+    void JWTTool :: createJWT ( const String &json )
+    {
+        JWTClaimSetBuilderRef builder = JWTMgr :: parseClaimSetBuilder ( json );
+
+        JWTClaimSetRef claimSet = builder -> stealClaimSet ();
+
+        //JWT jwt = JWTMgr :: sign ( key, *claimSet );
+    }
+    
     void JWTTool :: examineJWT ( const JWT & jwt )
     {
         UnverifiedJWTClaimsRef claimSet = JWTMgr :: inspect ( * pubKeys, jwt );
 
         std :: cout << claimSet -> readableJSON () << std :: endl;
     }
-    
+
     void JWTTool :: exec ()
     {
         switch ( jwtMode )
         {
+        case decode:
+            break;
+        case sign:
+        {
+            for ( auto json : inputParams )
+                createJWT ( json );
+            break;
+        }
         case examine:
         {
             for ( auto jwt : inputParams )

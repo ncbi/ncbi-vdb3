@@ -111,6 +111,16 @@ namespace ncbi
     {
         switch ( jwtMode )
         {
+        case decode:
+            break;
+        case sign:
+        {
+            log . msg ( LOG_INFO )
+                << "Creating a JWT "
+                << endm
+                ;
+            break;
+        }
         case examine:
         {
             JWSMgr :: Policy jwsPolicy = JWSMgr :: getPolicy ();
