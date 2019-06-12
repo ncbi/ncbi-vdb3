@@ -49,47 +49,7 @@ namespace ncbi
     
     struct ParamBlock
     {
-        void validate ( JWTMode mode )
-            {
-                switch ( mode )
-                {
-                case decode:
-                    break;
-                case sign:
-                {
-                    // Params
-                    if ( inputParams . empty () )
-                        throw InvalidArgument (
-                            XP ( XLOC, rc_param_err )
-                            << "Missing input parameters"
-                            );
-                    // Options
-                    if ( privFilePath . empty () )
-                        throw InvalidArgument (
-                            XP ( XLOC, rc_param_err )
-                            << "Required private signing key"
-                            );
-                    break;
-                }
-                case examine:
-                {
-                    // Params
-                    if ( inputParams . empty () )
-                        throw InvalidArgument (
-                            XP ( XLOC, rc_param_err )
-                            << "Missing input parameters"
-                            );
-                    
-                    // Options
-                    if ( keySetFilePaths . empty () )
-                        throw InvalidArgument (
-                            XP ( XLOC, rc_param_err )
-                            << "Required public key set"
-                            );
-                    break;
-                }
-                }
-            }
+        void validate ( JWTMode mode );
         
         ParamBlock ();
         
@@ -98,8 +58,8 @@ namespace ncbi
             }
         
         std :: vector <String> keySetFilePaths;
-        std :: vector <String> privKeyFilePath;
         std :: vector <String> inputParams;
+        String privKeyFilePath;
         U32 numPrivKeyFilePaths;
     };
     
@@ -117,14 +77,15 @@ namespace ncbi
         void exec ();
         void cleanup () noexcept;
 
-        void loadKeySet ( const String & path );
+        void loadPublicKeySet ( const String & path );
+        void loadPrivateKey ( const String & path );
 
         void createJWT ( const String & json );
         void examineJWT ( const JWT & jwt );
         
         std :: vector <String> keySetFilePaths;
-        std :: vector <String> privKeyFilePath;
         std :: vector <String> inputParams;
+        String privKeyFilePath;
 
         JWTMode jwtMode;
         JWKSetRef pubKeys;

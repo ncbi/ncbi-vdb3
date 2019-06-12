@@ -36,6 +36,48 @@ namespace ncbi
     static LocalLogger local_logger;
     Log log ( local_logger );
 
+    void ParamBlock :: validate ( JWTMode mode )
+    {
+        switch ( mode )
+        {
+        case decode:
+            break;
+        case sign:
+        {
+            // Params
+            if ( inputParams . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing input parameters"
+                    );
+            // Options
+            if ( privKeyFilePath . isEmpty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Required private signing key"
+                    );
+            break;
+        }
+        case examine:
+        {
+            // Params
+            if ( inputParams . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing input parameters"
+                    );
+            
+            // Options
+            if ( keySetFilePaths . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Required public key set"
+                    );
+            break;
+        }
+        }
+    }
+
     ParamBlock :: ParamBlock ()
         : numPrivKeyFilePaths ( 0 )
     {
@@ -43,8 +85,8 @@ namespace ncbi
 
     JWTTool :: JWTTool ( const ParamBlock & params, JWTMode mode )
         : keySetFilePaths ( params . keySetFilePaths )
-        , privKeyFilePath ( params . privKeyFilePath )
         , inputParams ( params . inputParams )
+        , privKeyFilePath ( params . privKeyFilePath )
         , jwtMode ( mode )
     {
     }
@@ -89,7 +131,7 @@ namespace ncbi
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "JSON", "JSON text to convert into a JWT" );
         cmdline . addOption ( params . privKeyFilePath, & params . numPrivKeyFilePaths,
-                                  "K", "priv_key", "path-to-private-key", "provide path to private signing key" );
+                                  "K", "priv-key", "path-to-priv-key", "provide path to private signing key" );
 
         cmdline . setCurrentMode ( "examine" );
         cmdline . startOptionalParams ();

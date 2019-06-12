@@ -36,9 +36,16 @@ namespace ncbi
     {
         JWTClaimSetBuilderRef builder = JWTMgr :: parseClaimSetBuilder ( json );
 
+        builder -> deleteClaim ( "exp" );
+        builder -> deleteClaim ( "nbf" );
+        builder -> deleteClaim ( "iat" );
+        builder -> setDuration ( 3600 );
+        
         JWTClaimSetRef claimSet = builder -> stealClaimSet ();
 
-        //JWT jwt = JWTMgr :: sign ( key, *claimSet );
+        JWT jwt = JWTMgr :: sign ( *privKey, *claimSet );
+
+        std :: cout << jwt << std :: endl;
     }
     
     void JWTTool :: examineJWT ( const JWT & jwt )

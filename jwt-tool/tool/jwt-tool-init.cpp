@@ -78,7 +78,7 @@ namespace ncbi
         return contents;
     }
 
-    void JWTTool :: loadKeySet ( const String & path )
+    void JWTTool :: loadPublicKeySet ( const String & path )
     {
         log . msg ( LOG_INFO )
             << "Attempting to load key sets from '"
@@ -106,6 +106,41 @@ namespace ncbi
         // otherwise, we need to have a method to merge in the keys
         // with a single path, this won't happen - so wait until later
     }
+
+    void JWTTool :: loadPrivateKey ( const String & path )
+    {
+        log . msg ( LOG_INFO )
+            << "Attempting to load private key from '"
+            << path
+            << '\''
+            << endm
+            ;
+
+        // capture String with contents of file
+        String contents = readTextFile ( path );
+        
+        log . msg ( LOG_INFO )
+            << "Decrypting private key '"
+            << contents
+            << '\''
+            << endm
+            ;
+
+        std :: string pwd;
+        std :: getline ( std :: cin, pwd );
+
+        if ( pwd . empty () )
+            throw RuntimeException (
+                XP ( XLOC, rc_param_err )
+                << "Missing input parameters"
+                );
+
+        JWKRef key = JWKMgr :: parsePEM ( contents, String ( pwd ), "sig", "RS256", "kid_1" );
+        
+        // if pubKeys is null, just assign it
+        if ( privKey == nullptr )
+            privKey = key;
+    }
     
     void JWTTool :: init ()
     {
@@ -115,8 +150,25 @@ namespace ncbi
             break;
         case sign:
         {
+            JWTMgr :: Policy jwtPolicy = JWTMgr :: getPolicy ();
+
+            jwtPolicy . pre_serial_verify = false;
+            jwtPolicy . zero_dur_allowed = true;
+
+            JWTMgr :: setPolicy ( jwtPolicy );
+            
             log . msg ( LOG_INFO )
-                << "Creating a JWT "
+                << "Attempting to load "
+                << 1
+                << " pem file"
+                << endm
+                ;
+            loadPrivateKey ( privKeyFilePath );
+            
+            log . msg ( LOG_INFO )
+                << "Successfully loaded "
+                << 1
+                << " private key"
                 << endm
                 ;
             break;
@@ -145,7 +197,7 @@ namespace ncbi
                 ;
             
             for ( auto path : keySetFilePaths )
-                loadKeySet ( path );
+                loadPublicKeySet ( path );
             
             log . msg ( LOG_INFO )
                 << "Successfully loaded "
