@@ -78,6 +78,36 @@ namespace ncbi
         return contents;
     }
 
+    static
+    void writeTextFile ( const String & text, const String & path )
+    {
+        std :: cout << "writing to file" << std :: endl;
+        
+        std :: ofstream file;
+        file . open ( path . toSTLString () );
+
+        if ( ! file . is_open () )
+            throw RuntimeException (
+                XP ( XLOC, rc_runtime_err )
+                << "Failed to open/create file"
+                );
+
+        try
+        {
+            file . write ( text . toSTLString () . c_str (), text . length () );
+
+            file . close ();
+        }
+        catch ( ... )
+        {
+            throw;
+        }
+
+        return;
+
+        
+}
+
     void JWTTool :: loadPublicKeySet ( const String & path )
     {
         log . msg ( LOG_INFO )
@@ -110,7 +140,7 @@ namespace ncbi
     void JWTTool :: loadPrivateKey ( const String & path )
     {
         log . msg ( LOG_INFO )
-            << "Attempting to load private key from '"
+            << "Reading  private key from '"
             << path
             << '\''
             << endm
@@ -141,7 +171,43 @@ namespace ncbi
         if ( privKey == nullptr )
             privKey = key;
     }
-    
+
+    void JWTTool :: importPrivPemFile ( const String & path )
+    {
+        log . msg ( LOG_INFO )
+            << "Reading pem file from '"
+            << path
+            << '\''
+            << endm
+            ;
+
+        String contents = readTextFile ( path );
+
+        JWKRef key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
+        if ( ! key -> isPrivate () )
+            throw RuntimeException (
+                XP ( XLOC, rc_param_err )
+                << "Pem file is not private"
+                );
+        if ( ! key -> isRSA () )
+            throw RuntimeException (
+                XP ( XLOC, rc_param_err )
+                << "Pem file is not RSA"
+                );
+            
+        if ( privKey == nullptr )
+            privKey = key;
+
+        // translate private key to public
+
+        // save keys to text files
+        if ( privKeyFilePaths . empty () )
+            writeTextFile ( privKey -> readableJSON (), "tool/input/extPemKeys.txt" );
+        else
+            writeTextFile ( privKey -> readableJSON (), privKeyFilePaths [ 0 ] );
+
+    }
+
     void JWTTool :: init ()
     {
         switch ( jwtMode )
@@ -153,7 +219,7 @@ namespace ncbi
             JWTMgr :: Policy jwtPolicy = JWTMgr :: getPolicy ();
 
             jwtPolicy . pre_serial_verify = false;
-            jwtPolicy . zero_dur_allowed = true;
+            // jwtPolicy . zero_dur_allowed = true;
 
             JWTMgr :: setPolicy ( jwtPolicy );
             
@@ -207,6 +273,13 @@ namespace ncbi
                 ;
             break;
         }
+        case import_pem:
+        {
+            for ( auto path : inputParams )
+                importPrivPemFile ( path );
+            break;
+        }
+        
         default:
             break;
         }

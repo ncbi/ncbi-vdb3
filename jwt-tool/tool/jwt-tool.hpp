@@ -44,7 +44,8 @@ namespace ncbi
     {
         decode = 1,
         sign, 
-        examine
+        examine,
+        import_pem
     };
     
     struct ParamBlock
@@ -57,10 +58,20 @@ namespace ncbi
             {
             }
         
-        std :: vector <String> keySetFilePaths;
         std :: vector <String> inputParams;
+        std :: vector <String> keySetFilePaths;
+        std :: vector <String> privKeyFilePaths;
+        
+        // sign
         String privKeyFilePath;
         U32 numPrivKeyFilePaths;
+
+        I64 duration;
+        U32 numDurationOpts;
+
+        // import-pem
+        String privPwd;
+        U32 numPwds;
     };
     
     class JWTTool
@@ -79,13 +90,19 @@ namespace ncbi
 
         void loadPublicKeySet ( const String & path );
         void loadPrivateKey ( const String & path );
+        void importPrivPemFile ( const String & path );
 
         void createJWT ( const String & json );
         void examineJWT ( const JWT & jwt );
         
-        std :: vector <String> keySetFilePaths;
         std :: vector <String> inputParams;
+        std :: vector <String> keySetFilePaths;
+        std :: vector <String> privKeyFilePaths;
+
         String privKeyFilePath;
+        String privPwd;
+        
+        long long int duration;
 
         JWTMode jwtMode;
         JWKSetRef pubKeys;

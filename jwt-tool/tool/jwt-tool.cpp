@@ -38,6 +38,17 @@ namespace ncbi
 
     void ParamBlock :: validate ( JWTMode mode )
     {
+        if ( numPrivKeyFilePaths > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Multiple private key file paths"
+                    );
+        if ( numDurationOpts > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Multiple duration values"
+                    );
+            
         switch ( mode )
         {
         case decode:
@@ -56,6 +67,13 @@ namespace ncbi
                     XP ( XLOC, rc_param_err )
                     << "Required private signing key"
                     );
+            if ( duration < 0 )
+            {
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Required a duration of 0 or more (seconds)"
+                    );
+            }
             break;
         }
         case examine:
@@ -75,18 +93,43 @@ namespace ncbi
                     );
             break;
         }
+        case import_pem:
+        {
+            if ( inputParams . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing pem files"
+                    );            
+            if ( numPwds > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Too many pem file passwords"
+                    );            
+            if ( privPwd . isEmpty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing pem file password"
+                    );            
+            break;
+        }
         }
     }
 
     ParamBlock :: ParamBlock ()
         : numPrivKeyFilePaths ( 0 )
+        , duration ( 5 * 60 )
+        , numDurationOpts ( 0 )
+        , numPwds ( 0 )
     {
     }
 
     JWTTool :: JWTTool ( const ParamBlock & params, JWTMode mode )
-        : keySetFilePaths ( params . keySetFilePaths )
-        , inputParams ( params . inputParams )
-        , privKeyFilePath ( params . privKeyFilePath )
+        : inputParams ( params . inputParams )
+        , keySetFilePaths ( params . keySetFilePaths )
+        , privKeyFilePaths ( params . privKeyFilePaths )
+        , privKeyFilePath ( params . privKeyFilePath ) // possibly redundant
+        , privPwd ( params . privPwd )
+        , duration ( params . duration )
         , jwtMode ( mode )
     {
     }
@@ -122,7 +165,8 @@ namespace ncbi
         cmdline . addMode ( "decode", "Extract and verify JWT claims" );
         cmdline . addMode ( "sign", "Sign a JSON claim set object" );
         cmdline . addMode ( "examine", "Examine a JWT without verification" );
-
+        cmdline . addMode ( "import-pem", "Import a private pem file to extract and save private and public keys to files" );
+        
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
 
@@ -131,14 +175,30 @@ namespace ncbi
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "JSON", "JSON text to convert into a JWT" );
         cmdline . addOption ( params . privKeyFilePath, & params . numPrivKeyFilePaths,
-                                  "K", "priv-key", "path-to-priv-key", "provide path to private signing key" );
+                              "", "priv-key", "path-to-priv-key", "provide path to private signing key" );
+        cmdline . addOption ( params . duration, & params . numDurationOpts,
+                              "", "duration", "duration in seconds" ,"amount of time JWT is valid" );
 
+        // examine
         cmdline . setCurrentMode ( "examine" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
         
         cmdline . addListOption ( params . keySetFilePaths, ',', 256,
-                                  "K", "key-sets", "path-to-JWKS", "provide one or more sets of public JWKs" );
+                                  "", "key-sets", "path-to-JWKS", "provide one or more sets of public JWKs" );
+
+        // import_pem
+        cmdline . setCurrentMode ( "import-pem" );
+        cmdline . startOptionalParams ();
+        cmdline . addParam ( params . inputParams, 0, 256, "pem file(s)", "one or more pem files" );
+        cmdline . addOption ( params . privPwd, & params . numPwds,
+                              "", "pwd", "priv-pem-pwd" , "Private pem file password for decryption" );        
+        cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
+                                  "", "priv-keys", "path-to-priv-key(s)", "Private key file(s); will create if it does not exist" );
+        cmdline . addListOption ( params . keySetFilePaths, ',', 256,
+                                  "", "pub-keys", "path-to-JWKS(s)", "Public JWKS file(s); will create if it does not exist" );
+
+
         
         // pre-parse to look for any configuration file path
         cmdline . parse ( true );
