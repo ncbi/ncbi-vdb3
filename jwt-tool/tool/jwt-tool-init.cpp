@@ -229,7 +229,7 @@ namespace ncbi
                 << " pem file"
                 << endm
                 ;
-            loadPrivateKey ( privKeyFilePath );
+            loadPrivateKey ( privKeyFilePaths [ 0 ] );
             
             log . msg ( LOG_INFO )
                 << "Successfully loaded "
@@ -257,12 +257,12 @@ namespace ncbi
             // load keysets in keyfilepaths into JWK obj
             log . msg ( LOG_INFO )
                 << "Attempting to load "
-                << keySetFilePaths . size ()
+                << pubKeyFilePaths . size ()
                 << " keyset files"
                 << endm
                 ;
             
-            for ( auto path : keySetFilePaths )
+            for ( auto path : pubKeyFilePaths )
                 loadPublicKeySet ( path );
             
             log . msg ( LOG_INFO )

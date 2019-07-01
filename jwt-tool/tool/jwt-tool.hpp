@@ -59,11 +59,10 @@ namespace ncbi
             }
         
         std :: vector <String> inputParams;
-        std :: vector <String> keySetFilePaths;
+        std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
         
         // sign
-        String privKeyFilePath;
         U32 numPrivKeyFilePaths;
 
         I64 duration;
@@ -96,10 +95,8 @@ namespace ncbi
         void examineJWT ( const JWT & jwt );
         
         std :: vector <String> inputParams;
-        std :: vector <String> keySetFilePaths;
+        std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
-
-        String privKeyFilePath;
         String privPwd;
         
         long long int duration;
