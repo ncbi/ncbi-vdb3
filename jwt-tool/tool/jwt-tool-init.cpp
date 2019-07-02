@@ -121,13 +121,13 @@ namespace ncbi
         String contents = readTextFile ( path );
         
         log . msg ( LOG_INFO )
-            << "Parsing keyset JSON '"
-            << contents
-            << '\''
+            << "Parsing keyset JSON"
             << endm
             ;
 
         JWKSetRef keySet = JWKMgr :: parseJWKSet ( contents );
+
+        std :: cout << keySet -> readableJSON () << std :: endl; 
         
         // if pubKeys is null, just assign it
         if ( pubKeys == nullptr )
@@ -183,28 +183,38 @@ namespace ncbi
 
         String contents = readTextFile ( path );
 
-        JWKRef key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
-        if ( ! key -> isPrivate () )
+        JWKRef privKey = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
+        std :: cout << privKey -> readableJSON () << std :: endl;
+        if ( ! privKey -> isPrivate () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Pem file is not private"
                 );
-        if ( ! key -> isRSA () )
+        if ( ! privKey -> isRSA () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Pem file is not RSA"
                 );
-            
-        if ( privKey == nullptr )
-            privKey = key;
 
         // translate private key to public
-
+        JWKRef pubKey = JWKMgr :: parseJWK ( * privKey );
+        std :: cout << pubKey -> readableJSON () << std :: endl;
+        if ( pubKey -> isPrivate () )
+            throw RuntimeException (
+                XP ( XLOC, rc_param_err )
+                << "Public key extraction failed"
+                );
+        
         // save keys to text files
         if ( privKeyFilePaths . empty () )
-            writeTextFile ( privKey -> readableJSON (), "tool/input/extPemKeys.txt" );
+            writeTextFile ( privKey -> readableJSON (), "tool/input/extPemPrivKey.txt" );
         else
             writeTextFile ( privKey -> readableJSON (), privKeyFilePaths [ 0 ] );
+        
+        if ( pubKeyFilePaths . empty () )
+            writeTextFile ( pubKey -> readableJSON (), "tool/input/extPemPubKeys.txt" );
+        else
+            writeTextFile ( pubKey -> readableJSON (), pubKeyFilePaths [ 0 ] );
 
     }
 

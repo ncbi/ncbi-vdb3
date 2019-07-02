@@ -244,6 +244,7 @@ namespace ncbi
         return props -> getValue ( "kid" ) . toString ();
     }
 
+    
     String JWK :: toJSON () const
     {
         return props -> toJSON ();

@@ -202,10 +202,10 @@ namespace ncbi
         cmdline . addOption ( params . privPwd, & params . numPwds,
                               "", "pwd", "priv-pem-pwd" , "Private pem file password for decryption" );        
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
-                                  "", "priv-keys", "path-to-priv-key-file",
+                                  "", "priv-key", "path-to-priv-key-file",
                                   "Private key file; will create if it does not exist" );
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
-                                  "", "pub-keys", "path-to-JWKS(s)", "Public JWKS file(s); will create if it does not exist" );
+                                  "", "pub-key", "path-to-pub-key", "Public key file; will create if it does not exist" );
 
 
         

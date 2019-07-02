@@ -169,6 +169,16 @@ namespace ncbi
         return * this;
     }
 
+    String JWKSet :: toJSON () const
+    {
+        return kset -> toJSON ();
+    }
+
+    String JWKSet :: readableJSON ( unsigned int indent ) const
+    {
+        return kset -> readableJSON ( indent );
+    }
+
     JWKSet :: JWKSet ( const JWKSet & ks )
         : num_verification_keys ( 0 )
     {
@@ -206,5 +216,4 @@ namespace ncbi
     {
         extractKeys ();
     }
-
 }

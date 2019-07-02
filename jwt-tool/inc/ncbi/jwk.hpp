@@ -107,6 +107,14 @@ namespace ncbi
 
         /**
          * parseJWK
+         * @brief translate a priv JWK to pub JWK
+         * @param priv_jwk 
+         * @return JWKRef
+         */
+        static JWKRef parseJWK ( const JWK & priv_jwk );
+
+        /**
+         * parseJWK
          * @brief inflate a JWK from JSON text
          * @param json_text a serialized version of a JWK
          * @return JWKRef
@@ -307,9 +315,8 @@ namespace ncbi
          * This property is considered OPTIONAL under RFC (section 4.5)
          * but has been configured to be MANDATORY in this implementation.
          */
-        String getID () const;
-
-
+        String getID () const;        
+        
         /*=================================================*
          *                  SERIALIZATION                  *
          *=================================================*/
@@ -484,6 +491,28 @@ namespace ncbi
          * @brief deletes any contents and destroys internal structures
          */        
         ~ JWKSet () noexcept;
+
+        /*=================================================*
+         *                  SERIALIZATION                  *
+         *=================================================*/
+
+        /**
+         * toJSON
+         * @return C++ std::string with JSON representation of properties
+         *
+         * NB - this representation may not be universally compatible
+         * with other systems. In particular, sensitive information
+         * may be encrypted.
+         */
+        String toJSON () const;
+
+        /**
+         * readableJSON
+         * @return C++ std::string with human-formatted JSON representation of properties..
+         *
+         * Differs from toJSON() in that spacing, indentation and line endings are inserted.
+         */
+        String readableJSON ( unsigned int indent = 0 ) const;
 
     private:
 

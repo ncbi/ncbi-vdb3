@@ -293,6 +293,22 @@ namespace ncbi
         }
     }
 
+    JWKRef JWKMgr :: parseJWK ( const JWK & priv_jwk )
+    {
+        JSONObjectRef props = priv_jwk . props -> cloneObject ();
+
+        props -> deleteValue ( "d" );
+        props -> deleteValue ( "dp" );
+        props -> deleteValue ( "dq" );
+        props -> deleteValue ( "p" );
+        props -> deleteValue ( "q" );
+        props -> deleteValue ( "qi" );
+
+        validateJWK ( * props );
+        
+        return JWKRef ( new JWK ( props ) );
+    }
+
     JWKRef JWKMgr :: parseJWK ( const String & json_text )
     {
         // keys have known depths
