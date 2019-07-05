@@ -431,9 +431,9 @@ $(LIBDIR)/libncbi-jwa-dbg.a: $(LIBJWATESTS) $(OBJDIR) $(LIBJWADBGOBJ) $(MAKEFILE
 $(LIBDIR)/libncbi-jwa-rel.a: $(LIBJWATESTS) $(OBJDIR) $(LIBJWARELOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBJWARELOBJ)
 
-JWA_TSTSRC =    \
-	jwa-tst     \
-	jwk-key.tst \
+JWA_TSTSRC =        \
+	jwa-tst         \
+	jwk-key-cmn.tst \
 	gtest-all
 
 JWA_TSTOBJ = \
@@ -460,6 +460,7 @@ $(TSTDIR)/jwa-test.passed: $(TSTDIR)/jwa-test
 LIBJWKSRC =        \
 	jwk-mgr        \
 	jwk-set        \
+	jwk-key-cmn    \
 	jwk-key
 
 LIBJWKDBGOBJ = \

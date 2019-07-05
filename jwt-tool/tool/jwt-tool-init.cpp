@@ -197,7 +197,7 @@ namespace ncbi
                 );
 
         // translate private key to public
-        JWKRef pubKey = JWKMgr :: parseJWK ( * privKey );
+        JWKRef pubKey = privKey -> toPublic ();
         std :: cout << pubKey -> readableJSON () << std :: endl;
         if ( pubKey -> isPrivate () )
             throw RuntimeException (

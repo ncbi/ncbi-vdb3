@@ -107,14 +107,6 @@ namespace ncbi
 
         /**
          * parseJWK
-         * @brief translate a priv JWK to pub JWK
-         * @param priv_jwk 
-         * @return JWKRef
-         */
-        static JWKRef parseJWK ( const JWK & priv_jwk );
-
-        /**
-         * parseJWK
          * @brief inflate a JWK from JSON text
          * @param json_text a serialized version of a JWK
          * @return JWKRef
@@ -316,6 +308,16 @@ namespace ncbi
          * but has been configured to be MANDATORY in this implementation.
          */
         String getID () const;        
+        
+        /*=================================================*
+         *                  Translation                    *
+         *=================================================*/
+
+        /**
+         * toPublic
+         * @return JWKRef
+         */
+        JWKRef toPublic ( ) const;
         
         /*=================================================*
          *                  SERIALIZATION                  *

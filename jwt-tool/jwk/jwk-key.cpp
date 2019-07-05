@@ -30,191 +30,6 @@
 
 namespace ncbi
 {
-    bool JWK :: forSigning () const noexcept
-    {
-        try
-        {
-            const JSONArray & ops = props -> getValue ( "key_ops" ) . toArray ();
-            unsigned int i, count = ops . count ();
-            for ( i = 0; i < count; ++ i )
-            {
-                const String & op = ops [ i ];
-                if ( op . compare ( "sign" ) == 0 )
-                    return true;
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        try
-        {
-            if ( props -> getValue ( "use" ) . toString () . compare ( "sig" ) == 0 )
-            {
-                if ( isSymmetric () )
-                    return true;
-
-                return isPrivate ();
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        return isSymmetric ();
-    }
-
-    bool JWK :: forVerifying () const noexcept
-    {
-        try
-        {
-            const JSONArray & ops = props -> getValue ( "key_ops" ) . toArray ();
-            unsigned int i, count = ops . count ();
-            for ( i = 0; i < count; ++ i )
-            {
-                const String & op = ops [ i ];
-                if ( op . compare ( "verify" ) == 0 )
-                    return true;
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        try
-        {
-            if ( props -> getValue ( "use" ) . toString () . compare ( "sig" ) == 0 )
-            {
-                // symmetric keys are always dual use,
-                // public or private asymmetric JWKs can be used for verifying
-                return true;
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        return isSymmetric ();
-    }
-
-    bool JWK :: forEncryption () const noexcept
-    {
-        try
-        {
-            const JSONArray & ops = props -> getValue ( "key_ops" ) . toArray ();
-            unsigned int i, count = ops . count ();
-            for ( i = 0; i < count; ++ i )
-            {
-                const String & op = ops [ i ];
-                if ( op . compare ( "encrypt" ) == 0 )
-                    return true;
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        try
-        {
-            if ( props -> getValue ( "use" ) . toString () . compare ( "enc" ) == 0 )
-            {
-                // symmetric keys are always dual use,
-                // public or private asymmetric JWKs can be used for encryption
-                return true;
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        return false;
-    }
-
-    bool JWK :: forDecryption () const noexcept
-    {
-        try
-        {
-            const JSONArray & ops = props -> getValue ( "key_ops" ) . toArray ();
-            unsigned int i, count = ops . count ();
-            for ( i = 0; i < count; ++ i )
-            {
-                const String & op = ops [ i ];
-                if ( op . compare ( "decrypt" ) == 0 )
-                    return true;
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        try
-        {
-            if ( props -> getValue ( "use" ) . toString () . compare ( "enc" ) == 0 )
-            {
-                if ( isSymmetric () )
-                    return true;
-
-                return isPrivate ();
-            }
-        }
-        catch ( ... )
-        {
-        }
-
-        return false;
-    }
-
-    bool JWK :: isPrivate () const noexcept
-    {
-        if ( isSymmetric () )
-            return false;
-
-        if ( props -> exists ( "d" ) )
-            return true;
-
-        return false;
-    }
-
-    bool JWK :: isSymmetric () const noexcept
-    {
-        try
-        {
-            return getType () . compare ( "oct" ) == 0;
-        }
-        catch ( ... )
-        {
-        }
-        return false;
-    }
-
-    bool JWK :: isRSA () const noexcept
-    {
-        try
-        {
-            return getType () . compare ( "RSA" ) == 0;
-        }
-        catch ( ... )
-        {
-        }
-        return false;
-    }
-
-    bool JWK :: isEllipticCurve () const noexcept
-    {
-        try
-        {
-            return getType () . compare ( "EC" ) == 0;
-        }
-        catch ( ... )
-        {
-        }
-        return false;
-    }
-
-    String JWK :: getType () const
-    {
-        return props -> getValue ( "kty" ) . toString ();
-    }
 
     String JWK :: getUse () const
     {
@@ -245,6 +60,22 @@ namespace ncbi
     }
 
     
+    JWKRef JWK :: toPublic () const
+    {
+        JSONObjectRef p = props -> cloneObject ();
+
+        p -> deleteValue ( "d" );
+        p -> deleteValue ( "dp" );
+        p -> deleteValue ( "dq" );
+        p -> deleteValue ( "p" );
+        p -> deleteValue ( "q" );
+        p -> deleteValue ( "qi" );
+
+        JWKMgr :: validateJWK ( * p );
+        
+        return JWKRef ( new JWK ( p ) );
+    }
+
     String JWK :: toJSON () const
     {
         return props -> toJSON ();
