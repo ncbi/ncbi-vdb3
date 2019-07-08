@@ -425,7 +425,15 @@ namespace ncbi
          * @param kid std::string with key id
          * @return JWKRef
          */
-        JWKRef getKey ( const String & kid ) const;
+        JWKRef getKey ( U32 value ) const;
+		
+		/**
+		 * getKey
+		 * @brief return JWK for key identifier
+		 * @param kid std::string with key id
+		 * @return JWKRef
+		 */
+		JWKRef getKey ( const String & kid ) const;
 
         /**
          * removeKey

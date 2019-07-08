@@ -42,7 +42,7 @@ namespace ncbi
 
         std :: cout << "Duration set to " << claimSet -> getDuration () << " seconds" <<  std :: endl;
 
-        JWT jwt = JWTMgr :: sign ( *privKey, *claimSet );
+        JWT jwt = JWTMgr :: sign ( *privKeys -> getKey ( 0 ), *claimSet );
 
         std :: cout << jwt << std :: endl;
     }

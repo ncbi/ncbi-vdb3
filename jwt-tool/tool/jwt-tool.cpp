@@ -132,8 +132,11 @@ namespace ncbi
     }
 
     ParamBlock :: ParamBlock ()
-        : duration ( 5 * 60 )
+        : isPem ( false )
+        , duration ( 5 * 60 )
         , numDurationOpts ( 0 )
+	    , numPubKeyFilePaths ( 0 )
+	    , numPrivKeyFilePaths ( 0 )
         , numPwds ( 0 )
     {
     }
@@ -143,6 +146,7 @@ namespace ncbi
         , pubKeyFilePaths ( params . pubKeyFilePaths )
         , privKeyFilePaths ( params . privKeyFilePaths )
         , privPwd ( params . privPwd )
+	    , isPem ( params . isPem )
         , duration ( params . duration )
         , jwtMode ( mode )
     {
@@ -188,10 +192,12 @@ namespace ncbi
         cmdline . setCurrentMode ( "sign" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "JSON", "JSON text to convert into a JWT" );
+		cmdline . addOption ( params . isPem, "", "--is-pem", "Indicates private key is a pem file" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
                                   "", "priv-pem", "path-to-priv-pem", "Private signing pem file; provide only 1" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
-                              "", "pwd", "priv-pem-pwd" , "Private pem file password for decryption"         cmdline . addOption ( params . duration, & params . numDurationOpts,
+                             "", "pwd", "priv-pem-pwd" , "Private pem file password for decryption");
+        cmdline . addOption ( params . duration, & params . numDurationOpts,
                               "", "duration", "duration in seconds" ,"amount of time JWT is valid" );
 
         // examine

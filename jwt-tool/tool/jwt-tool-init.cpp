@@ -108,39 +108,60 @@ namespace ncbi
         
 }
 
-    void JWTTool :: loadPublicKeySet ( const String & path )
-    {
-        log . msg ( LOG_INFO )
-            << "Attempting to load key sets from '"
-            << path
-            << '\''
-            << endm
-            ;
+	void JWTTool :: loadPublicKey ( const JWKRef & key )
+	{
+		// if pubKeys is null, just assign it
+		if ( pubKeys == nullptr )
+			pubKeys = JWKMgr :: makeJWKSet ();
+		
+		pubKeys -> addKey ( key );
+	}
+	
+	void JWTTool :: loadPublicKey ( const String & path )
+	{
+		log . msg ( LOG_INFO )
+		<< "Reading public key from '"
+		<< path
+		<< '\''
+		<< endm
+		;
+		
+		// capture String with contents of file
+		String contents = readTextFile ( path );
+		
+		JWKRef key;
+		if ( isPem )
+			key = JWKMgr :: parsePEM ( contents, "sig", "RS256", "kid_1" );
+		else
+			key = JWKMgr :: parseJWK ( contents );
+		
+		if ( key -> isPrivate () )
+			throw RuntimeException (
+									XP ( XLOC, rc_param_err )
+									<< "Key is not public"
+									);
+		if ( ! key -> isRSA () )
+			throw RuntimeException (
+									XP ( XLOC, rc_param_err )
+									<< "Key is not RSA"
+									);
 
-        // capture String with contents of file
-        String contents = readTextFile ( path );
-        
-        log . msg ( LOG_INFO )
-            << "Parsing keyset JSON"
-            << endm
-            ;
+		loadPublicKey ( key );
+	}
 
-        JWKSetRef keySet = JWKMgr :: parseJWKSet ( contents );
-
-        std :: cout << keySet -> readableJSON () << std :: endl; 
-        
-        // if pubKeys is null, just assign it
-        if ( pubKeys == nullptr )
-            pubKeys = keySet;
-        
-        // otherwise, we need to have a method to merge in the keys
-        // with a single path, this won't happen - so wait until later
-    }
-
+	void JWTTool :: loadPrivateKey ( const JWKRef & key )
+	{
+		// if pubKeys is null, just assign it
+		if ( privKeys == nullptr )
+			privKeys = JWKMgr :: makeJWKSet ();
+		
+		privKeys -> addKey ( key );
+	}
+	
     void JWTTool :: loadPrivateKey ( const String & path )
     {
         log . msg ( LOG_INFO )
-            << "Reading  private key from '"
+            << "Reading private key from '"
             << path
             << '\''
             << endm
@@ -148,67 +169,85 @@ namespace ncbi
 
         // capture String with contents of file
         String contents = readTextFile ( path );
-        
-        JWKRef priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
-        if ( ! priv_key -> isPrivate () )
+		
+		JWKRef key;
+		if ( isPem )
+			key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
+		else
+			key = JWKMgr :: parseJWK ( contents );
+		
+        if ( ! key -> isPrivate () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Pem file is not private"
                 );
-        if ( ! priv_key -> isRSA () )
+        if ( ! key -> isRSA () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Pem file is not RSA"
                 );
-        
-        // if pubKeys is null, just assign it
-        if ( privKey == nullptr )
-            privKey = key;
+		
+		loadPrivateKey ( key );
     }
 
-    void JWTTool :: importPrivPemFile ( const String & path )
+	void JWTTool :: loadKeySet ( const String & path )
+	{
+		log . msg ( LOG_INFO )
+		<< "Attempting to load key sets from '"
+		<< path
+		<< '\''
+		<< endm
+		;
+		
+		// capture String with contents of file
+		String contents = readTextFile ( path );
+		
+		log . msg ( LOG_INFO )
+		<< "Parsing keyset JSON"
+		<< endm
+		;
+		
+		JWKSetRef key_set = JWKMgr :: parseJWKSet ( contents );
+		
+		// otherwise, merge in the keys
+		std :: vector <String> kids = key_set -> getKeyIDs ();
+		
+		for ( auto kid : kids )
+		{
+			JWKRef key = key_set -> getKey ( kid );
+			if ( key -> isPrivate () )
+				loadPrivateKey ( key );
+			else
+				loadPublicKey ( key );
+		}
+	}
+	
+    void JWTTool :: importPemFile ( const String & path )
     {
-        log . msg ( LOG_INFO )
-            << "Reading pem file from '"
-            << path
-            << '\''
-            << endm
-            ;
-
-        String contents = readTextFile ( path );
-
-        JWKRef priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
-        std :: cout << priv_key -> readableJSON () << std :: endl;
-        if ( ! priv_key -> isPrivate () )
-            throw RuntimeException (
-                XP ( XLOC, rc_param_err )
-                << "Pem file is not private"
-                );
-        if ( ! priv_key -> isRSA () )
-            throw RuntimeException (
-                XP ( XLOC, rc_param_err )
-                << "Pem file is not RSA"
-                );
-
+		loadPrivateKey ( path );
+		
+		assert ( privKeys -> count () == 1 ); //shouldnt have more than one private key from pem file
+		
         // translate private key to public
-        JWKRef pub_key = priv_key -> toPublic ();
-        std :: cout << pub_key -> readableJSON () << std :: endl;
-        if ( pub_key -> isPrivate () )
+        JWKRef key = privKeys -> getKey ( 0 ) -> toPublic ();
+        if ( key -> isPrivate () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Public key extraction failed"
                 );
-        
+		
+		loadPublicKey ( key );
+		
         // save keys to text files
         if ( privKeyFilePaths . empty () )
-            writeTextFile ( priv_key -> readableJSON (), "tool/input/extPemPrivKey.txt" );
+            writeTextFile ( privKeys -> readableJSON (), "tool/input/extPemPrivKey.txt" );
         else
-            writeTextFile ( priv_key -> readableJSON (), privKeyFilePaths [ 0 ] );
+            writeTextFile ( privKeys -> readableJSON (), privKeyFilePaths [ 0 ] );
         
         if ( pubKeyFilePaths . empty () )
-            writeTextFile ( pub_key -> readableJSON (), "tool/input/extPemPubKeys.txt" );
+            writeTextFile ( pubKeys -> readableJSON (), "tool/input/extPemPubKeys.txt" );
         else
-            writeTextFile ( pub_key -> readableJSON (), pubKeyFilePaths [ 0 ] );
+            writeTextFile ( pubKeys -> readableJSON (), pubKeyFilePaths [ 0 ] );
 
     }
 
@@ -267,7 +306,7 @@ namespace ncbi
                 ;
             
             for ( auto path : pubKeyFilePaths )
-                loadPublicKeySet ( path );
+                loadKeySet ( path );
             
             log . msg ( LOG_INFO )
                 << "Successfully loaded "
@@ -280,7 +319,9 @@ namespace ncbi
         case import_pem:
         {
             for ( auto path : inputParams )
-                importPrivPemFile ( path );
+			{
+                importPemFile ( path );
+			}
             break;
         }
         

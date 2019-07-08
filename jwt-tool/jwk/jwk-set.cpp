@@ -112,21 +112,42 @@ namespace ncbi
         num_verification_keys += ( count_t ) key -> forVerifying ();
     }
 
-    JWKRef JWKSet :: getKey ( const String & kid ) const
+    JWKRef JWKSet :: getKey ( U32 value ) const
     {
         SLocker lock ( busy );
-        auto it = map . find ( kid );
-        if ( it == map . end () )
-        {
-            throw JWKKeyNotFound (
-                XP ( XLOC )
-                << "key-id '"
-                << kid
-                << "' not found"
-                );
-        }
-        return it -> second . second;
+		auto it = map . cbegin ();
+		for ( auto counter = 0; counter < map . size (); ++ counter, ++ it )
+		{
+			if ( it == map . cend () )
+			{
+				throw JWKKeyNotFound (
+									  XP ( XLOC )
+									  << "no keys"
+									  );
+			}
+			
+			if ( counter == value )
+				break;
+		}
+		
+		return it -> second . second;
     }
+	
+	JWKRef JWKSet :: getKey ( const String & kid ) const
+	{
+		SLocker lock ( busy );
+		auto it = map . find ( kid );
+		if ( it == map . cend () )
+		{
+			throw JWKKeyNotFound (
+								  XP ( XLOC )
+								  << "key-id '"
+								  << kid
+								  << "' not found"
+								  );
+		}
+		return it -> second . second;
+	}
 
     void JWKSet :: removeKey ( const String & kid )
     {

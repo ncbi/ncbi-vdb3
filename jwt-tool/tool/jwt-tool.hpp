@@ -61,14 +61,13 @@ namespace ncbi
         std :: vector <String> inputParams;
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
-        std :: vector <String> pubPemFilePaths;
-        std :: vector <String> privPemFilePaths;
 
         bool isPem;
         
         I64 duration;
 
         U32 numDurationOpts;
+		U32 numPubKeyFilePaths;
         U32 numPrivKeyFilePaths;
         U32 numPwds;
 
@@ -89,9 +88,12 @@ namespace ncbi
         void exec ();
         void cleanup () noexcept;
 
-        void loadPublicKeySet ( const String & path );
-        void loadPrivateKey ( const String & path );
-        void importPrivPemFile ( const String & path );
+		void loadPublicKey ( const JWKRef & key );
+		void loadPublicKey ( const String & path );
+		void loadPrivateKey ( const JWKRef & key );
+		void loadPrivateKey ( const String & path );
+		void loadKeySet ( const String & path );
+		void importPemFile ( const String & path );
 
         void createJWT ( const String & json );
         void examineJWT ( const JWT & jwt );
@@ -100,11 +102,13 @@ namespace ncbi
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
         String privPwd;
+		
+		bool isPem;
         
         long long int duration;
 
         JWTMode jwtMode;
         JWKSetRef pubKeys;
-        JWKRef privKey;
+        JWKSetRef privKeys;
     };
 }
