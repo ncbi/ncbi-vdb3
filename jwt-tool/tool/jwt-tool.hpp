@@ -61,16 +61,18 @@ namespace ncbi
         std :: vector <String> inputParams;
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
+        std :: vector <String> pubPemFilePaths;
+        std :: vector <String> privPemFilePaths;
+
+        bool isPem;
         
-        // sign
-        U32 numPrivKeyFilePaths;
-
         I64 duration;
-        U32 numDurationOpts;
 
-        // import-pem
-        String privPwd;
+        U32 numDurationOpts;
+        U32 numPrivKeyFilePaths;
         U32 numPwds;
+
+        String privPwd;
     };
     
     class JWTTool

@@ -149,23 +149,17 @@ namespace ncbi
         // capture String with contents of file
         String contents = readTextFile ( path );
         
-        log . msg ( LOG_INFO )
-            << "Decrypting private key '"
-            << contents
-            << '\''
-            << endm
-            ;
-
-        std :: string pwd;
-        std :: getline ( std :: cin, pwd );
-
-        if ( pwd . empty () )
+        JWKRef priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
+        if ( ! priv_key -> isPrivate () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
-                << "Missing input parameters"
+                << "Pem file is not private"
                 );
-
-        JWKRef key = JWKMgr :: parsePEM ( contents, String ( pwd ), "sig", "RS256", "kid_1" );
+        if ( ! priv_key -> isRSA () )
+            throw RuntimeException (
+                XP ( XLOC, rc_param_err )
+                << "Pem file is not RSA"
+                );
         
         // if pubKeys is null, just assign it
         if ( privKey == nullptr )
@@ -183,23 +177,23 @@ namespace ncbi
 
         String contents = readTextFile ( path );
 
-        JWKRef privKey = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
-        std :: cout << privKey -> readableJSON () << std :: endl;
-        if ( ! privKey -> isPrivate () )
+        JWKRef priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
+        std :: cout << priv_key -> readableJSON () << std :: endl;
+        if ( ! priv_key -> isPrivate () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Pem file is not private"
                 );
-        if ( ! privKey -> isRSA () )
+        if ( ! priv_key -> isRSA () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Pem file is not RSA"
                 );
 
         // translate private key to public
-        JWKRef pubKey = privKey -> toPublic ();
-        std :: cout << pubKey -> readableJSON () << std :: endl;
-        if ( pubKey -> isPrivate () )
+        JWKRef pub_key = priv_key -> toPublic ();
+        std :: cout << pub_key -> readableJSON () << std :: endl;
+        if ( pub_key -> isPrivate () )
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
                 << "Public key extraction failed"
@@ -207,14 +201,14 @@ namespace ncbi
         
         // save keys to text files
         if ( privKeyFilePaths . empty () )
-            writeTextFile ( privKey -> readableJSON (), "tool/input/extPemPrivKey.txt" );
+            writeTextFile ( priv_key -> readableJSON (), "tool/input/extPemPrivKey.txt" );
         else
-            writeTextFile ( privKey -> readableJSON (), privKeyFilePaths [ 0 ] );
+            writeTextFile ( priv_key -> readableJSON (), privKeyFilePaths [ 0 ] );
         
         if ( pubKeyFilePaths . empty () )
-            writeTextFile ( pubKey -> readableJSON (), "tool/input/extPemPubKeys.txt" );
+            writeTextFile ( pub_key -> readableJSON (), "tool/input/extPemPubKeys.txt" );
         else
-            writeTextFile ( pubKey -> readableJSON (), pubKeyFilePaths [ 0 ] );
+            writeTextFile ( pub_key -> readableJSON (), pubKeyFilePaths [ 0 ] );
 
     }
 

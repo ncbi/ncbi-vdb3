@@ -44,6 +44,12 @@ namespace ncbi
                     << "Multiple duration values"
                     );
             
+        if ( numPwds > 1 )
+            throw InvalidArgument (
+                XP ( XLOC, rc_param_err )
+                << "Multiple password values"
+                );
+        
         switch ( mode )
         {
         case decode:
@@ -67,6 +73,11 @@ namespace ncbi
                     XP ( XLOC, rc_param_err )
                     << "Required private signing key"
                     );
+            if ( privPwd . isEmpty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing pem file password"
+                    );            
             if ( duration < 0 )
             {
                 throw InvalidArgument (
@@ -99,11 +110,6 @@ namespace ncbi
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
                     << "Missing pem files"
-                    );            
-            if ( numPwds > 1 )
-                throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Too many pem file passwords"
                     );            
             if ( privPwd . isEmpty () )
                 throw InvalidArgument (
@@ -183,8 +189,9 @@ namespace ncbi
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "JSON", "JSON text to convert into a JWT" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
-                                  "", "priv-keys", "path-to-priv-key", "Private signing key; provide only 1" );
-        cmdline . addOption ( params . duration, & params . numDurationOpts,
+                                  "", "priv-pem", "path-to-priv-pem", "Private signing pem file; provide only 1" );
+        cmdline . addOption ( params . privPwd, & params . numPwds,
+                              "", "pwd", "priv-pem-pwd" , "Private pem file password for decryption"         cmdline . addOption ( params . duration, & params . numDurationOpts,
                               "", "duration", "duration in seconds" ,"amount of time JWT is valid" );
 
         // examine
