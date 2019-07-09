@@ -1842,7 +1842,7 @@ namespace ncbi
     do {                                                     \
         if ( str == nullptr )                                \
             return false;                                    \
-        if ( len == 0 || idx >= cnt )                        \
+        if ( len == 0 || ( count_t ) idx >= cnt )            \
             return false;                                    \
         if ( ! isAscii () || ! is_ascii ( query ) )          \
             return meth ( String ( query ), len );           \
@@ -1857,7 +1857,7 @@ namespace ncbi
         DETECT_MISMATCHED_STRINGS ( xend );                  \
         if ( idx >= xend . idx )                             \
             return false;                                    \
-        if ( xend . idx <= 0 || idx >= cnt )                 \
+        if ( xend . idx <= 0 || ( count_t ) idx >= cnt )     \
             return false;                                    \
         if ( ! isAscii () || ! is_ascii ( query ) )          \
             return meth ( String ( query ), xend );          \
@@ -1958,7 +1958,7 @@ namespace ncbi
         DETECT_MISMATCHED_STRINGS ( end );              \
         if ( end . idx >= idx )                         \
             return false;                               \
-        if ( idx <= 0 || end . idx >= cnt )             \
+        if ( idx <= 0 || ( count_t ) end . idx >= cnt ) \
             return false;                               \
         left = end . idx;                               \
         xright = idx;                                   \
@@ -1986,7 +1986,7 @@ namespace ncbi
         DETECT_MISMATCHED_STRINGS ( end );                   \
         if ( end . idx >= idx )                              \
             return false;                                    \
-        if ( idx <= 0 || end . idx >= cnt )                  \
+        if ( idx <= 0 || ( count_t ) end . idx >= cnt )      \
             return false;                                    \
         if ( ! isAscii () || ! is_ascii ( query ) )          \
             return meth ( String ( query ), end );           \
@@ -2176,7 +2176,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( ( count_t ) idx < cnt );
             return true;
         }
 
@@ -2230,7 +2230,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( ( count_t ) idx < cnt );
             return true;
         }
 
@@ -2280,7 +2280,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( ( count_t ) idx < cnt );
             return true;
         }
 
@@ -2299,7 +2299,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( ( count_t ) idx < cnt );
             return true;
         }
 
@@ -2312,7 +2312,7 @@ namespace ncbi
 
         if ( cset . isEmpty () )
         {
-            if ( idx >= cnt )
+            if ( ( count_t ) idx >= cnt )
             {
                 // seek right edge
                 idx = cnt;
@@ -2362,7 +2362,7 @@ namespace ncbi
 
         if ( cset . isEmpty () )
         {
-            if ( idx >= cnt )
+            if ( ( count_t ) idx >= cnt )
             {
                 idx = cnt;
                 off = str -> size ();
@@ -2499,11 +2499,11 @@ namespace ncbi
             count_t avail = cnt - idx;
 
             // amount to measure is shorter of "avail" or "adjust"
-            count_t amt = ( avail > adjust ) ? adjust : avail;
+            count_t amt = ( avail > ( count_t ) adjust ) ? ( count_t ) adjust : avail;
 
             // the number of extra characters off end of string
             count_t extra = avail - amt;
-            if ( adjust >= avail )
+            if ( ( count_t ) adjust >= avail )
             {
                 // add in any overage
                 off = str -> size () + extra;
@@ -2539,11 +2539,11 @@ namespace ncbi
             count_t avail = idx;
 
             // amount to measure is shorter of "avail" or "adjust"
-            count_t amt = ( avail > adjust ) ? adjust : avail;
+            count_t amt = ( avail > ( count_t ) adjust ) ? ( count_t ) adjust : avail;
 
             // the number of extra characters off end of string
             count_t extra = avail - amt;
-            if ( adjust >= avail )
+            if ( ( count_t ) adjust >= avail )
             {
                 off = 0L - extra;
             }
