@@ -37,13 +37,13 @@ namespace ncbi
     bool JWKSet :: isEmpty () const
     {
         SLocker lock ( busy );
-        return map . empty ();
+        return ord_idx . empty ();
     }
 
     unsigned long int JWKSet :: count () const
     {
         SLocker lock ( busy );
-        return ( unsigned long int ) map . size ();
+        return ( unsigned long int ) ord_idx . size ();
     }
 
     bool JWKSet :: hasVerificationKeys () const
@@ -55,8 +55,8 @@ namespace ncbi
     bool JWKSet :: contains ( const String & kid ) const
     {
         SLocker lock ( busy );
-        auto it = map . find ( kid );
-        return it != map . end ();
+        auto it = key_idx . find ( kid );
+        return it != key_idx . end ();
     }
 
     std :: vector < String > JWKSet :: getKeyIDs () const
@@ -65,7 +65,7 @@ namespace ncbi
 
         std :: vector < String > kids;
 
-        for ( auto it = map . begin (); it != map . end (); ++ it )
+        for ( auto it = key_idx . begin (); it != key_idx . end (); ++ it )
         {
             kids . push_back ( it -> first );
         }
@@ -79,8 +79,8 @@ namespace ncbi
 
         XLocker lock ( busy );
 
-        auto it = map . find ( kid );
-        if ( it != map . end () )
+        auto it = key_idx . find ( kid );
+        if ( it != key_idx . end () )
         {
             throw JWKUniqueConstraintViolation (
                 XP ( XLOC )
@@ -95,6 +95,7 @@ namespace ncbi
 
         // obtain the new array index
         unsigned int idx = keys . count ();
+        assert ( idx == ( unsigned int ) ord_idx . size () );
 
         // clone the object
         JSONValueRef cpy ( key -> props -> clone () );
@@ -105,39 +106,36 @@ namespace ncbi
         // verify that the insertion index was correct ( due to non-atomicity )
         assert ( keys [ idx ] . toObject () . getValue ( "kid" ) . toString () . compare ( kid ) == 0 );
 
+        // append key onto ord_idx
+        ord_idx . push_back ( key );
+
         // insert idx and key into map under kid
-        std :: pair < unsigned long int, JWKRef > entry ( idx, key );
-        map . emplace ( kid, entry );
+        key_idx . emplace ( kid, idx );
 
         num_verification_keys += ( count_t ) key -> forVerifying ();
     }
 
-    JWKRef JWKSet :: getKey ( U32 value ) const
+    JWKRef JWKSet :: getKey ( long int idx ) const
     {
         SLocker lock ( busy );
-		auto it = map . cbegin ();
-		for ( auto counter = 0; counter < map . size (); ++ counter, ++ it )
-		{
-			if ( it == map . cend () )
-			{
-				throw JWKKeyNotFound (
-									  XP ( XLOC )
-									  << "no keys"
-									  );
-			}
-			
-			if ( counter == value )
-				break;
-		}
-		
-		return it -> second . second;
+        if ( idx < 0 || ( size_t ) idx >= ord_idx . size () )
+        {
+			throw JWKKeyNotFound (
+								  XP ( XLOC )
+								  << "key entry "
+								  << idx
+								  << " not found"
+								  );
+        }
+
+        return ord_idx [ idx ];
     }
 	
 	JWKRef JWKSet :: getKey ( const String & kid ) const
 	{
 		SLocker lock ( busy );
-		auto it = map . find ( kid );
-		if ( it == map . cend () )
+		auto it = key_idx . find ( kid );
+		if ( it == key_idx . cend () )
 		{
 			throw JWKKeyNotFound (
 								  XP ( XLOC )
@@ -146,20 +144,21 @@ namespace ncbi
 								  << "' not found"
 								  );
 		}
-		return it -> second . second;
+		return ord_idx [ it -> second ];
 	}
 
     void JWKSet :: removeKey ( const String & kid )
     {
         XLocker lock ( busy );
-        auto it = map . find ( kid );
-        if ( it != map . end () )
+        auto it = key_idx . find ( kid );
+        if ( it != key_idx . end () )
         {
             JSONArray & keys = kset -> getValue ( "keys" ) . toArray ();
-            assert ( keys [ it -> second . first ] . toObject () . getValue ( "kid" ) . toString () . compare ( kid ) == 0 );
-            num_verification_keys -= ( count_t ) it -> second . second -> forVerifying ();
-            keys . removeValue ( it -> second . first );
-            map . erase ( it );
+            assert ( keys [ it -> second ] . toObject () . getValue ( "kid" ) . toString () . compare ( kid ) == 0 );
+            num_verification_keys -= ( count_t ) ord_idx [ it -> second ] -> forVerifying ();
+            keys . removeValue ( it -> second );
+            ord_idx . erase ( ord_idx . begin () + it -> second );
+            key_idx . erase ( it );
         }
     }
 
@@ -171,7 +170,8 @@ namespace ncbi
     void JWKSet :: invalidate ()
     {
         XLocker lock ( busy );
-        map . clear ();
+        ord_idx . clear ();
+        key_idx . clear ();
         kset -> invalidate ();
         num_verification_keys = 0;
     }
@@ -181,7 +181,8 @@ namespace ncbi
         XLocker lock1 ( busy );
         SLocker lock2 ( ks . busy );
 
-        map . clear ();
+        ord_idx . clear ();
+        key_idx . clear ();
         kset = ks . kset -> cloneObject ();
         num_verification_keys = 0;
 
@@ -210,7 +211,8 @@ namespace ncbi
 
     JWKSet :: ~ JWKSet () noexcept
     {
-        map . clear ();
+        ord_idx . clear ();
+        key_idx . clear ();
         kset -> invalidate ();
         num_verification_keys = 0;
     }
@@ -225,8 +227,8 @@ namespace ncbi
             JSONObjectRef cpy ( key . cloneObject () );
             JWKRef jwk ( new JWK ( cpy ) );
             String kid = key . getValue ( "kid" ) . toString ();
-            std :: pair < unsigned long int, JWKRef > entry ( i, jwk );
-            map . emplace ( kid, entry );
+            ord_idx . push_back ( jwk );
+            key_idx . emplace ( kid, i );
             num_verification_keys += ( count_t ) jwk -> forVerifying ();
         }
     }

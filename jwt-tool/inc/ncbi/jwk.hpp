@@ -422,10 +422,10 @@ namespace ncbi
         /**
          * getKey
          * @brief return JWK for key identifier
-         * @param kid std::string with key id
+         * @param idx ordinal index into JWKSet
          * @return JWKRef
          */
-        JWKRef getKey ( U32 value ) const;
+        JWKRef getKey ( long int idx ) const;
 		
 		/**
 		 * getKey
@@ -533,7 +533,10 @@ namespace ncbi
         JWKSet () = delete;
 
         JSONObjectRef kset;
-        std :: map < String, std :: pair < unsigned long int, JWKRef > > map;
+
+        std :: vector < JWKRef > ord_idx;
+        std :: map < String, unsigned long int > key_idx;
+
         count_t num_verification_keys;
         BusyLock busy;
 
