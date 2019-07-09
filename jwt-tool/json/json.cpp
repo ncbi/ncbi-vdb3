@@ -38,6 +38,32 @@ namespace ncbi
     static bool have_limits;
     JSON :: Limits JSON :: default_limits;
 
+    struct JSONError
+    {
+        JSONError ( const char * _what, const String :: Iterator & _curs )
+            : what ( _what )
+            , curs ( _curs )
+        {
+        }
+
+        const char * what;
+        const String :: Iterator & curs;
+    };
+
+    static
+    XP & operator << ( XP & xp, const JSONError & x )
+    {
+        const String :: Iterator & curs = x . curs;
+        xp
+            << curs . charIndex ()
+            << ", byte offset "
+            << curs . byteOffset ()
+            << ": "
+            << x . what
+            ;
+        return xp;
+    }
+
     struct JSONExpected
     {
         JSONExpected ( const char * _what, const String :: Iterator & _curs )
@@ -50,7 +76,7 @@ namespace ncbi
         const String :: Iterator & curs;
     };
 
-    inline
+    static
     XP & operator << ( XP & xp, const JSONExpected & x )
     {
         const String :: Iterator & curs = x . curs;
@@ -75,12 +101,41 @@ namespace ncbi
         return xp;
     }
 
-    // without the leading string,
-    // which is defined on the XP object,
-    // C++ has difficulty with the global operator<<
-    // make this into a macro to force a leading expression.
+    struct JSONTrailingBytes
+    {
+        JSONTrailingBytes ( const String :: Iterator & _curs )
+            : curs ( _curs )
+        {
+        }
+
+        const String :: Iterator & curs;
+    };
+
+    static
+    XP & operator << ( XP & xp, const JSONTrailingBytes & x )
+    {
+        const String :: Iterator & curs = x . curs;
+        xp
+            << curs . charIndex ()
+            << ", byte offset "
+            << curs . byteOffset ()
+            ;
+        return xp;
+    }
+
+    // Without the leading string or other parameter for
+    // which there is an operator defined within the XP class,
+    // C++ has difficulty associating a global "operator <<".
+    // Making this into a macro to force a leading expression
+    // gets past the problem.
+#define JSON_ERROR( what, curs ) \
+    "JSON: at character index " << JSONError ( what, curs )
 #define JSON_EXPECTED( what, curs ) \
     "JSON: at character index " << JSONExpected ( what, curs )
+#define JSON_TRAILING_BYTES( curs ) \
+    "JSON: trailing bytes in text at character index " << JSONTrailingBytes ( curs )
+#define JSON_LIMIT_VIOLATION( what, actual, lim ) \
+    what << " ( " << actual << " ) exceeds allowed limit ( " << lim << " )"
 
     String double_to_string ( long double val, unsigned int precision )
     {
@@ -169,11 +224,7 @@ namespace ncbi
             {
                 throw JSONLimitViolation (
                     XP ( XLOC )
-                    << "string size ( "
-                    << str_size
-                    << " ) exceeds allowed limit ( "
-                    << lim . string_size
-                    << " )"
+                    << JSON_LIMIT_VIOLATION ( "string size", str_size, lim . string_size )
                     );
             }
 
@@ -182,11 +233,7 @@ namespace ncbi
             {
                 throw JSONLimitViolation (
                     XP ( XLOC )
-                    << "string length ( "
-                    << str_length
-                    << " ) exceeds allowed limit ( "
-                    << lim . string_length
-                    << " )"
+                    << JSON_LIMIT_VIOLATION ( "string length", str_length, lim . string_length )
                     );
             }
 
@@ -208,19 +255,39 @@ namespace ncbi
                 // expect 4 hex digits
                 UTF32 h1 = * ++ curs;
                 if ( ! iswxdigit ( h1 ) )
-                    throw MalformedJSON ( XP ( XLOC ) << "expected hex digit" );
+                {
+                    throw MalformedJSON (
+                        XP ( XLOC )
+                        << JSON_EXPECTED ( "hex digit", curs )
+                        );
+                }
 
                 UTF32 h2 = * ++ curs;
                 if ( ! iswxdigit ( h2 ) )
-                    throw MalformedJSON ( XP ( XLOC ) << "expected hex digit" );
+                {
+                    throw MalformedJSON (
+                        XP ( XLOC )
+                        << JSON_EXPECTED ( "hex digit", curs )
+                        );
+                }
 
                 UTF32 h3 = * ++ curs;
                 if ( ! iswxdigit ( h3 ) )
-                    throw MalformedJSON ( XP ( XLOC ) << "expected hex digit" );
+                {
+                    throw MalformedJSON (
+                        XP ( XLOC )
+                        << JSON_EXPECTED ( "hex digit", curs )
+                        );
+                }
 
                 UTF32 h4 = * ++ curs;
                 if ( ! iswxdigit ( h4 ) )
-                    throw MalformedJSON ( XP ( XLOC ) << "expected hex digit" );
+                {
+                    throw MalformedJSON (
+                        XP ( XLOC )
+                        << JSON_EXPECTED ( "hex digit", curs )
+                        );
+                }
 
                 ++ curs;
 
@@ -242,7 +309,10 @@ namespace ncbi
             catch ( BoundsException & x )
             {
                 curs = save;
-                throw MalformedJSON ( XP ( XLOC ) << "bad escape sequence" );
+                throw MalformedJSON (
+                    XP ( XLOC )
+                    << JSON_ERROR ( "bad escape sequence", curs )
+                    );
             }
             catch ( ... )
             {
@@ -262,11 +332,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "parsing recursion depth ( "
-                << depth
-                << " ) exceeds maximum depth ( "
-                << lim . recursion_depth
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "parsing recursion depth", depth, lim . recursion_depth )
                 );
         }
     }
@@ -289,11 +355,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "JSON source size ( "
-                << json . size ()
-                << " ) exceeds allowed limit ( "
-                << lim . json_string_size
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "JSON source size", json . size (), lim . json_string_size )
                 );
         }
 
@@ -305,8 +367,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Expected: '{' or '[' at position "
-                << curs . charIndex ()
+                << JSON_EXPECTED ( "'{' or '['", curs )
                 );
         }
 
@@ -342,8 +403,7 @@ namespace ncbi
 
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Expected: '{' or '[' at position "
-                << curs . charIndex ()
+                << JSON_EXPECTED ( "'{' or '['", curs )
                 );
         }
 
@@ -352,8 +412,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Trailing bytes in JSON text at position "
-                << curs . charIndex ()
+                << JSON_TRAILING_BYTES ( curs )
                 );
         }
 
@@ -378,11 +437,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "JSON source size ( "
-                << json . size ()
-                << " ) exceeds allowed limit ( "
-                << lim . json_string_size
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "JSON source size", json . size (), lim . json_string_size )
                 );
         }
 
@@ -394,8 +449,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Expected: '[' at position "
-                << curs . charIndex ()
+                << JSON_EXPECTED ( "'['", curs )
                 );
         }
 
@@ -409,8 +463,7 @@ namespace ncbi
         default:
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Expected: '[' at position "
-                << curs . charIndex ()
+                << JSON_EXPECTED ( "'['", curs )
                 );
         }
 
@@ -419,8 +472,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Trailing bytes in JSON text at position "
-                << curs . charIndex ()
+                << JSON_TRAILING_BYTES ( curs )
                 );
         }
 
@@ -445,11 +497,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "JSON source size ( "
-                << json . size ()
-                << " ) exceeds allowed limit ( "
-                << lim . json_string_size
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "JSON source size", json . size (), lim . json_string_size )
                 );
         }
 
@@ -461,8 +509,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Expected: '{' at position "
-                << curs . charIndex ()
+                << JSON_EXPECTED ( "'{'", curs )
                 );
         }
 
@@ -476,8 +523,7 @@ namespace ncbi
         default:
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Expected: '{' at position "
-                << curs . charIndex ()
+                << JSON_EXPECTED ( "'{'", curs )
                 );
         }
 
@@ -486,8 +532,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Trailing bytes in JSON text at position "
-                << curs . charIndex ()
+                << JSON_TRAILING_BYTES ( curs )
                 );
         }
 
@@ -535,11 +580,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "string size ( "
-                << str . size ()
-                << " ) exceeds allowed limit ( "
-                << default_limits . string_size
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "string size", str . size (), default_limits . string_size )
                 );
         }
 
@@ -548,11 +589,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "string length ( "
-                << str . length ()
-                << " ) exceeds allowed limit ( "
-                << default_limits . string_length
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "string length", str . length (), default_limits . string_length )
                 );
         }
         
@@ -606,8 +643,7 @@ namespace ncbi
                     // garbage
                     throw MalformedJSON (
                         XP ( XLOC )
-                        << "Invalid JSON format at position "
-                        << curs . charIndex ()
+                        << JSON_EXPECTED ( "'{' or '[' or '\"' or 'true' or 'false' or number", curs )
                         );
             }
         }
@@ -618,8 +654,6 @@ namespace ncbi
 
     JSONValueRef JSON :: parseNull ( String :: Iterator & curs )
     {
-        count_t pos = curs . charIndex ();
-
         do
         {
             try
@@ -651,15 +685,12 @@ namespace ncbi
         // bad JSON
         throw MalformedJSON (
             XP ( XLOC )
-            << "Expected keyword: 'null' at position "
-            << pos
+            << JSON_EXPECTED ( "keyword 'null'", curs )
             ) ;
     }
 
     JSONValueRef JSON :: parseBoolean ( String :: Iterator & curs )
     {
-        count_t pos = curs . charIndex ();
-
         bool which = false;
         do
         {
@@ -705,12 +736,11 @@ namespace ncbi
         while ( false );
 
         // bad JSON
+        const char * what = which ?
+            "keyword 'true'" : "keyword 'false'";
         throw MalformedJSON (
             XP ( XLOC )
-            << "Expected keyword: '"
-            << ( which ? "true" : "false" )
-            << "' at position "
-            << pos
+            << JSON_EXPECTED ( what, curs )
             ) ;
     }
 
@@ -811,11 +841,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "numeral length ( "
-                << num_length
-                << " ) exceeds allowed limit ( "
-                << lim . numeral_length
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "numeral length", num_length, lim . numeral_length )
                 );
         }
 
@@ -858,7 +884,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "unterminated string"
+                << JSON_ERROR ( "unterminated string", delim )
                 );
         }
 
@@ -870,11 +896,7 @@ namespace ncbi
             {
                 throw JSONLimitViolation (
                     XP ( XLOC )
-                    << "string size ( "
-                    << proj_size
-                    << " ) exceeds allowed limit ( "
-                    << lim . string_size
-                    << " )"
+                    << JSON_LIMIT_VIOLATION ( "string size", proj_size, lim . string_size )
                     );
             }
 
@@ -883,11 +905,7 @@ namespace ncbi
             {
                 throw JSONLimitViolation (
                     XP ( XLOC )
-                    << "string length ( "
-                    << proj_len
-                    << " ) exceeds allowed limit ( "
-                    << lim . string_length
-                    << " )"
+                    << JSON_LIMIT_VIOLATION ( "string length", proj_len, lim . string_length )
                     );
             }
 
@@ -942,14 +960,12 @@ namespace ncbi
                     -- curs;
                     throw MalformedJSON (
                         XP ( XLOC )
-                        << "Invalid escape character '"
+                        << JSON_ERROR ( "Invalid escape character", curs )
+                        << ' '
                         << curs
                         << "' ("
                         << ( U32 ) * curs
-                        << ") at character index "
-                        << curs . charIndex ()
-                        << ", byte offset "
-                        << curs . byteOffset ()
+                        << ')'
                         );
             }
 
@@ -962,7 +978,7 @@ namespace ncbi
             {
                 throw MalformedJSON (
                     XP ( XLOC )
-                    << "unterminated string"
+                    << JSON_ERROR ( "unterminated string", delim )
                     );
             }
         }
@@ -984,22 +1000,14 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "string size ( "
-                << sb . size ()
-                << " ) exceeds allowed limit ( "
-                << lim . string_size
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "string size", sb . size (), lim . string_size )
                 );
         }
         if ( sb . length () > lim . string_length )
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "string length ( "
-                << sb . length ()
-                << " ) exceeds allowed limit ( "
-                << lim . string_length
-                << " )"
+                << JSON_LIMIT_VIOLATION ( "string length", sb . length (), lim . string_length )
                 );
         }
         
@@ -1045,11 +1053,7 @@ namespace ncbi
                 {
                     throw JSONLimitViolation (
                         XP ( XLOC )
-                        << "Array element count ( "
-                        << array -> count ()
-                        << " ) exceeds limit ( "
-                        << lim . array_elem_count
-                        << " )"
+                        << JSON_LIMIT_VIOLATION ( "array element count", array -> count (), lim . array_elem_count )
                         );
                 }
             }
@@ -1140,11 +1144,7 @@ namespace ncbi
             {
                 throw JSONLimitViolation (
                     XP ( XLOC )
-                    << "Array element count ( "
-                    << obj -> count ()
-                    << " ) exceeds limit ( "
-                    << lim . object_mbr_count
-                    << " )"
+                    << JSON_LIMIT_VIOLATION ( "object member count", obj -> count (), lim . object_mbr_count )
                     );
             }
 
@@ -1196,11 +1196,7 @@ namespace ncbi
         {
             throw JSONLimitViolation (
                 XP ( XLOC )
-                << "JSON source size ("
-                << json . size ()
-                << ") exceeds allowed size limit ("
-                << default_limits . json_string_size
-                << ')'
+                << JSON_LIMIT_VIOLATION ( "JSON source size", json . size (), default_limits . json_string_size )
                 );
         }
 
@@ -1211,10 +1207,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Trailing bytes in JSON text at character index "
-                << curs . charIndex ()
-                << ", byte offset "
-                << curs . byteOffset ()
+                << JSON_TRAILING_BYTES ( curs )
                 );
         }
 
