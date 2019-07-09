@@ -38,6 +38,50 @@ namespace ncbi
     static bool have_limits;
     JSON :: Limits JSON :: default_limits;
 
+    struct JSONExpected
+    {
+        JSONExpected ( const char * _what, const String :: Iterator & _curs )
+            : what ( _what )
+            , curs ( _curs )
+        {
+        }
+
+        const char * what;
+        const String :: Iterator & curs;
+    };
+
+    inline
+    XP & operator << ( XP & xp, const JSONExpected & x )
+    {
+        const String :: Iterator & curs = x . curs;
+        xp
+            << curs . charIndex ()
+            << ", byte offset "
+            << curs . byteOffset ()
+            << " expected: "
+            << x . what
+            << " but found '"
+            << curs
+            << '\''
+            ;
+        if ( curs . isValid () )
+        {
+            xp
+                << " ("
+                << ( U32 ) * curs
+                << ')'
+                ;
+        }
+        return xp;
+    }
+
+    // without the leading string,
+    // which is defined on the XP object,
+    // C++ has difficulty with the global operator<<
+    // make this into a macro to force a leading expression.
+#define JSON_EXPECTED( what, curs ) \
+    "JSON: at character index " << JSONExpected ( what, curs )
+
     String double_to_string ( long double val, unsigned int precision )
     {
         // TBD - come up with a more precise cutoff
@@ -686,8 +730,7 @@ namespace ncbi
         {
             throw MalformedJSON (
                 XP ( XLOC )
-                << "Expected: digit at position "
-                << curs . charIndex ()
+                << JSON_EXPECTED ( "digit", curs )
                 );
         }
 
@@ -812,7 +855,12 @@ namespace ncbi
 
         // Find ending '"' or escaped characters
         if ( ! delim . findFirstOf ( "\\\"" ) )
-            throw MalformedJSON ( XP ( XLOC ) << "unterminated string" );
+        {
+            throw MalformedJSON (
+                XP ( XLOC )
+                << "unterminated string"
+                );
+        }
 
         while ( 1 )
         {
@@ -891,7 +939,18 @@ namespace ncbi
                 }
 
                 default:
-                    throw MalformedJSON ( XP ( XLOC ) << "Invalid escape character" ); // test hit
+                    -- curs;
+                    throw MalformedJSON (
+                        XP ( XLOC )
+                        << "Invalid escape character '"
+                        << curs
+                        << "' ("
+                        << ( U32 ) * curs
+                        << ") at character index "
+                        << curs . charIndex ()
+                        << ", byte offset "
+                        << curs . byteOffset ()
+                        );
             }
 
             // skip escaped character
@@ -900,7 +959,12 @@ namespace ncbi
 
             // Find ending '"' or control characters
             if ( ! ( delim = curs ) . findFirstOf ( "\\\"" ) )
-                throw MalformedJSON ( XP ( XLOC ) << "unterminated string" );
+            {
+                throw MalformedJSON (
+                    XP ( XLOC )
+                    << "unterminated string"
+                    );
+            }
         }
 
         // being here should mean that we had a break above
@@ -953,7 +1017,12 @@ namespace ncbi
             // skip over '[' and any whitespace
             // * curs is known to be  '[' or ','
             if ( ! skip_whitespace ( ++ curs ) )
-                throw MalformedJSON ( XP ( XLOC ) << "Expected: ']'" );
+            {
+                throw MalformedJSON (
+                    XP ( XLOC )
+                    << JSON_EXPECTED ( "']'", curs )
+                    );
+            }
 
             // allow an empty array
             if ( * curs == ']' )
@@ -963,7 +1032,12 @@ namespace ncbi
             {
                 JSONValueRef value = parse ( lim, json, curs, depth );
                 if ( value == nullptr )
-                    throw MalformedJSON ( XP ( XLOC ) << "Excpected: ',' or ']'" );
+                {
+                    throw MalformedJSON (
+                        XP ( XLOC )
+                        << JSON_EXPECTED ( "',' or ']'", curs )
+                        );
+                }
 
                 array -> appendValue ( value );
 
@@ -988,7 +1062,12 @@ namespace ncbi
 
         // must end on ']'
         if ( ! curs . isValid () || * curs != ']' )
-            throw MalformedJSON ( XP ( XLOC ) << "Excpected: ']'" );
+        {
+            throw MalformedJSON (
+                XP ( XLOC )
+                << JSON_EXPECTED ( "']'", curs )
+                );
+        }
 
         // skip over ']'
         ++ curs;
@@ -997,7 +1076,7 @@ namespace ncbi
         assert ( array != nullptr );
         return array;
     }
-        
+
     JSONObjectRef JSON :: parseObject ( const Limits & lim, const String & json,
         String :: Iterator & curs, unsigned int depth )
     {
@@ -1011,19 +1090,34 @@ namespace ncbi
             // skip over '{' and any whitespace
             // json [ pos ] is '{' or ',', start at json [ pos + 1 ]
             if ( ! skip_whitespace ( ++ curs ) )
-                throw MalformedJSON ( XP ( XLOC ) << "Expected: '}'" );
+            {
+                throw MalformedJSON (
+                    XP ( XLOC )
+                    << JSON_EXPECTED ( "'}'", curs )
+                    );
+            }
 
             if ( * curs == '}' )
                 break;
 
             if ( * curs != '"' )
-                throw MalformedJSON ( XP ( XLOC ) << "Expected: \"<name>\" " );
+            {
+                throw MalformedJSON (
+                    XP ( XLOC )
+                    << JSON_EXPECTED ( "\"<name>\"", curs )
+                    );
+            }
 
             JSONValueRef name = parseString ( lim, json, curs );
 
             // skip to ':'
             if ( ! skip_whitespace ( curs ) || * curs != ':' )
-                throw MalformedJSON ( XP ( XLOC ) << "Expected: ':'" );
+            {
+                throw MalformedJSON (
+                    XP ( XLOC )
+                    << JSON_EXPECTED ( "':'", curs )
+                    );
+            }
                 
             // skip over ':'
             ++ curs;
@@ -1032,7 +1126,12 @@ namespace ncbi
             {
                 JSONValueRef value = parse ( lim, json, curs, depth );
                 if ( value == nullptr )
-                    throw MalformedJSON ( XP ( XLOC ) << "Expected: ',' or '}'" );
+                {
+                    throw MalformedJSON (
+                        XP ( XLOC )
+                        << JSON_EXPECTED ( "',' or '}'", curs )
+                        );
+                }
                             
                 obj -> addValue ( name -> toString (), value );
             }
@@ -1057,7 +1156,12 @@ namespace ncbi
 
         // must end on '}'
         if ( ! curs . isValid () || * curs != '}' )
-            throw MalformedJSON ( XP ( XLOC ) << "Expected: '}'" ); // test hit
+        {
+            throw MalformedJSON (
+                XP ( XLOC )
+                << JSON_EXPECTED ( "'}'", curs )
+                );
+        }
 
         // skip over '}'
         ++ curs;
@@ -1089,13 +1193,30 @@ namespace ncbi
         initLimits ();
 
         if ( json . size () > default_limits . json_string_size )
-            throw JSONLimitViolation ( XP ( XLOC ) << "JSON source exceeds allowed size limit" );
+        {
+            throw JSONLimitViolation (
+                XP ( XLOC )
+                << "JSON source size ("
+                << json . size ()
+                << ") exceeds allowed size limit ("
+                << default_limits . json_string_size
+                << ')'
+                );
+        }
 
         auto curs = json . makeIterator ();
         JSONValueRef val = parse ( default_limits, json, curs, 0 );
 
         if ( consume_all && skip_whitespace ( curs ) )
-            throw MalformedJSON ( XP ( XLOC ) << "Trailing byes in JSON text" ); // test hit
+        {
+            throw MalformedJSON (
+                XP ( XLOC )
+                << "Trailing bytes in JSON text at character index "
+                << curs . charIndex ()
+                << ", byte offset "
+                << curs . byteOffset ()
+                );
+        }
 
         return val;
     }
