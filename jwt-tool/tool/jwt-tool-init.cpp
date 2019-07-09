@@ -30,6 +30,7 @@
 #include <ncbi/jws.hpp>
 
 #include <fstream>
+#include <cassert>
 
 namespace ncbi
 {
@@ -110,6 +111,10 @@ namespace ncbi
 
 	void JWTTool :: loadPublicKey ( const JWKRef & key )
 	{
+		log . msg ( LOG_INFO )
+		<< "Loading priv key to JWKS  '"
+		<< endm
+		;
 		// if pubKeys is null, just assign it
 		if ( pubKeys == nullptr )
 			pubKeys = JWKMgr :: makeJWKSet ();
@@ -170,7 +175,11 @@ namespace ncbi
         // capture String with contents of file
         String contents = readTextFile ( path );
 		
-		JWKRef key;
+		log . msg ( LOG_INFO )
+		<< "Parsing JWK '"
+		<< endm
+		;
+		JWKRef key = nullptr;
 		if ( isPem )
 			key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
 		else
@@ -228,6 +237,12 @@ namespace ncbi
 		
 		assert ( privKeys -> count () == 1 ); //shouldnt have more than one private key from pem file
 		
+		log . msg ( LOG_INFO )
+		<< "Attempting to translate a privat key to public '"
+		<< path
+		<< '\''
+		<< endm
+		;
         // translate private key to public
         JWKRef key = privKeys -> getKey ( 0 ) -> toPublic ();
         if ( key -> isPrivate () )

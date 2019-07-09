@@ -38,17 +38,22 @@ namespace ncbi
 
     void ParamBlock :: validate ( JWTMode mode )
     {
+		if ( inputParams . empty () )
+			throw InvalidArgument (
+								   XP ( XLOC, rc_param_err )
+								   << "Missing input parameters"
+								   );
         if ( numDurationOpts > 1 )
                 throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Multiple duration values"
-                    );
+									   XP ( XLOC, rc_param_err )
+									   << "Multiple duration values"
+									   );
             
-        if ( numPwds > 1 )
-            throw InvalidArgument (
-                XP ( XLOC, rc_param_err )
-                << "Multiple password values"
-                );
+		if ( numPwds > 1 )
+			throw InvalidArgument (
+								   XP ( XLOC, rc_param_err )
+								   << "Multiple password values"
+								   );
         
         switch ( mode )
         {
@@ -57,11 +62,6 @@ namespace ncbi
         case sign:
         {
             // Params
-            if ( inputParams . empty () )
-                throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Missing input parameters"
-                    );
             // Options
             if ( privKeyFilePaths . size () > 1 )
                 throw InvalidArgument (
@@ -89,13 +89,6 @@ namespace ncbi
         }
         case examine:
         {
-            // Params
-            if ( inputParams . empty () )
-                throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Missing input parameters"
-                    );
-            
             // Options
             if ( pubKeyFilePaths . empty () )
                 throw InvalidArgument (
@@ -105,12 +98,7 @@ namespace ncbi
             break;
         }
         case import_pem:
-        {
-            if ( inputParams . empty () )
-                throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Missing pem files"
-                    );            
+        {          
             if ( privPwd . isEmpty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -191,14 +179,14 @@ namespace ncbi
         // sign
         cmdline . setCurrentMode ( "sign" );
         cmdline . startOptionalParams ();
-        cmdline . addParam ( params . inputParams, 0, 256, "JSON", "JSON text to convert into a JWT" );
-		cmdline . addOption ( params . isPem, "", "--is-pem", "Indicates private key is a pem file" );
+        cmdline . addParam ( params . inputParams, 0, 256, "JSON text", "JSON text to convert into a JWT" );
+		cmdline . addOption ( params . isPem, "", "is-pem", "Indicates private key is a pem file" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
-                                  "", "priv-pem", "path-to-priv-pem", "Private signing pem file; provide only 1" );
+								 "", "priv-pem", "", "Private signing pem file; provide only 1" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
-                             "", "pwd", "priv-pem-pwd" , "Private pem file password for decryption");
+							 "", "pwd", "" , "Private pem file password for decryption");
         cmdline . addOption ( params . duration, & params . numDurationOpts,
-                              "", "duration", "duration in seconds" ,"amount of time JWT is valid" );
+							 "", "duration", "" ,"amount of time JWT is valid" );
 
         // examine
         cmdline . setCurrentMode ( "examine" );
@@ -206,19 +194,20 @@ namespace ncbi
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
         
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
-                                  "", "key-sets", "path-to-JWKS", "provide one or more sets of public JWKs" );
+                                  "", "key-sets", "", "provide one or more sets of public JWKs" );
 
         // import_pem
         cmdline . setCurrentMode ( "import-pem" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "pem file(s)", "one or more pem files" );
+		cmdline . addOption ( params . isPem, "", "is-pem", "Indicates private key is a pem file" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
-                              "", "pwd", "priv-pem-pwd" , "Private pem file password for decryption" );        
+							 "", "pwd", "" , "Private pem file password for decryption" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
-                                  "", "priv-key", "path-to-priv-key-file",
-                                  "Private key file; will create if it does not exist" );
+								 "", "priv-key", "",
+								 "Private key file; will create if it does not exist" );
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
-                                  "", "pub-key", "path-to-pub-key", "Public key file; will create if it does not exist" );
+								 "", "pub-key", "", "Public key file; will create if it does not exist" );
 
 
         
@@ -263,6 +252,7 @@ namespace ncbi
             log . msg ( LOG_ERR )
                 << "EXIT: exception - "
                 << x . what ()
+			    << XBackTrace ( x )
                 << endm
                 ;
             return x . status ();
