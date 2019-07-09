@@ -660,7 +660,7 @@ namespace ncbi
     {
         count_t pos = curs . charIndex ();
 
-        bool which;
+        bool which = false;
         do
         {
             try
