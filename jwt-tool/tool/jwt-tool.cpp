@@ -252,6 +252,7 @@ namespace ncbi
             log . msg ( LOG_ERR )
                 << "EXIT: exception - "
                 << x . what ()
+                << '\n'
 			    << XBackTrace ( x )
                 << endm
                 ;
