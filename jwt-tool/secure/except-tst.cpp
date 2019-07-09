@@ -314,7 +314,7 @@ namespace ncbi
     TEST ( ExceptionTest, lineno )
     {
         Exception x ( XP ( XLOC ) );
-        EXPECT_EQ ( x . line (), __LINE__ - 1 );
+        EXPECT_EQ ( x . line (), ( unsigned int ) __LINE__ - 1U );
     }
 
     TEST ( ExceptionTest, function )
@@ -390,7 +390,7 @@ namespace ncbi
             );
 
         const XMsg what = x . what ();
-        EXPECT_EQ ( what . msg_size, 53 );
+        EXPECT_EQ ( what . msg_size, 53U );
         EXPECT_STREQ ( what . zmsg, "a more 'standard' scenario, size 8 ( 0x8 ) [ 0b1000 ]" );
     }
 
@@ -414,7 +414,7 @@ namespace ncbi
             );
 
         const XMsg what = x . what ();
-        EXPECT_EQ ( what . msg_size, 105 );
+        EXPECT_EQ ( what . msg_size, 105U );
         EXPECT_STREQ ( what . zmsg, "and now the 'ü' ( 0b11111100 ) as seen in the string 'Einige Bücher' of size 14 with character count 13" );
     }
 }

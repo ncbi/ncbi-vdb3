@@ -85,29 +85,29 @@ namespace ncbi
     {
         EXPECT_EQ ( pay . data (), nullptr );
         EXPECT_EQ ( const_cast < const Payload * > ( & pay ) -> data (), nullptr );
-        EXPECT_EQ ( pay . size (), 0 );
-        EXPECT_EQ ( pay . capacity (), 0 );
+        EXPECT_EQ ( pay . size (), 0U );
+        EXPECT_EQ ( pay . capacity (), 0U );
     }
 
     TEST_F ( PayloadTestFixture, set_capacity )
     {
         EXPECT_ANY_THROW ( pay . setSize ( 12345 ) );
-        EXPECT_EQ ( pay . size (), 0 );
+        EXPECT_EQ ( pay . size (), 0U );
         pay . increaseCapacity ( 12345 );
         EXPECT_NE ( pay . data (), nullptr );
         EXPECT_NE ( const_cast < const Payload * > ( & pay ) -> data (), nullptr );
-        EXPECT_EQ ( pay . size (), 0 );
-        EXPECT_EQ ( pay . capacity (), 12345 );
+        EXPECT_EQ ( pay . size (), 0U );
+        EXPECT_EQ ( pay . capacity (), 12345U );
         EXPECT_ANY_THROW ( pay . setSize ( 12346 ) );
         pay . setSize ( 12345 );
-        EXPECT_EQ ( pay . size (), 12345 );
-        EXPECT_EQ ( pay . capacity (), 12345 );
+        EXPECT_EQ ( pay . size (), 12345U );
+        EXPECT_EQ ( pay . capacity (), 12345U );
     }
 
     TEST_F ( PayloadTestFixture, fill_wipe_and_reinit )
     {
         pay . increaseCapacity ();
-        EXPECT_EQ ( pay . capacity (), 256 );
+        EXPECT_EQ ( pay . capacity (), 256U );
         const char msg [] = "secret key data";
         memmove ( pay . data (), msg, sizeof msg );
         pay . setSize ( sizeof msg );
@@ -115,21 +115,21 @@ namespace ncbi
         pay . wipe ();
         EXPECT_STREQ ( ( const char * ) pay . data (), "" );
         EXPECT_EQ ( pay . size (), sizeof msg );
-        EXPECT_EQ ( pay . capacity (), 256 );
+        EXPECT_EQ ( pay . capacity (), 256U );
         pay . reinitialize ( false );
-        EXPECT_EQ ( pay . size (), 0 );
-        EXPECT_EQ ( pay . capacity (), 0 );
+        EXPECT_EQ ( pay . size (), 0U );
+        EXPECT_EQ ( pay . capacity (), 0U );
     }
 
     TEST_F ( PayloadTestFixture, fill_and_increase )
     {
         pay . increaseCapacity ();
-        EXPECT_EQ ( pay . capacity (), 256 );
+        EXPECT_EQ ( pay . capacity (), 256U );
         memset ( pay . data (), 'A', pay . capacity () );
         pay . setSize ( pay . capacity () );
 
         pay . increaseCapacity ( 1234567 );
-        EXPECT_EQ ( pay . capacity (), 256 + 1234567 );
+        EXPECT_EQ ( pay . capacity (), 256U + 1234567U );
         memset ( ( char * ) pay . data () + 256, 'B', pay . capacity () - 256 );
         pay . setSize ( pay . capacity () );
 

@@ -101,9 +101,9 @@ namespace ncbi
         EXPECT_EQ ( str . size (), utf8 . size () );
         EXPECT_EQ ( str . count (), utf8 . size () );
         EXPECT_EQ ( str . length (), utf8 . size () );
-        EXPECT_EQ ( str [ 7 ], '\t' );
-        EXPECT_EQ ( str [ 8 ], 7 );
-        EXPECT_EQ ( str [ 9 ], 'd' );
+        EXPECT_EQ ( str [ 7 ], ( UTF32 ) '\t' );
+        EXPECT_EQ ( str [ 8 ], ( UTF32 ) 7 );
+        EXPECT_EQ ( str [ 9 ], ( UTF32 ) 'd' );
     }
 
     TEST ( StringTest, constructor_from_ascii_utf16 )
@@ -196,8 +196,8 @@ namespace ncbi
     TEST ( StringTest, properties )
     {
         String str1;
-        EXPECT_EQ ( str1 . size (), 0 );
-        EXPECT_EQ ( str1 . count (), 0 );
+        EXPECT_EQ ( str1 . size (), 0U );
+        EXPECT_EQ ( str1 . count (), 0U );
 
         std :: string ascii = "abc";
         String str2 ( ascii );
@@ -220,54 +220,54 @@ namespace ncbi
         std :: string ascii = "abc";
         String str2 ( ascii );
         EXPECT_NE ( str2 . data (), nullptr );
-        EXPECT_EQ ( str2 . getChar ( 0 ), 'a' );
-        EXPECT_EQ ( str2 . getChar ( 1 ), 'b' );
-        EXPECT_EQ ( str2 . getChar ( 2 ), 'c' );
+        EXPECT_EQ ( str2 . getChar ( 0 ), ( UTF32 ) 'a' );
+        EXPECT_EQ ( str2 . getChar ( 1 ), ( UTF32 ) 'b' );
+        EXPECT_EQ ( str2 . getChar ( 2 ), ( UTF32 ) 'c' );
         EXPECT_ANY_THROW ( str2 . getChar ( 3 ) );
 
         std :: string utf8 = "¿dónde están las uvas?";
         String str3 ( utf8 );
         EXPECT_NE ( str3 . data (), nullptr );
-        EXPECT_EQ ( str3 . getChar (  0 ), 0xBF );
-        EXPECT_EQ ( str3 . getChar (  1 ),  'd' );
-        EXPECT_EQ ( str3 . getChar (  2 ), 0xF3 );
-        EXPECT_EQ ( str3 . getChar (  3 ),  'n' );
-        EXPECT_EQ ( str3 . getChar (  4 ),  'd' );
-        EXPECT_EQ ( str3 . getChar (  5 ),  'e' );
-        EXPECT_EQ ( str3 . getChar (  6 ),  ' ' );
-        EXPECT_EQ ( str3 . getChar (  7 ),  'e' );
-        EXPECT_EQ ( str3 . getChar (  8 ),  's' );
-        EXPECT_EQ ( str3 . getChar (  9 ),  't' );
-        EXPECT_EQ ( str3 . getChar ( 10 ), 0xE1 );
-        EXPECT_EQ ( str3 . getChar ( 11 ),  'n' );
-        EXPECT_EQ ( str3 . getChar ( 12 ),  ' ' );
-        EXPECT_EQ ( str3 . getChar ( 13 ),  'l' );
-        EXPECT_EQ ( str3 . getChar ( 14 ),  'a' );
-        EXPECT_EQ ( str3 . getChar ( 15 ),  's' );
-        EXPECT_EQ ( str3 . getChar ( 16 ),  ' ' );
-        EXPECT_EQ ( str3 . getChar ( 17 ),  'u' );
-        EXPECT_EQ ( str3 . getChar ( 18 ),  'v' );
-        EXPECT_EQ ( str3 . getChar ( 19 ),  'a' );
-        EXPECT_EQ ( str3 . getChar ( 20 ),  's' );
-        EXPECT_EQ ( str3 . getChar ( 21 ),  '?' );
+        EXPECT_EQ ( str3 . getChar (  0 ), ( UTF32 ) 0xBF );
+        EXPECT_EQ ( str3 . getChar (  1 ), ( UTF32 )  'd' );
+        EXPECT_EQ ( str3 . getChar (  2 ), ( UTF32 ) 0xF3 );
+        EXPECT_EQ ( str3 . getChar (  3 ), ( UTF32 )  'n' );
+        EXPECT_EQ ( str3 . getChar (  4 ), ( UTF32 )  'd' );
+        EXPECT_EQ ( str3 . getChar (  5 ), ( UTF32 )  'e' );
+        EXPECT_EQ ( str3 . getChar (  6 ), ( UTF32 )  ' ' );
+        EXPECT_EQ ( str3 . getChar (  7 ), ( UTF32 )  'e' );
+        EXPECT_EQ ( str3 . getChar (  8 ), ( UTF32 )  's' );
+        EXPECT_EQ ( str3 . getChar (  9 ), ( UTF32 )  't' );
+        EXPECT_EQ ( str3 . getChar ( 10 ), ( UTF32 ) 0xE1 );
+        EXPECT_EQ ( str3 . getChar ( 11 ), ( UTF32 )  'n' );
+        EXPECT_EQ ( str3 . getChar ( 12 ), ( UTF32 )  ' ' );
+        EXPECT_EQ ( str3 . getChar ( 13 ), ( UTF32 )  'l' );
+        EXPECT_EQ ( str3 . getChar ( 14 ), ( UTF32 )  'a' );
+        EXPECT_EQ ( str3 . getChar ( 15 ), ( UTF32 )  's' );
+        EXPECT_EQ ( str3 . getChar ( 16 ), ( UTF32 )  ' ' );
+        EXPECT_EQ ( str3 . getChar ( 17 ), ( UTF32 )  'u' );
+        EXPECT_EQ ( str3 . getChar ( 18 ), ( UTF32 )  'v' );
+        EXPECT_EQ ( str3 . getChar ( 19 ), ( UTF32 )  'a' );
+        EXPECT_EQ ( str3 . getChar ( 20 ), ( UTF32 )  's' );
+        EXPECT_EQ ( str3 . getChar ( 21 ), ( UTF32 )  '?' );
         EXPECT_ANY_THROW ( str3 . getChar ( 22 ) );
 
         // perform a slight shuffle to ensure lack of stateful behavior
-        EXPECT_EQ ( str3 . getChar ( 14 ),  'a' );
-        EXPECT_EQ ( str3 . getChar (  1 ),  'd' );
-        EXPECT_EQ ( str3 . getChar (  2 ), 0xF3 );
-        EXPECT_EQ ( str3 . getChar (  3 ),  'n' );
-        EXPECT_EQ ( str3 . getChar (  4 ),  'd' );
-        EXPECT_EQ ( str3 . getChar (  5 ),  'e' );
-        EXPECT_EQ ( str3 . getChar ( 17 ),  'u' );
-        EXPECT_EQ ( str3 . getChar (  6 ),  ' ' );
-        EXPECT_EQ ( str3 . getChar (  0 ), 0xBF );
-        EXPECT_EQ ( str3 . getChar (  7 ),  'e' );
-        EXPECT_EQ ( str3 . getChar (  8 ),  's' );
-        EXPECT_EQ ( str3 . getChar (  9 ),  't' );
-        EXPECT_EQ ( str3 . getChar ( 10 ), 0xE1 );
-        EXPECT_EQ ( str3 . getChar ( 11 ),  'n' );
-        EXPECT_EQ ( str3 . getChar ( 12 ),  ' ' );
+        EXPECT_EQ ( str3 . getChar ( 14 ), ( UTF32 )  'a' );
+        EXPECT_EQ ( str3 . getChar (  1 ), ( UTF32 )  'd' );
+        EXPECT_EQ ( str3 . getChar (  2 ), ( UTF32 ) 0xF3 );
+        EXPECT_EQ ( str3 . getChar (  3 ), ( UTF32 )  'n' );
+        EXPECT_EQ ( str3 . getChar (  4 ), ( UTF32 )  'd' );
+        EXPECT_EQ ( str3 . getChar (  5 ), ( UTF32 )  'e' );
+        EXPECT_EQ ( str3 . getChar ( 17 ), ( UTF32 )  'u' );
+        EXPECT_EQ ( str3 . getChar (  6 ), ( UTF32 )  ' ' );
+        EXPECT_EQ ( str3 . getChar (  0 ), ( UTF32 ) 0xBF );
+        EXPECT_EQ ( str3 . getChar (  7 ), ( UTF32 )  'e' );
+        EXPECT_EQ ( str3 . getChar (  8 ), ( UTF32 )  's' );
+        EXPECT_EQ ( str3 . getChar (  9 ), ( UTF32 )  't' );
+        EXPECT_EQ ( str3 . getChar ( 10 ), ( UTF32 ) 0xE1 );
+        EXPECT_EQ ( str3 . getChar ( 11 ), ( UTF32 )  'n' );
+        EXPECT_EQ ( str3 . getChar ( 12 ), ( UTF32 )  ' ' );
 
         // TBD - 3 and 4 byte UTF-8 characters
     }
@@ -279,33 +279,33 @@ namespace ncbi
         String :: Iterator it = str . makeIterator ();
 
         EXPECT_EQ ( it . isValid (), true );
-        EXPECT_EQ ( it . charIndex (), 0 );
-        EXPECT_EQ ( it . byteOffset (), 0 );
-        EXPECT_EQ ( * it, 0xBF );
+        EXPECT_EQ ( it . charIndex (), 0U );
+        EXPECT_EQ ( it . byteOffset (), 0U );
+        EXPECT_EQ ( * it, ( UTF32 ) 0xBF );
 
         ++ it;
         EXPECT_EQ ( it . isValid (), true );
-        EXPECT_EQ ( it . charIndex (), 1 );
-        EXPECT_EQ ( it . byteOffset (), 2 );
-        EXPECT_EQ ( * it, 'd' );
+        EXPECT_EQ ( it . charIndex (), 1U );
+        EXPECT_EQ ( it . byteOffset (), 2U );
+        EXPECT_EQ ( * it, ( UTF32 ) 'd' );
 
         ++ it;
         EXPECT_EQ ( it . isValid (), true );
-        EXPECT_EQ ( it . charIndex (), 2 );
-        EXPECT_EQ ( it . byteOffset (), 3 );
-        EXPECT_EQ ( * it, 0xF3 );
+        EXPECT_EQ ( it . charIndex (), 2U );
+        EXPECT_EQ ( it . byteOffset (), 3U );
+        EXPECT_EQ ( * it, ( UTF32 ) 0xF3 );
 
         ++ it;
         EXPECT_EQ ( it . isValid (), true );
         EXPECT_EQ ( it . charIndex (), 3 );
         EXPECT_EQ ( it . byteOffset (), 5 );
-        EXPECT_EQ ( * it, 'n' );
+        EXPECT_EQ ( * it, ( UTF32 ) 'n' );
 
         ++ it;
         EXPECT_EQ ( it . isValid (), true );
         EXPECT_EQ ( it . charIndex (), 4 );
         EXPECT_EQ ( it . byteOffset (), 6 );
-        EXPECT_EQ ( * it, 'd' );
+        EXPECT_EQ ( * it, ( UTF32 ) 'd' );
 
         ++ it; //  5
         ++ it; //  6
@@ -317,13 +317,13 @@ namespace ncbi
         EXPECT_EQ ( it . isValid (), true );
         EXPECT_EQ ( it . charIndex (), 10 );
         EXPECT_EQ ( it . byteOffset (), 12 );
-        EXPECT_EQ ( * it, 0xE1 );
+        EXPECT_EQ ( * it, ( UTF32 ) 0xE1 );
 
         ++ it;
         EXPECT_EQ ( it . isValid (), true );
         EXPECT_EQ ( it . charIndex (), 11 );
         EXPECT_EQ ( it . byteOffset (), 14 );
-        EXPECT_EQ ( * it, 'n' );
+        EXPECT_EQ ( * it, ( UTF32 ) 'n' );
 
         ++ it; // 12
         ++ it; // 13
@@ -339,7 +339,7 @@ namespace ncbi
         EXPECT_EQ ( it . isValid (), true );
         EXPECT_EQ ( it . charIndex (), 21 );
         EXPECT_EQ ( it . byteOffset (), 24 );
-        EXPECT_EQ ( * it, '?' );
+        EXPECT_EQ ( * it, ( UTF32 ) '?' );
 
         ++ it;
         EXPECT_EQ ( it . isValid (), false );
@@ -358,7 +358,7 @@ namespace ncbi
         EXPECT_EQ ( it . isValid (), true );
         EXPECT_EQ ( it . charIndex (), 15 );
         EXPECT_EQ ( it . byteOffset (), 18 );
-        EXPECT_EQ ( * it, 's' );
+        EXPECT_EQ ( * it, ( UTF32 ) 's' );
     }
 
     /*=================================================*

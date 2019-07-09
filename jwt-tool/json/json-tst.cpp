@@ -308,7 +308,7 @@ namespace ncbi
         EXPECT_ANY_THROW ( val . toObject () );
 
         EXPECT_EQ ( val . isEmpty (), true );
-        EXPECT_EQ ( val . count (), 0 );
+        EXPECT_EQ ( val . count (), 0U );
         EXPECT_EQ ( val . exists ( 10 ), false );
         EXPECT_ANY_THROW ( val . getValue ( 0 ) );
 
@@ -322,7 +322,7 @@ namespace ncbi
 
         val . appendValue ( JSON :: makeInteger ( 123 ) );
         EXPECT_EQ ( cval . isEmpty (), false );
-        EXPECT_EQ ( cval . count (), 1 );
+        EXPECT_EQ ( cval . count (), 1U );
         EXPECT_EQ ( cval . exists ( 0 ), true );
         EXPECT_EQ ( cval . exists ( 1 ), false );
         EXPECT_EQ ( cval . getValue ( 0 ) . toInteger (), 123 );
@@ -337,7 +337,7 @@ namespace ncbi
 
         val . appendValue ( JSON :: makeInteger ( 123 ) );
         EXPECT_EQ ( cval . isEmpty (), false );
-        EXPECT_EQ ( cval . count (), 1 );
+        EXPECT_EQ ( cval . count (), 1U );
         EXPECT_EQ ( cval . exists ( 0 ), true );
         EXPECT_EQ ( cval . exists ( 1 ), false );
         EXPECT_EQ ( cval . getValue ( 0 ) . toInteger (), 123 );
@@ -345,7 +345,7 @@ namespace ncbi
         
         val . appendValue ( JSON :: makeString ( "abc" ) );
         EXPECT_EQ ( cval . isEmpty (), false );
-        EXPECT_EQ ( cval . count (), 2 );
+        EXPECT_EQ ( cval . count (), 2U );
         EXPECT_EQ ( cval . exists ( 0 ), true );
         EXPECT_EQ ( cval . exists ( 1 ), true );
         EXPECT_EQ ( cval . exists ( 2 ), false );
@@ -363,7 +363,7 @@ namespace ncbi
 
         val . appendValue ( JSON :: makeInteger ( 123 ) );
         EXPECT_EQ ( cval . isEmpty (), false );
-        EXPECT_EQ ( cval . count (), 1 );
+        EXPECT_EQ ( cval . count (), 1U );
         EXPECT_EQ ( cval . exists ( 0 ), true );
         EXPECT_EQ ( cval . exists ( 1 ), false );
         EXPECT_EQ ( cval . getValue ( 0 ) . toInteger (), 123 );
@@ -371,7 +371,7 @@ namespace ncbi
         
         val . appendValue ( JSON :: makeString ( "abc" ) );
         EXPECT_EQ ( cval . isEmpty (), false );
-        EXPECT_EQ ( cval . count (), 2 );
+        EXPECT_EQ ( cval . count (), 2U );
         EXPECT_EQ ( cval . exists ( 0 ), true );
         EXPECT_EQ ( cval . exists ( 1 ), true );
         EXPECT_EQ ( cval . exists ( 2 ), false );
