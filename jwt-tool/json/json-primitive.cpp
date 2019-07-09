@@ -142,7 +142,7 @@ namespace ncbi
                 << syserr ( status )
                 );
         }
-        if ( status >= sizeof buffer )
+        if ( ( size_t ) status >= sizeof buffer )
         {
             throw InternalError (
                 XP ( XLOC )
