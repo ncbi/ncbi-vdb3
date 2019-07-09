@@ -1619,6 +1619,34 @@ v         * toSTLString
 
     /**
      * operator<<
+     * @overload throws a String :: Iterator at an Exception
+     */
+    inline XP & operator << ( XP & xp, const String :: Iterator & it )
+    {
+        if ( ! it . isValid () )
+            xp << "INVALID";
+        else
+            xp . putChar ( * it );
+        return xp;
+    }
+
+    /**
+     * operator<<
+     * @overload throws a String :: Iterator at a std :: ostream
+     */
+    inline std :: ostream & operator << ( std :: ostream & os, const String :: Iterator & it )
+    {
+        if ( ! it . isValid () )
+            os << "INVALID";
+        else if ( it . isAscii () )
+            os << ( char ) * it;
+        else
+            os << String ( * it );
+        return os;
+    }
+
+    /**
+     * operator<<
      * @overload throws a StringBuffer at an Exception
      */
     inline XP & operator << ( XP & xp, const StringBuffer & sb )
