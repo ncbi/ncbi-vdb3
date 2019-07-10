@@ -319,6 +319,29 @@ namespace ncbi
         return JWKSetRef ( new JWKSet ( props ) );
     }
 
+	JWKSetRef JWKMgr :: parseJWKorJWKSet ( const String & json_text )
+	{
+		// key sets have known depths
+		JSON :: Limits lim;
+		lim . recursion_depth = 22; // TBD - get real limit
+		
+		JSONObjectRef props = JSON :: parseObject ( lim, json_text );
+		
+		if ( ! props . exists ( "keys" ) )
+		{
+			// not a keyset
+			validateJWK ( * props );
+			JWKRef key = JWKRef ( new JWK ( props ) );
+			JWKSetRef set = JWK :: makeJWKSet ();
+			set . addKey ( key );
+			
+			return set;
+		}
+		
+		validateJWKSet ( * props );
+		
+		return JWKSetRef ( new JWKSet ( props ) );
+	}
 
     // code to perform some mbedtls magic
     static

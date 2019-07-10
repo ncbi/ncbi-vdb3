@@ -121,6 +121,14 @@ namespace ncbi
          */
         static JWKSetRef parseJWKSet ( const String & json_text );
 
+		/**
+		 * parseJWKorJWKSet
+		 * @brief discover a JWK or JWKSet from JSON text
+		 * @param json_text a serialized version of a JWKSet
+		 * @return JWKSetRef
+		 */
+		static JWKSetRef parseJWKorJWKSet ( const String & json_text );
+		
         /**
          * parsePEM
          * @overload inflate public JWK from PEM text format

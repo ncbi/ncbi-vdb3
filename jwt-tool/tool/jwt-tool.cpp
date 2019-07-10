@@ -43,19 +43,19 @@ namespace ncbi
 								   XP ( XLOC, rc_param_err )
 								   << "Missing input parameters"
 								   );
-        if ( numDurationOpts > 1 )
-                throw InvalidArgument (
-									   XP ( XLOC, rc_param_err )
-									   << "Multiple duration values"
-									   );
-            
+		if ( numDurationOpts > 1 )
+			throw InvalidArgument (
+								   XP ( XLOC, rc_param_err )
+								   << "Multiple duration values"
+								   );
+		
 		if ( numPwds > 1 )
 			throw InvalidArgument (
 								   XP ( XLOC, rc_param_err )
 								   << "Multiple password values"
 								   );
-        
-        switch ( mode )
+		
+		switch ( mode )
         {
         case decode:
             break;
@@ -73,11 +73,14 @@ namespace ncbi
                     XP ( XLOC, rc_param_err )
                     << "Required private signing key"
                     );
-            if ( privPwd . isEmpty () )
-                throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Missing pem file password"
-                    );            
+			if ( isPem )
+			{
+				if ( privPwd . isEmpty () )
+					throw InvalidArgument (
+										   XP ( XLOC, rc_param_err )
+										   << "Missing pem file password"
+										   );
+			}
             if ( duration < 0 )
             {
                 throw InvalidArgument (
@@ -182,7 +185,7 @@ namespace ncbi
         cmdline . addParam ( params . inputParams, 0, 256, "JSON text", "JSON text to convert into a JWT" );
 		cmdline . addOption ( params . isPem, "", "is-pem", "Indicates private key is a pem file" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
-								 "", "priv-pem", "", "Private signing pem file; provide only 1" );
+								 "", "priv-key", "", "Private signing key; provide only 1" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
 							 "", "pwd", "" , "Private pem file password for decryption");
         cmdline . addOption ( params . duration, & params . numDurationOpts,
