@@ -101,13 +101,24 @@ namespace ncbi
         JSONValueRef cpy ( key -> props -> clone () );
 
         // append to array
+        assert ( cpy != nullptr );
         keys . appendValue ( cpy );
+        assert ( cpy == nullptr );
 
         // verify that the insertion index was correct ( due to non-atomicity )
         assert ( keys [ idx ] . toObject () . getValue ( "kid" ) . toString () . compare ( kid ) == 0 );
 
         // append key onto ord_idx
+#if _DEBUGGING
+        bool single_owner = key . unique ();
+        long int key_refs = key . use_count ();
+#endif
         ord_idx . push_back ( key );
+        assert ( ! key . unique () );
+#if _DEBUGGING
+        if ( single_owner )
+            assert ( key . use_count () == key_refs + 1 );
+#endif
 
         // insert idx and key into map under kid
         key_idx . emplace ( kid, idx );
