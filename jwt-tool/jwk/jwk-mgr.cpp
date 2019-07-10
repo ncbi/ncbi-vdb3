@@ -327,13 +327,13 @@ namespace ncbi
 		
 		JSONObjectRef props = JSON :: parseObject ( lim, json_text );
 		
-		if ( ! props . exists ( "keys" ) )
+		if ( ! props -> exists ( "keys" ) )
 		{
 			// not a keyset
 			validateJWK ( * props );
 			JWKRef key = JWKRef ( new JWK ( props ) );
-			JWKSetRef set = JWK :: makeJWKSet ();
-			set . addKey ( key );
+			JWKSetRef set = JWKMgr :: makeJWKSet ();
+			set -> addKey ( key );
 			
 			return set;
 		}
