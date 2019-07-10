@@ -155,6 +155,9 @@ namespace ncbi
         bool unique () const noexcept
         { return p . unique (); }
 
+        long int use_count () const noexcept
+        { return p . use_count (); }
+
         bool operator ! () const noexcept
         { return ! p; }
 
