@@ -112,10 +112,10 @@ namespace ncbi
 	void JWTTool :: loadPublicKey ( const JWKRef & key )
 	{
 		log . msg ( LOG_INFO )
-		<< "Loading priv key to JWKS  '"
+		<< "Loading pub key to JWKS  '"
 		<< endm
 		;
-		// if pubKeys is null, just assign it
+		
 		if ( pubKeys == nullptr )
 			pubKeys = JWKMgr :: makeJWKSet ();
 		
@@ -156,7 +156,11 @@ namespace ncbi
 
 	void JWTTool :: loadPrivateKey ( const JWKRef & key )
 	{
-		// if pubKeys is null, just assign it
+		log . msg ( LOG_INFO )
+		<< "Loading priv key to JWKS  '"
+		<< endm
+		;
+		
 		if ( privKeys == nullptr )
 			privKeys = JWKMgr :: makeJWKSet ();
 		
@@ -179,6 +183,7 @@ namespace ncbi
 		<< "Parsing JWK '"
 		<< endm
 		;
+		
 		JWKRef key = nullptr;
 		if ( isPem )
 			key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", "kid_1" );
@@ -216,7 +221,7 @@ namespace ncbi
 		<< endm
 		;
 		
-		JWKSetRef key_set = JWKMgr :: parseJWKSet ( contents );
+		JWKSetRef key_set = JWKMgr :: parseJWKorJWKSet ( contents );
 		
 		// otherwise, merge in the keys
 		std :: vector <String> kids = key_set -> getKeyIDs ();
@@ -229,6 +234,7 @@ namespace ncbi
 			else
 				loadPublicKey ( key );
 		}
+		std :: cout << "Priv Key: " << privKeys -> getKey (0) -> readableJSON () << std :: endl;
 	}
 	
     void JWTTool :: importPemFile ( const String & path )
@@ -243,13 +249,9 @@ namespace ncbi
 		<< '\''
 		<< endm
 		;
+		
         // translate private key to public
         JWKRef key = privKeys -> getKey ( 0 ) -> toPublic ();
-        if ( key -> isPrivate () )
-            throw RuntimeException (
-                XP ( XLOC, rc_param_err )
-                << "Public key extraction failed"
-                );
 		
 		loadPublicKey ( key );
 		
@@ -287,8 +289,10 @@ namespace ncbi
                 << " pem file"
                 << endm
                 ;
-            loadPrivateKey ( privKeyFilePaths [ 0 ] );
-            
+            loadKeySet ( privKeyFilePaths [ 0 ] );
+			
+			std :: cout << "Priv Key: " << privKeys -> getKey (0) -> readableJSON () <<  std :: endl;
+			
             log . msg ( LOG_INFO )
                 << "Successfully loaded "
                 << 1

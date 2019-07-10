@@ -41,6 +41,7 @@ namespace ncbi
         JWTClaimSetRef claimSet = builder -> stealClaimSet ();
 
         std :: cout << "Duration set to " << claimSet -> getDuration () << " seconds" <<  std :: endl;
+		std :: cout << "Priv Key: " << privKeys -> getKey ( 0 ) -> readableJSON () <<  std :: endl;
 
         JWT jwt = JWTMgr :: sign ( *privKeys -> getKey ( 0 ), *claimSet );
 
