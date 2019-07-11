@@ -675,29 +675,28 @@ namespace ncbi
     }
 
 
-
     /*=================================================*
      *                     String                      *
      *=================================================*/
 
     bool String :: isEmpty () const noexcept
     {
-        return str -> empty ();
+        return str -> s . empty ();
     }
 
     bool String :: isAscii () const noexcept
     {
-        return str -> size () == cnt;
+        return str -> s . size () == cnt;
     }
 
     size_t String :: size () const noexcept
     {
-        return str -> size ();
+        return str -> s . size ();
     }
 
     const UTF8 * String :: data () const noexcept
     {
-        return str -> data ();
+        return str -> s . data ();
     }
 
 
@@ -717,13 +716,13 @@ namespace ncbi
 
         // if self is all ASCII, then STL is sufficient
         if ( isAscii () )
-            return str -> at ( idx );
+            return str -> s . at ( idx );
 
         // since we have some UTF-8, find the byte offset to character
-        size_t offset = char_idx_to_byte_off ( str -> data (), str -> size (), idx );
+        size_t offset = char_idx_to_byte_off ( str -> s . data (), str -> s . size (), idx );
 
         // transform the character to UTF-32
-        return utf8_to_utf32 ( str -> data (), str -> size (), offset );
+        return utf8_to_utf32 ( str -> s . data (), str -> s . size (), offset );
     }
 
     bool String :: equal ( const String & s ) const noexcept
@@ -742,7 +741,7 @@ namespace ncbi
     {
         // if 100% ASCII, STL will do the job
         if ( isAscii () && s . isAscii () )
-            return str -> compare ( * s . str );
+            return str -> s . compare ( s . str -> s );
 
         // otherwise, walk each string in UNICODE
         Iterator a = makeIterator ();
@@ -888,39 +887,39 @@ namespace ncbi
         xright = left + len;                                  \
     } while ( 0 )
 
-#define STRING_FIND_ASCII_RETURN_1( meth, str, query, lim ) \
-    do {                                                    \
-        if ( xright >= cnt )                                \
-            return str -> meth ( query, left );             \
-        if ( cnt - xright < lim )                           \
-        {                                                   \
-            pos = str -> meth ( query, left );              \
-            return ( pos >= xright ) ? npos : pos;          \
-        }                                                   \
-        pos = str -> substr ( left, len ) . meth ( query ); \
-        return ( pos == str -> npos ) ? npos : pos + left;  \
+#define STRING_FIND_ASCII_RETURN_1( meth, str, query, lim )     \
+    do {                                                        \
+        if ( xright >= cnt )                                    \
+            return str -> s . meth ( query, left );             \
+        if ( cnt - xright < lim )                               \
+        {                                                       \
+            pos = str -> s . meth ( query, left );              \
+            return ( pos >= xright ) ? npos : pos;              \
+        }                                                       \
+        pos = str -> s . substr ( left, len ) . meth ( query ); \
+        return ( pos == str -> s . npos ) ? npos : pos + left;  \
     } while ( 0 )
 
-#define STRING_FIND_UTF8_RETURN_1( meth, str, query )                \
-    do {                                                             \
-        size_t start = 0;                                            \
-        if ( left != 0 )                                             \
-            start = char_idx_to_byte_off (                           \
-                str -> data (),                                      \
-                str -> size (),                                      \
-                left );                                              \
-        size_t size = str -> npos;                                   \
-        if ( xright < cnt )                                          \
-        {                                                            \
-            size = char_idx_to_byte_off (                            \
-                str -> data () + start,                              \
-                str -> size () - start,                              \
-                len );                                               \
-        }                                                            \
-        pos = str -> substr ( start, size ) . meth ( query );        \
-        if ( pos == str -> npos )                                    \
-            return npos;                                             \
-        return string_length ( str -> data () + start, pos ) + left; \
+#define STRING_FIND_UTF8_RETURN_1( meth, str, query )                    \
+    do {                                                                 \
+        size_t start = 0;                                                \
+        if ( left != 0 )                                                 \
+            start = char_idx_to_byte_off (                               \
+                str -> s . data (),                                      \
+                str -> s . size (),                                      \
+                left );                                                  \
+        size_t size = str -> s . npos;                                   \
+        if ( xright < cnt )                                              \
+        {                                                                \
+            size = char_idx_to_byte_off (                                \
+                str -> s . data () + start,                              \
+                str -> s . size () - start,                              \
+                len );                                                   \
+        }                                                                \
+        pos = str -> s . substr ( start, size ) . meth ( query );        \
+        if ( pos == str -> s . npos )                                    \
+            return npos;                                                 \
+        return string_length ( str -> s . data () + start, pos ) + left; \
     } while ( 0 )
 
 #define STRING_RFIND_DECLARE_VARS_1( ... )      \
@@ -968,17 +967,17 @@ namespace ncbi
         left = xright - len;                               \
     } while ( 0 )
 
-#define STRING_RFIND_ASCII_RETURN_1( meth, str, query, lim )  \
-    do {                                                      \
-        if ( left == 0 )                                      \
-            return str -> meth ( query, xright - 1 );         \
-        if ( left < lim )                                     \
-        {                                                     \
-            pos = str -> meth ( query, xright - 1 );          \
-            return ( pos < left ) ? npos : pos;               \
-        }                                                     \
-        pos = str -> substr ( left, len ) . meth ( query );   \
-        return ( pos == str -> npos ) ? npos : pos + left;    \
+#define STRING_RFIND_ASCII_RETURN_1( meth, str, query, lim )    \
+    do {                                                        \
+        if ( left == 0 )                                        \
+            return str -> s . meth ( query, xright - 1 );       \
+        if ( left < lim )                                       \
+        {                                                       \
+            pos = str -> s . meth ( query, xright - 1 );        \
+            return ( pos < left ) ? npos : pos;                 \
+        }                                                       \
+        pos = str -> s . substr ( left, len ) . meth ( query ); \
+        return ( pos == str -> s . npos ) ? npos : pos + left;  \
     } while ( 0 )
 
 #define STRING_RFIND_UTF8_RETURN_1( meth, str, query )  \
@@ -1007,12 +1006,12 @@ namespace ncbi
                 return npos;
 
             // run ASCII within ASCII
-            STRING_FIND_ASCII_RETURN_1 ( find, str, * sub . str, nsquare_search_edge );
+            STRING_FIND_ASCII_RETURN_1 ( find, str, sub . str -> s, nsquare_search_edge );
         }
 
         // character offsets cannot be used. Instead, transform them to
         // byte offsets and back again.
-        STRING_FIND_UTF8_RETURN_1 ( find, str, * sub . str );
+        STRING_FIND_UTF8_RETURN_1 ( find, str, sub . str -> s );
     }
 
     count_t String :: find ( const UTF8 * zstr, count_t left, count_t len ) const
@@ -1043,10 +1042,10 @@ namespace ncbi
         {
             if ( ! sub . isAscii () )
                 return npos;
-            STRING_RFIND_ASCII_RETURN_1 ( rfind, str, * sub . str, nsquare_search_edge );
+            STRING_RFIND_ASCII_RETURN_1 ( rfind, str, sub . str -> s, nsquare_search_edge );
         }
 
-        STRING_RFIND_UTF8_RETURN_1( rfind, str, * sub . str );
+        STRING_RFIND_UTF8_RETURN_1( rfind, str, sub . str -> s );
     }
 
     count_t String :: rfind ( const UTF8 * zstr, count_t xright, count_t len ) const
@@ -1074,12 +1073,12 @@ namespace ncbi
 
         // STL will work properly if self is ASCII
         if ( isAscii () )
-            STRING_FIND_ASCII_RETURN_1 ( find_first_of, str, * cset . str, nsquare_search_edge );
+            STRING_FIND_ASCII_RETURN_1 ( find_first_of, str, cset . str -> s, nsquare_search_edge );
 
         // STL will kinda work if cset is ASCII
         // but there will be work to convert pos from bytes to characters
         if ( cset . isAscii () )
-            STRING_FIND_UTF8_RETURN_1 ( find_first_of, str, * cset . str );
+            STRING_FIND_UTF8_RETURN_1 ( find_first_of, str, cset . str -> s );
 
         // "xright" may be beyond the end of the string
         // crop it to the exact end
@@ -1125,10 +1124,10 @@ namespace ncbi
             return xright - 1;
 
         if ( isAscii () )
-            STRING_RFIND_ASCII_RETURN_1 ( find_last_of, str, * cset . str, nsquare_search_edge );
+            STRING_RFIND_ASCII_RETURN_1 ( find_last_of, str, cset . str -> s, nsquare_search_edge );
 
         if ( cset . isAscii () )
-            STRING_RFIND_UTF8_RETURN_1 ( find_last_of, str, * cset . str );
+            STRING_RFIND_UTF8_RETURN_1 ( find_last_of, str, cset . str -> s );
 
         // walk across self, one character at a time
         Iterator a = makeIterator ( xright - 1 );
@@ -1181,7 +1180,7 @@ namespace ncbi
         if ( isAscii () && is_ascii ( zsub ) )
         {
             count_t i;
-            const ASCII * data = str -> data ();
+            const ASCII * data = str -> s . data ();
             for ( i = 0; i < cnt; ++ i )
             {
                 if ( zsub [ i ] == 0 )
@@ -1246,8 +1245,9 @@ namespace ncbi
         {
             if ( isAscii () )
             {
-                sub . str = new std :: string ( str -> substr ( left, len ) );
-                sub . cnt = sub . str -> size ();
+                //sub . str = new wipersnapper ( * str, left, len );
+                sub . str = new Wiper ( * str, left, len );
+                sub . cnt = sub . str -> s . size ();
             }
             else
             {
@@ -1259,18 +1259,18 @@ namespace ncbi
 
                 size_t start = 0;
                 if ( left != 0 )
-                    start = char_idx_to_byte_off ( str -> data (), str -> size (), left );
+                    start = char_idx_to_byte_off ( str -> s . data (), str -> s . size (), left );
 
-                size_t size = str -> npos;
+                size_t size = str -> s . npos;
                 if ( left + len < cnt )
                 {
                     size = char_idx_to_byte_off (
-                        str -> data () + start,
-                        str -> size () - start,
+                        str -> s . data () + start,
+                        str -> s . size () - start,
                         len );
                 }
 
-                sub . str = new std :: string ( str -> substr ( start, size ) );
+                sub . str = new Wiper ( * str, start, size );
                 sub . cnt = len;
             }
         }
@@ -1301,7 +1301,7 @@ namespace ncbi
 
         // ASCII concat
         String cpy ( * this );
-        cpy . str -> append ( zstr );
+        cpy . str -> s . append ( zstr );
         cpy . cnt += string_size ( zstr );
         return cpy;
     }
@@ -1318,7 +1318,7 @@ namespace ncbi
 
         // add single ASCII character to end
         String cpy ( * this );
-        cpy . str -> push_back ( static_cast < ASCII > ( ch ) );
+        cpy . str -> s . push_back ( static_cast < ASCII > ( ch ) );
         cpy . cnt += 1;
         return cpy;
     }
@@ -1337,25 +1337,21 @@ namespace ncbi
         return sb . tolower () . stealString ();
     }
 
-    void String :: wipe () noexcept
-    {
-        size_t bytes = str -> capacity ();
-        memset_while_respecting_language_semantics
-            ( ( void * ) str -> data (), bytes, 0, bytes, str -> c_str () );
-    }
-
     void String :: clear ( bool _wipe ) noexcept
     {
+        // do NOT optimize this into str->wipe |= _wipe
         if ( _wipe )
-            wipe ();
+            str -> wipe = true;
+        else
+            _wipe = str -> wipe;
 
-        str -> erase ();
+        str = new Wiper ( _wipe );
         cnt = 0;
     }
 
     std :: string String :: toSTLString () const
     {
-        return std :: string ( * str );
+        return std :: string ( str -> s );
     }
 
     String :: Iterator String :: makeIterator ( count_t origin ) const noexcept
@@ -1368,7 +1364,7 @@ namespace ncbi
             // detect end of string
             if ( origin >= cnt )
             {
-                offset = str -> size ();
+                offset = str -> s . size ();
                 origin = cnt;
             }
 
@@ -1376,7 +1372,7 @@ namespace ncbi
             // map the character index to a byte offset
             else if ( ! isAscii () )
             {
-                offset = char_idx_to_byte_off ( str -> data (), str -> size (), origin );
+                offset = char_idx_to_byte_off ( str -> s . data (), str -> s . size (), origin );
             }
         }
 
@@ -1414,7 +1410,7 @@ namespace ncbi
     }
 
     String :: String ()
-        : str ( new std :: string )
+        : str ( new Wiper )
         , cnt ( 0 )
     {
     }
@@ -1424,8 +1420,8 @@ namespace ncbi
     {
         if ( is_ascii ( ch ) )
         {
-            str = new std :: string;
-            * str += ( char ) ch;
+            str = new Wiper;
+            str -> s += ( char ) ch;
             cnt = 1;
         }
         else
@@ -1446,8 +1442,8 @@ namespace ncbi
         // 100% ASCII is fine
         if ( is_ascii ( zstr ) )
         {
-            str = new std :: string ( zstr );
-            cnt = str -> size ();
+            str = new Wiper ( zstr, false );
+            cnt = str -> s . size ();
         }
         else
         {
@@ -1465,8 +1461,8 @@ namespace ncbi
 
         if ( is_ascii ( s, bytes ) )
         {
-            str = new std :: string ( s, bytes );
-            cnt = str -> size ();
+            str = new Wiper ( s, bytes, false );
+            cnt = str -> s . size ();
         }
         else
         {
@@ -1517,8 +1513,8 @@ namespace ncbi
     {
         if ( is_ascii ( s . data (), s . size () ) )
         {
-            str = new std :: string ( s );
-            cnt = str -> size ();
+            str = new Wiper ( s, false );
+            cnt = str -> s . size ();
         }
         else
         {
@@ -1733,32 +1729,81 @@ namespace ncbi
         }
 
         // update the string
-        str = new std :: string ( utf8, offset );
+        str = new Wiper ( utf8, offset, false );
 
         // return the character count
         return ccnt;
     }
 
+    void String :: Wiper :: append ( const Wiper & str )
+    {
+        s . append ( str . s );
+        wipe |= str . wipe;
+    }
+
+    String :: Wiper :: Wiper ()
+        : wipe ( false )
+    {
+    }
+
+    String :: Wiper :: Wiper ( bool _wipe )
+        : wipe ( _wipe )
+    {
+    }
+
+    String :: Wiper :: Wiper ( const UTF8 * zstr, bool _wipe )
+        : s ( zstr )
+        , wipe ( _wipe )
+    {
+    }
+
+    String :: Wiper :: Wiper ( const UTF8 * str, size_t bytes, bool _wipe )
+        : s ( str, bytes )
+        , wipe ( _wipe )
+    {
+    }
+
+    String :: Wiper :: Wiper ( const std :: string & str, bool _wipe )
+        : s ( str )
+        , wipe ( _wipe )
+    {
+    }
+
+    String :: Wiper :: Wiper ( const String :: Wiper & str, size_t pos, size_t bytes )
+        : s ( str . s . substr ( pos, bytes ) )
+        , wipe ( str . wipe )
+    {
+    }
+
+    String :: Wiper :: ~ Wiper ()
+    {
+        if ( wipe )
+        {
+            size_t bytes = s . capacity ();
+            memset_while_respecting_language_semantics
+                ( ( void * ) s . data (), bytes, 0, bytes, s . c_str () );
+        }
+    }
 
     bool String :: Iterator :: isValid () const noexcept
     {
         if ( str != nullptr )
-            return off >= 0 && ( size_t ) off < str -> size ();
+            return off >= 0 && ( size_t ) off < str -> s . size ();
 
         return false;
     }
 
     bool String :: Iterator :: isAscii () const noexcept
     {
-        return str -> size () == cnt;
+        return str -> s . size () == cnt;
     }
 
     UTF32 String :: Iterator :: get () const
     {
-        if ( str == nullptr || off < 0 || ( size_t ) off >= str -> size () )
+        if ( str == nullptr || off < 0 || ( size_t ) off >= str -> s . size () )
             throw BoundsException ( XP ( XLOC ) << "invalid string index" );
 
-        return utf8_to_utf32 ( str -> data (), str -> size (), off );
+        return utf8_to_utf32 ( str -> s . data (), str -> s . size (), off );
     }
 
 
@@ -1866,59 +1911,59 @@ namespace ncbi
         STRING_IT_FIND_CALC_VARS_2 ();                       \
     } while ( 0 )
 
-#define STRING_IT_FIND_ASCII_RETURN_1( meth, str, query, lim )        \
-    do {                                                              \
-        if ( xright >= cnt || cnt - xright < lim )                    \
-        {                                                             \
-            pos = str -> meth ( query, left );                        \
-            if ( pos >= xright )                                      \
-                return false;                                         \
-            off = idx = pos;                                          \
-            return true;                                              \
-        }                                                             \
-        pos = str -> substr ( left, xright - left ) . meth ( query ); \
-        if ( pos == str -> npos )                                     \
-            return false;                                             \
-        off = idx = pos + left;                                       \
-        return true;                                                  \
+#define STRING_IT_FIND_ASCII_RETURN_1( meth, str, query, lim )            \
+    do {                                                                  \
+        if ( xright >= cnt || cnt - xright < lim )                        \
+        {                                                                 \
+            pos = str -> s . meth ( query, left );                        \
+            if ( pos >= xright )                                          \
+                return false;                                             \
+            off = idx = pos;                                              \
+            return true;                                                  \
+        }                                                                 \
+        pos = str -> s . substr ( left, xright - left ) . meth ( query ); \
+        if ( pos == str -> s . npos )                                     \
+            return false;                                                 \
+        off = idx = pos + left;                                           \
+        return true;                                                      \
     } while ( 0 )
 
-#define STRING_IT_FIND_UTF8_RETURN_1( meth, str, query )            \
-    do {                                                            \
-        size_t start = off;                                         \
-        if ( idx < 0 )                                              \
-            start = 0;                                              \
-        size_t size = str -> npos;                                  \
-        if ( xright < cnt )                                         \
-        {                                                           \
-            assert ( left + len == xright );                        \
-            size = char_idx_to_byte_off (                           \
-                str -> data () + start,                             \
-                str -> size () - start,                             \
-                len );                                              \
-        }                                                           \
-        pos = str -> substr ( start, size ) . meth ( query );       \
-        if ( pos == str -> npos )                                   \
-            return false;                                           \
-        off = start + pos;                                          \
-        idx = string_length ( str -> data () + start, pos ) + left; \
-        return true;                                                \
+#define STRING_IT_FIND_UTF8_RETURN_1( meth, str, query )                \
+    do {                                                                \
+        size_t start = off;                                             \
+        if ( idx < 0 )                                                  \
+            start = 0;                                                  \
+        size_t size = str -> s . npos;                                  \
+        if ( xright < cnt )                                             \
+        {                                                               \
+            assert ( left + len == xright );                            \
+            size = char_idx_to_byte_off (                               \
+                str -> s . data () + start,                             \
+                str -> s . size () - start,                             \
+                len );                                                  \
+        }                                                               \
+        pos = str -> s . substr ( start, size ) . meth ( query );       \
+        if ( pos == str -> s . npos )                                   \
+            return false;                                               \
+        off = start + pos;                                              \
+        idx = string_length ( str -> s . data () + start, pos ) + left; \
+        return true;                                                    \
     } while ( 0 )
 
-#define STRING_IT_FIND_UTF8_RETURN_2( meth, str, query )           \
-    do {                                                           \
-        size_t start = off;                                        \
-        if ( idx < 0 )                                             \
-            start = 0;                                             \
-        assert ( ( size_t )  xend . off > start );                 \
-        size_t stop = xend . off;                                  \
-        size_t size = stop - start;                                \
-        pos = str -> substr ( start, size ) . meth ( query );       \
-        if ( pos == str -> npos )                                   \
-            return false;                                          \
-        off = start + pos;                                         \
-        idx = string_length ( str -> data () + start, pos ) + left; \
-        return true;                                               \
+#define STRING_IT_FIND_UTF8_RETURN_2( meth, str, query )                \
+    do {                                                                \
+        size_t start = off;                                             \
+        if ( idx < 0 )                                                  \
+            start = 0;                                                  \
+        assert ( ( size_t )  xend . off > start );                      \
+        size_t stop = xend . off;                                       \
+        size_t size = stop - start;                                     \
+        pos = str -> s . substr ( start, size ) . meth ( query );       \
+        if ( pos == str -> s . npos )                                   \
+            return false;                                               \
+        off = start + pos;                                              \
+        idx = string_length ( str -> s . data () + start, pos ) + left; \
+        return true;                                                    \
     } while ( 0 )
 
 #define STRING_IT_RFIND_CALC_VARS_1()         \
@@ -1965,7 +2010,7 @@ namespace ncbi
         STRING_IT_RFIND_CALC_VARS_2();                  \
     } while ( 0 )
     
-#define STRING_IT_RFIND_DECLARE_VARS_3( meth, query, ... )    \
+#define STRING_IT_RFIND_DECLARE_VARS_3( meth, query, ... )   \
     size_t pos;                                              \
     __VA_ARGS__;                                             \
     do {                                                     \
@@ -1995,58 +2040,58 @@ namespace ncbi
         STRING_IT_RFIND_CALC_VARS_2();                       \
     } while ( 0 )
 
-#define STRING_IT_RFIND_ASCII_RETURN_1( meth, str, query, lim )      \
-    do {                                                             \
-        if ( left < lim )                                            \
-        {                                                            \
-            pos = str -> meth ( query, xright - 1 );                  \
-            if ( pos < left || pos >= xright )                       \
-                return false;                                        \
-            off = idx = pos;                                         \
-            return true;                                             \
-        }                                                            \
-        pos = str -> substr ( left, xright - left ) . meth ( query ); \
-        if ( pos == str -> npos )                                     \
-            return false;                                            \
-        off = idx = pos + left;                                      \
-        return true;                                                 \
+#define STRING_IT_RFIND_ASCII_RETURN_1( meth, str, query, lim )           \
+    do {                                                                  \
+        if ( left < lim )                                                 \
+        {                                                                 \
+            pos = str -> s . meth ( query, xright - 1 );                  \
+            if ( pos < left || pos >= xright )                            \
+                return false;                                             \
+            off = idx = pos;                                              \
+            return true;                                                  \
+        }                                                                 \
+        pos = str -> s . substr ( left, xright - left ) . meth ( query ); \
+        if ( pos == str -> s . npos )                                     \
+            return false;                                                 \
+        off = idx = pos + left;                                           \
+        return true;                                                      \
     } while ( 0 )
 
-#define STRING_IT_RFIND_UTF8_RETURN_1( meth, str, query )          \
-    do {                                                           \
-        size_t start = 0;                                          \
-        if ( left != 0 )                                           \
-        {                                                          \
-            start = char_idx_to_byte_off (                         \
-                str -> data (),                                     \
-                str -> size (),                                     \
-                left );                                            \
-        }                                                          \
-        assert ( ( size_t ) off > start );                         \
-        size_t stop = off;                                         \
-        size_t size = stop - start;                                \
-        pos = str -> substr ( start, size ) . meth ( query );       \
-        if ( pos == str -> npos )                                   \
-            return false;                                          \
-        off = start + pos;                                         \
-        idx = string_length ( str -> data () + start, pos ) + left; \
-        return true;                                               \
+#define STRING_IT_RFIND_UTF8_RETURN_1( meth, str, query )               \
+    do {                                                                \
+        size_t start = 0;                                               \
+        if ( left != 0 )                                                \
+        {                                                               \
+            start = char_idx_to_byte_off (                              \
+                str -> s . data (),                                     \
+                str -> s . size (),                                     \
+                left );                                                 \
+        }                                                               \
+        assert ( ( size_t ) off > start );                              \
+        size_t stop = off;                                              \
+        size_t size = stop - start;                                     \
+        pos = str -> s . substr ( start, size ) . meth ( query );       \
+        if ( pos == str -> s . npos )                                   \
+            return false;                                               \
+        off = start + pos;                                              \
+        idx = string_length ( str -> s . data () + start, pos ) + left; \
+        return true;                                                    \
     } while ( 0 )
 
-#define STRING_IT_RFIND_UTF8_RETURN_2( meth, str, query )          \
-    do {                                                           \
-        size_t start = end . off;                                  \
-        if ( end . idx < 0 )                                       \
-            start = 0;                                             \
-        assert ( ( size_t )  off > start );                        \
-        size_t stop = off;                                         \
-        size_t size = stop - start;                                \
-        pos = str -> substr ( start, size ) . meth ( query );       \
-        if ( pos == str -> npos )                                   \
-            return false;                                          \
-        off = start + pos;                                         \
-        idx = string_length ( str -> data () + start, pos ) + left; \
-        return true;                                               \
+#define STRING_IT_RFIND_UTF8_RETURN_2( meth, str, query )               \
+    do {                                                                \
+        size_t start = end . off;                                       \
+        if ( end . idx < 0 )                                            \
+            start = 0;                                                  \
+        assert ( ( size_t )  off > start );                             \
+        size_t stop = off;                                              \
+        size_t size = stop - start;                                     \
+        pos = str -> s . substr ( start, size ) . meth ( query );       \
+        if ( pos == str -> s . npos )                                   \
+            return false;                                               \
+        off = start + pos;                                              \
+        idx = string_length ( str -> s . data () + start, pos ) + left; \
+        return true;                                                    \
     } while ( 0 )
 
 
@@ -2059,10 +2104,10 @@ namespace ncbi
         {
             if ( ! sub . isAscii () )
                 return false;
-            STRING_IT_FIND_ASCII_RETURN_1 ( find, str, * sub . str, nsquare_search_edge );
+            STRING_IT_FIND_ASCII_RETURN_1 ( find, str, sub . str -> s, nsquare_search_edge );
         }
 
-        STRING_IT_FIND_UTF8_RETURN_1 ( find, str, * sub . str );
+        STRING_IT_FIND_UTF8_RETURN_1 ( find, str, sub . str -> s );
     }
 
     bool String :: Iterator :: find ( const String & sub, const Iterator & xend )
@@ -2074,10 +2119,10 @@ namespace ncbi
         {
             if ( ! sub . isAscii () )
                 return false;
-            STRING_IT_FIND_ASCII_RETURN_1 ( find, str, * sub . str, nsquare_search_edge );
+            STRING_IT_FIND_ASCII_RETURN_1 ( find, str, sub . str -> s, nsquare_search_edge );
         }
 
-        STRING_IT_FIND_UTF8_RETURN_2 ( find, str, * sub . str );
+        STRING_IT_FIND_UTF8_RETURN_2 ( find, str, sub . str -> s );
     }
 
     bool String :: Iterator :: find ( const UTF8 * zstr, count_t len )
@@ -2115,10 +2160,10 @@ namespace ncbi
         {
             if ( ! sub . isAscii () )
                 return false;
-            STRING_IT_RFIND_ASCII_RETURN_1 ( rfind, str, * sub . str, nsquare_search_edge );
+            STRING_IT_RFIND_ASCII_RETURN_1 ( rfind, str, sub . str -> s, nsquare_search_edge );
         }
 
-        STRING_IT_RFIND_UTF8_RETURN_1 ( rfind, str, * sub . str );
+        STRING_IT_RFIND_UTF8_RETURN_1 ( rfind, str, sub . str -> s );
     }
 
     bool String :: Iterator :: rfind ( const String & sub, const Iterator & end )
@@ -2130,10 +2175,10 @@ namespace ncbi
         {
             if ( ! sub . isAscii () )
                 return false;
-            STRING_IT_RFIND_ASCII_RETURN_1 ( rfind, str, * sub . str, nsquare_search_edge );
+            STRING_IT_RFIND_ASCII_RETURN_1 ( rfind, str, sub . str -> s, nsquare_search_edge );
         }
 
-        STRING_IT_RFIND_UTF8_RETURN_2 ( rfind, str, * sub . str );
+        STRING_IT_RFIND_UTF8_RETURN_2 ( rfind, str, sub . str -> s );
     }
 
     bool String :: Iterator :: rfind ( const UTF8 * zstr, count_t len )
@@ -2182,12 +2227,12 @@ namespace ncbi
 
         // STL will work properly if self is ASCII
         if ( isAscii () )
-            STRING_IT_FIND_ASCII_RETURN_1 ( find_first_of, str, * cset . str, nsquare_search_edge );
+            STRING_IT_FIND_ASCII_RETURN_1 ( find_first_of, str, cset . str -> s, nsquare_search_edge );
 
         // STL will kinda work if cset is ASCII
         // but there will be work to convert pos from bytes to characters
         if ( cset . isAscii () )
-            STRING_IT_FIND_UTF8_RETURN_1 ( find_first_of, str, * cset . str );
+            STRING_IT_FIND_UTF8_RETURN_1 ( find_first_of, str, cset . str -> s );
 
         // get an actual length
         if ( xright > cnt )
@@ -2235,10 +2280,10 @@ namespace ncbi
         }
 
         if ( isAscii () )
-            STRING_IT_FIND_ASCII_RETURN_1 ( find_first_of, str, * cset . str, nsquare_search_edge );
+            STRING_IT_FIND_ASCII_RETURN_1 ( find_first_of, str, cset . str -> s, nsquare_search_edge );
 
         if ( cset . isAscii () )
-            STRING_IT_FIND_UTF8_RETURN_2 ( find_first_of, str, * cset . str );
+            STRING_IT_FIND_UTF8_RETURN_2 ( find_first_of, str, cset . str -> s );
 
         if ( xright > cnt )
             xright = cnt;
@@ -2316,7 +2361,7 @@ namespace ncbi
             {
                 // seek right edge
                 idx = cnt;
-                off = str -> size ();
+                off = str -> s . size ();
 
                 // back up by one
                 -- ( * this );
@@ -2326,10 +2371,10 @@ namespace ncbi
         }
 
         if ( isAscii () )
-            STRING_IT_RFIND_ASCII_RETURN_1 ( find_last_of, str, * cset . str, nsquare_search_edge );
+            STRING_IT_RFIND_ASCII_RETURN_1 ( find_last_of, str, cset . str -> s, nsquare_search_edge );
 
         if ( cset . isAscii () )
-            STRING_IT_RFIND_UTF8_RETURN_1 ( find_last_of, str, * cset . str );
+            STRING_IT_RFIND_UTF8_RETURN_1 ( find_last_of, str, cset . str -> s );
 
         // walk across string, one character at a time
         long int save_idx = idx;
@@ -2365,7 +2410,7 @@ namespace ncbi
             if ( ( count_t ) idx >= cnt )
             {
                 idx = cnt;
-                off = str -> size ();
+                off = str -> s . size ();
                 -- ( * this );
             }
             assert ( idx >= 0 );
@@ -2373,10 +2418,10 @@ namespace ncbi
         }
 
         if ( isAscii () )
-            STRING_IT_RFIND_ASCII_RETURN_1 ( find_last_of, str, * cset . str, nsquare_search_edge );
+            STRING_IT_RFIND_ASCII_RETURN_1 ( find_last_of, str, cset . str -> s, nsquare_search_edge );
 
         if ( cset . isAscii () )
-            STRING_IT_RFIND_UTF8_RETURN_2 ( find_last_of, str, * cset . str );
+            STRING_IT_RFIND_UTF8_RETURN_2 ( find_last_of, str, cset . str -> s );
 
         // walk across string, one character at a time
         long int save_idx = idx;
@@ -2425,7 +2470,7 @@ namespace ncbi
         if ( isAscii () )
             ++ off;
         else
-            off += scan_fwd ( str -> data (), str -> size (), off );
+            off += scan_fwd ( str -> s . data (), str -> s . size (), off );
 
         ++ idx;
 
@@ -2440,7 +2485,7 @@ namespace ncbi
         if ( isAscii () )
             -- off;
         else
-            off -= scan_rev ( str -> data (), str -> size (), off );
+            off -= scan_rev ( str -> s . data (), str -> s . size (), off );
 
         -- idx;
 
@@ -2506,14 +2551,14 @@ namespace ncbi
             if ( ( count_t ) adjust >= avail )
             {
                 // add in any overage
-                off = str -> size () + extra;
+                off = str -> s . size () + extra;
             }
             else
             {
                 // measure the size
                 off += char_idx_to_byte_off (
-                    str -> data () + off,
-                    str -> size () - off,
+                    str -> s . data () + off,
+                    str -> s . size () - off,
                     amt );
             }
         }
@@ -2555,15 +2600,15 @@ namespace ncbi
                 {
                     // measure the size to left
                     off = char_idx_to_byte_off (
-                        str -> data (),
-                        str -> size (),
+                        str -> s . data (),
+                        str -> s . size (),
                         left );
                 }
                 else
                 {
                     for ( count_t i = 0; i < amt; ++ i )
                     {
-                        off -= scan_rev ( str -> data (), str -> size (), off );
+                        off -= scan_rev ( str -> s . data (), str -> s . size (), off );
                     }
                 }
             }
@@ -2619,7 +2664,7 @@ namespace ncbi
     {
     }
 
-    String :: Iterator :: Iterator ( const SRef < std :: string > & _str, count_t _cnt, size_t origin, count_t index )
+    String :: Iterator :: Iterator ( const SRef < Wiper > & _str, count_t _cnt, size_t origin, count_t index )
         : str ( _str )
         , cnt ( _cnt )
         , idx ( index )
@@ -2634,7 +2679,7 @@ namespace ncbi
 
     const UTF8 * NULTerminatedString :: c_str () const noexcept
     {
-        return str -> c_str ();
+        return str -> s . c_str ();
     }
 
     NULTerminatedString & NULTerminatedString :: operator = ( const String & s )
@@ -2697,7 +2742,7 @@ namespace ncbi
     size_t StringBuffer :: capacity () const
     {
         SLocker lock ( busy );
-        return str . str -> capacity ();
+        return str . str -> s . capacity ();
     }
 
     count_t StringBuffer :: count () const
@@ -2876,7 +2921,7 @@ namespace ncbi
         {
             XLocker lock ( busy );
             size_t old_size = str . size ();
-            str . str -> append ( zstr );
+            str . str -> s . append ( zstr );
             size_t new_size = str . size ();
             str . cnt += new_size - old_size;
             return * this;
@@ -2890,7 +2935,7 @@ namespace ncbi
         if ( is_ascii ( ch ) )
         {
             XLocker lock ( busy );
-            * str . str += ( char ) ch;
+            str . str -> s += ( char ) ch;
             str . cnt += 1;
             return * this;
         }
@@ -2927,7 +2972,7 @@ namespace ncbi
                     UTF8 buffer [ 8 ];
                     size_t new_sz = utf32_to_utf8_strict ( buffer, sizeof buffer, ch );
 
-                    str . str -> replace ( it . byteOffset (), cur_sz, buffer, new_sz );
+                    str . str -> s . replace ( it . byteOffset (), cur_sz, buffer, new_sz );
                 }
             }
         }
@@ -2963,7 +3008,7 @@ namespace ncbi
                     UTF8 buffer [ 8 ];
                     size_t new_sz = utf32_to_utf8_strict ( buffer, sizeof buffer, ch );
 
-                    str . str -> replace ( it . byteOffset (), cur_sz, buffer, new_sz );
+                    str . str -> s . replace ( it . byteOffset (), cur_sz, buffer, new_sz );
                 }
             }
         }

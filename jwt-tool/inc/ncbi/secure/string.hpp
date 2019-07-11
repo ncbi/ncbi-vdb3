@@ -408,15 +408,21 @@ namespace ncbi
          *                     WIPING                      *
          *=================================================*/
 
-        /**
-         * wipe
-         * @brief wipe the string memory
-         *
-         * If the string data are not shared with any other string,
-         * write over the memory with some pattern to erase contents
-         * from RAM.
-         */
-        void wipe () noexcept;
+        struct Wiper
+        {
+            void append ( const Wiper & str );
+
+            Wiper ();
+            explicit Wiper ( bool wipe );
+            Wiper ( const UTF8 * zstr, bool wipe );
+            Wiper ( const UTF8 * str, size_t bytes, bool wipe );
+            Wiper ( const std :: string & str, bool wipe );
+            Wiper ( const Wiper & str, size_t pos, size_t bytes );
+            ~ Wiper ();
+
+            std :: string s;
+            bool wipe;
+        };
 
         /**
          * clear
@@ -922,10 +928,10 @@ v         * toSTLString
 
         private:
 
-            Iterator ( const SRef < std :: string > & str, count_t cnt, size_t origin, count_t index );
+            Iterator ( const SRef < Wiper > & str, count_t cnt, size_t origin, count_t index );
 
             //!< retain pointer to String
-            SRef < std :: string > str;
+            SRef < Wiper > str;
             count_t cnt;
 
             //!< character index into the String sequence
@@ -1036,8 +1042,8 @@ v         * toSTLString
 
     protected:
 
-        //!< base implementation on std :: string
-        SRef < std :: string > str;
+        //!< base implementation on struct holding std :: string
+        SRef < Wiper > str;
 
         //!< the number of characters (not bytes) in string
         count_t cnt;
