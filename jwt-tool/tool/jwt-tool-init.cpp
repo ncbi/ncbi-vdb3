@@ -120,6 +120,10 @@ namespace ncbi
 			pubKeys = JWKMgr :: makeJWKSet ();
 		
 		pubKeys -> addKey ( key );
+		log . msg ( LOG_INFO )
+		<< "Added key to JWKS  '"
+		<< endm
+		;
 	}
 	
 	void JWTTool :: loadPublicKey ( const String & path )
@@ -204,7 +208,7 @@ namespace ncbi
 		loadPrivateKey ( key );
     }
 
-	void JWTTool :: loadKeySet ( const String & path )
+	void JWTTool :: loadKeyorKeySet ( const String & path )
 	{
 		log . msg ( LOG_INFO )
 		<< "Attempting to load key sets from '"
@@ -234,7 +238,6 @@ namespace ncbi
 			else
 				loadPublicKey ( key );
 		}
-		std :: cout << "Priv Key: " << privKeys -> getKey (0) -> readableJSON () << std :: endl;
 	}
 	
     void JWTTool :: importPemFile ( const String & path )
@@ -273,7 +276,26 @@ namespace ncbi
         switch ( jwtMode )
         {
         case decode:
+        {
+            // load keysets in keyfilepaths into JWK obj
+            log . msg ( LOG_INFO )
+                << "Attempting to load "
+                << pubKeyFilePaths . size ()
+                << " keyset files"
+                << endm
+                ;
+            
+            for ( auto path : pubKeyFilePaths )
+                loadKeyorKeySet ( path );
+            
+            log . msg ( LOG_INFO )
+                << "Successfully loaded "
+                << pubKeys -> count ()
+                << " keys"
+                << endm
+                ;
             break;
+        }
         case sign:
         {
             JWTMgr :: Policy jwtPolicy = JWTMgr :: getPolicy ();
@@ -289,9 +311,7 @@ namespace ncbi
                 << " pem file"
                 << endm
                 ;
-            loadKeySet ( privKeyFilePaths [ 0 ] );
-			
-			std :: cout << "Priv Key: " << privKeys -> getKey (0) -> readableJSON () <<  std :: endl;
+            loadKeyorKeySet ( privKeyFilePaths [ 0 ] );
 			
             log . msg ( LOG_INFO )
                 << "Successfully loaded "
@@ -325,7 +345,7 @@ namespace ncbi
                 ;
             
             for ( auto path : pubKeyFilePaths )
-                loadKeySet ( path );
+                loadKeyorKeySet ( path );
             
             log . msg ( LOG_INFO )
                 << "Successfully loaded "

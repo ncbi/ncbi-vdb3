@@ -92,7 +92,7 @@ namespace ncbi
 		void loadPublicKey ( const String & path );
 		void loadPrivateKey ( const JWKRef & key );
 		void loadPrivateKey ( const String & path );
-		void loadKeySet ( const String & path );
+		void loadKeyorKeySet ( const String & path );
 		void importPemFile ( const String & path );
 
         void createJWT ( const String & json );

@@ -179,6 +179,13 @@ namespace ncbi
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
 
+        cmdline . setCurrentMode ( "decode" );
+        cmdline . startOptionalParams ();
+        cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
+        
+        cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
+                                  "", "pub-key", "", "provide one or more public JWK or JWKSets" );
+
         // sign
         cmdline . setCurrentMode ( "sign" );
         cmdline . startOptionalParams ();
@@ -197,7 +204,7 @@ namespace ncbi
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
         
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
-                                  "", "key-sets", "", "provide one or more sets of public JWKs" );
+                                  "", "pub-key", "", "provide one or more public JWK or JWKSets" );
 
         // import_pem
         cmdline . setCurrentMode ( "import-pem" );
