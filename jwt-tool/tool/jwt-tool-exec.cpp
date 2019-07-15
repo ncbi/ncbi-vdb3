@@ -48,8 +48,25 @@ namespace ncbi
         std :: cout << jwt << std :: endl;
     }
     
+    void JWTTool :: decodeJWT ( const JWT & jwt )
+    {
+        log . msg ( LOG_INFO )
+		<< "Decoding JWT'"
+		<< endm
+		;
+
+        JWTClaimSetRef claimSet = JWTMgr :: decode ( * pubKeys, jwt );
+
+        std :: cout << claimSet -> readableJSON () << std :: endl;
+    }
+    
     void JWTTool :: examineJWT ( const JWT & jwt )
     {
+        log . msg ( LOG_INFO )
+		<< "Examining unverified JWT'"
+		<< endm
+		;
+
         UnverifiedJWTClaimsRef claimSet = JWTMgr :: inspect ( * pubKeys, jwt );
 
         std :: cout << claimSet -> readableJSON () << std :: endl;
@@ -62,7 +79,11 @@ namespace ncbi
         switch ( jwtMode )
         {
         case decode:
+        {
+            for ( auto jwt : inputParams )
+                decodeJWT ( jwt );
             break;
+        }
         case sign:
         {
             for ( auto json : inputParams )

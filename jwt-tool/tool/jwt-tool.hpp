@@ -96,6 +96,7 @@ namespace ncbi
 		void importPemFile ( const String & path );
 
         void createJWT ( const String & json );
+        void decodeJWT ( const JWT & jwt );
         void examineJWT ( const JWT & jwt );
         
         std :: vector <String> inputParams;

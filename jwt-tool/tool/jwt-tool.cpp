@@ -58,7 +58,15 @@ namespace ncbi
 		switch ( mode )
         {
         case decode:
+        {
+            // Options
+            if ( pubKeyFilePaths . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Required public key set"
+                    );
             break;
+        }
         case sign:
         {
             // Params
@@ -179,10 +187,10 @@ namespace ncbi
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
 
+        // decode
         cmdline . setCurrentMode ( "decode" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
-        
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
                                   "", "pub-key", "", "provide one or more public JWK or JWKSets" );
 
