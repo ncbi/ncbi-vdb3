@@ -37,6 +37,12 @@ namespace ncbi
     static
     String readTextFile ( const String & path )
     {
+		log . msg ( LOG_INFO )
+		<< "reading file:  '"
+        << path
+		<< endm
+		;
+
         // declare String for return
         String contents;
         
@@ -63,7 +69,6 @@ namespace ncbi
         {
             // read file into buffer within try block
             file . read ( buf, size );
-            
             file . close ();
             
             contents = String ( buf, size );
@@ -82,8 +87,12 @@ namespace ncbi
     static
     void writeTextFile ( const String & text, const String & path )
     {
-        std :: cout << "writing to file" << std :: endl;
-        
+		log . msg ( LOG_INFO )
+		<< "writing to file:  '"
+        << path
+		<< endm
+		;
+
         std :: ofstream file;
         file . open ( path . toSTLString () );
 
@@ -120,10 +129,7 @@ namespace ncbi
 			pubKeys = JWKMgr :: makeJWKSet ();
 		
 		pubKeys -> addKey ( key );
-		log . msg ( LOG_INFO )
-		<< "Added key to JWKS  '"
-		<< endm
-		;
+
 	}
 	
 	void JWTTool :: loadPublicKey ( const String & path )

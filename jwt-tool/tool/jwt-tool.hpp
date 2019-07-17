@@ -59,6 +59,8 @@ namespace ncbi
             }
         
         std :: vector <String> inputParams;
+        std :: vector <String> jwsPolicySettings;
+        std :: vector <String> jwtPolicySettings;
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
 
@@ -72,6 +74,7 @@ namespace ncbi
         U32 numPwds;
 
         String privPwd;
+        String alg;
     };
     
     class JWTTool

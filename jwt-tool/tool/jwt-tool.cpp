@@ -27,6 +27,7 @@
  */
 
 #include "jwt-tool.hpp"
+#include <ncbi/jws.hpp>
 
 #include "cmdline.hpp"
 #include "logging.hpp"
@@ -38,24 +39,167 @@ namespace ncbi
 
     void ParamBlock :: validate ( JWTMode mode )
     {
-		if ( inputParams . empty () )
+        if ( inputParams . empty () )
 			throw InvalidArgument (
-								   XP ( XLOC, rc_param_err )
-								   << "Missing input parameters"
-								   );
+                XP ( XLOC, rc_param_err )
+                << "Missing input parameters"
+                );
 		if ( numDurationOpts > 1 )
 			throw InvalidArgument (
-								   XP ( XLOC, rc_param_err )
-								   << "Multiple duration values"
-								   );
+                XP ( XLOC, rc_param_err )
+                << "Multiple duration values"
+                );
 		
 		if ( numPwds > 1 )
 			throw InvalidArgument (
-								   XP ( XLOC, rc_param_err )
-								   << "Multiple password values"
-								   );
-		
-		switch ( mode )
+                XP ( XLOC, rc_param_err )
+                << "Multiple password values"
+                );
+
+        if ( ! jwsPolicySettings . empty () )
+        {
+            JWSMgr :: Policy jwsPolicy = JWSMgr :: getPolicy ();
+
+            for ( auto policy_str : jwsPolicySettings )
+            {
+
+                count_t pos = policy_str . find ( '=' );
+                if ( pos == String :: npos )
+                    throw InvalidArgument (
+                        XP ( XLOC, rc_param_err )
+                        << "Missing input parameters"
+                        );
+
+                String policy_name = policy_str . subString ( 0, pos );
+                String policy_val = policy_str . subString ( pos + 1, policy_str . count () - 1 );
+
+                bool toggle = policy_val . equal ( "true" ) ? true : false;
+
+                if ( policy_name . equal ( "kid_required" ) )
+                    jwsPolicy . kid_required = toggle;
+                
+                else if ( policy_name . equal ( "kid_gen" ) )
+                    jwsPolicy . kid_gen = toggle;
+                
+                else if ( policy_name . equal ( "require_simple_hdr" ) )
+                    jwsPolicy . require_simple_hdr = toggle;
+                
+                else if ( policy_name . equal ( "require_prestored_kid" ) )
+                    jwsPolicy . require_prestored_kid = toggle;
+                
+                else if ( policy_name . equal ( "require_prestored_key" ) )
+                    jwsPolicy . require_prestored_key = toggle;
+
+                else
+                {
+                    throw InvalidArgument (
+                        XP ( XLOC, rc_param_err )
+                        << "Invalid JWT policy: "
+                        << policy_name
+                        );
+                }
+                
+            log . msg ( LOG_INFO )
+                << "Set JWS policy: "
+                << policy_name
+                << " to "
+                << policy_val
+                << endm
+                ;
+                
+            }
+
+            JWSMgr :: setPolicy ( jwsPolicy );
+        }
+
+        if ( ! jwtPolicySettings . empty () )
+        {
+            JWTMgr :: Policy jwtPolicy = JWTMgr :: getPolicy ();
+
+            for ( auto policy_str : jwtPolicySettings )
+            {
+                count_t pos = policy_str . find ( '=' );
+                if ( pos == String :: npos )
+                    throw InvalidArgument (
+                        XP ( XLOC, rc_param_err )
+                        << "Missing input parameters"
+                        );
+
+                String policy_name = policy_str . subString ( 0, pos );
+                String policy_val = policy_str . subString ( pos + 1, policy_str . count () - 1 );
+
+
+                if ( policy_name . equal ( "skew_seconds" ) )
+                    jwtPolicy . skew_seconds = decToLongLongInteger ( policy_val );
+
+                else if ( policy_name . equal ( "sig_val_required" ) )
+                    jwtPolicy . sig_val_required = policy_val . equal ( "true" ) ? true : false;
+                
+                else if ( policy_name . equal ( "nested_sig_val_required" ) )
+                    jwtPolicy . nested_sig_val_required = policy_val . equal ( "true" ) ? true : false;
+                
+                else if ( policy_name . equal ( "iss_required" ) )
+                    jwtPolicy . iss_required = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "sub_required" ) )
+                    jwtPolicy . sub_required = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "aud_required" ) )
+                    jwtPolicy . aud_required = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "exp_required" ) )
+                    jwtPolicy . exp_required = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "nbf_required" ) )
+                    jwtPolicy . nbf_required = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "iat_required" ) )
+                    jwtPolicy . iat_required = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "jti_required" ) )
+                    jwtPolicy . jti_required = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "exp_gen" ) )
+                    jwtPolicy . exp_gen = policy_val . equal ( "true" ) ? true : false;
+                
+                else if ( policy_name . equal ( "nbf_gen" ) )
+                    jwtPolicy . nbf_gen = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "iat_gen" ) )
+                    jwtPolicy . iat_gen = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "jti_gen" ) )
+                    jwtPolicy . jti_gen = policy_val . equal ( "true" ) ? true : false;
+                
+                else if ( policy_name . equal ( "pre_serial_verify" ) )
+                    jwtPolicy . pre_serial_verify = policy_val . equal ( "true" ) ? true : false;
+
+                else if ( policy_name . equal ( "zero_dur_allowed" ) )
+                    jwtPolicy . zero_dur_allowed = policy_val . equal ( "true" ) ? true : false;
+
+                else
+                {
+                    throw InvalidArgument (
+                        XP ( XLOC, rc_param_err )
+                        << "Invalid JWT policy: "
+                        << policy_name
+                        );
+                }
+                
+                log . msg ( LOG_INFO )
+                << "Set JWT policy: "
+                << policy_name
+                << " to "
+                << policy_val
+                << endm
+                ;
+                
+            }
+
+            JWTMgr :: setPolicy ( jwtPolicy );
+        }
+
+        switch ( mode )
         {
         case decode:
         {
@@ -120,11 +264,8 @@ namespace ncbi
                     XP ( XLOC, rc_param_err )
                     << "Multiple private key paths"
                     );
-            if ( privKeyFilePaths [ 0 ]  . isEmpty () )
-                throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Required private key file path"
-                    );
+            
+            isPem = true;
             break;
         }
         }
@@ -193,6 +334,12 @@ namespace ncbi
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
                                   "", "pub-key", "", "provide one or more public JWK or JWKSets" );
+        cmdline . addListOption ( params . jwsPolicySettings, ',', 256,
+								 "", "jws-policy", "",
+                                  "Overrite default policy settings for JWS" );
+        cmdline . addListOption ( params . jwtPolicySettings, ',', 256,
+								 "", "jwt-policy", "",
+                                  "Overrite default policy settings for JWT" );
 
         // sign
         cmdline . setCurrentMode ( "sign" );
@@ -205,6 +352,12 @@ namespace ncbi
 							 "", "pwd", "" , "Private pem file password for decryption");
         cmdline . addOption ( params . duration, & params . numDurationOpts,
 							 "", "duration", "" ,"amount of time JWT is valid" );
+        cmdline . addListOption ( params . jwsPolicySettings, ',', 256,
+								 "", "jws-policy", "",
+                                  "Overrite default policy settings for JWS" );
+        cmdline . addListOption ( params . jwtPolicySettings, ',', 256,
+								 "", "jwt-policy", "",
+                                  "Overrite default policy settings for JWT" );
 
         // examine
         cmdline . setCurrentMode ( "examine" );
@@ -213,19 +366,31 @@ namespace ncbi
         
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
                                   "", "pub-key", "", "provide one or more public JWK or JWKSets" );
+        cmdline . addListOption ( params . jwsPolicySettings, ',', 256,
+								 "", "jws-policy", "",
+                                  "Overrite default policy settings for JWS" );
+        cmdline . addListOption ( params . jwtPolicySettings, ',', 256,
+								 "", "jwt-policy", "",
+                                  "Overrite default policy settings for JWT" );
 
         // import_pem
         cmdline . setCurrentMode ( "import-pem" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "pem file(s)", "one or more pem files" );
-		cmdline . addOption ( params . isPem, "", "is-pem", "Indicates private key is a pem file" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
 							 "", "pwd", "" , "Private pem file password for decryption" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
 								 "", "priv-key", "",
-								 "Private key file; will create if it does not exist" );
+								 "Write to private key file; default location if unspecified; will overrite" );
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
-								 "", "pub-key", "", "Public key file; will create if it does not exist" );
+								 "", "pub-key", "",
+                                  "Write to public key file; default location if unspecified; will overrite" );
+        cmdline . addListOption ( params . jwsPolicySettings, ',', 256,
+								 "", "jws-policy", "",
+                                  "Overrite default policy settings for JWS" );
+        cmdline . addListOption ( params . jwtPolicySettings, ',', 256,
+								 "", "jwt-policy", "",
+                                  "Overrite default policy settings for JWT" );
 
 
         
