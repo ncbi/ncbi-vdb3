@@ -32,6 +32,8 @@
 #include "cmdline.hpp"
 #include "logging.hpp"
 
+#include <iostream>
+
 namespace ncbi
 {
     static LocalLogger local_logger;
@@ -39,11 +41,6 @@ namespace ncbi
 
     void ParamBlock :: validate ( JWTMode mode )
     {
-        if ( inputParams . empty () )
-			throw InvalidArgument (
-                XP ( XLOC, rc_param_err )
-                << "Missing input parameters"
-                );
 		if ( numDurationOpts > 1 )
 			throw InvalidArgument (
                 XP ( XLOC, rc_param_err )
@@ -56,6 +53,26 @@ namespace ncbi
                 << "Multiple password values"
                 );
 
+        if ( inputParams . empty () )
+        {
+            // take from stdin
+            log . msg ( LOG_INFO )
+                << "No input params. Reading from stdin "
+                << endm
+                ;
+
+            std :: string line;
+            getline ( std :: cin, line );
+
+            if ( line . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing input parameter from stdin"
+                    );
+
+            inputParams . emplace_back ( String ( line ) );            
+        }
+        
         if ( ! jwsPolicySettings . empty () )
         {
             JWSMgr :: Policy jwsPolicy = JWSMgr :: getPolicy ();

@@ -38,9 +38,19 @@ namespace ncbi
         builder -> setDuration ( duration );
         
         JWTClaimSetRef claimSet = builder -> stealClaimSet ();
+        log . msg ( LOG_INFO )
+		<< "Duration set to"
+        << claimSet -> getDuration ()
+        << " seconds"
+		<< endm
+		;
 
-        std :: cerr << "Duration set to " << claimSet -> getDuration () << " seconds" <<  std :: endl;
-		std :: cerr << "Priv Key: " << privKeys -> getKey ( 0 ) -> readableJSON () <<  std :: endl;
+        log . msg ( LOG_INFO )
+		<< "Signing with key:\n "
+        << privKeys -> getKey ( 0 ) -> readableJSON ()
+        << "\n"
+		<< endm
+		;
 
         JWT jwt = JWTMgr :: sign ( *privKeys -> getKey ( 0 ), *claimSet );
 
