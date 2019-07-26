@@ -84,7 +84,7 @@ namespace ncbi
                 if ( pos == String :: npos )
                     throw InvalidArgument (
                         XP ( XLOC, rc_param_err )
-                        << "Missing input parameters"
+                        << "Faulty policy parameters"
                         );
 
                 String policy_name = policy_str . subString ( 0, pos );
@@ -139,7 +139,7 @@ namespace ncbi
                 if ( pos == String :: npos )
                     throw InvalidArgument (
                         XP ( XLOC, rc_param_err )
-                        << "Missing input parameters"
+                        << "Faulty policy parameters"
                         );
 
                 String policy_name = policy_str . subString ( 0, pos );
@@ -230,17 +230,15 @@ namespace ncbi
         }
         case sign:
         {
-            // Params
-            // Options
+            if ( privKeyFilePaths . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing required private signing key"
+                    );
             if ( privKeyFilePaths . size () > 1 )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
                     << "Multiple private key paths"
-                    );
-            if ( privKeyFilePaths [ 0 ]  . isEmpty () )
-                throw InvalidArgument (
-                    XP ( XLOC, rc_param_err )
-                    << "Required private signing key"
                     );
 			if ( isPem )
 			{
@@ -363,12 +361,12 @@ namespace ncbi
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "JSON text", "JSON text to convert into a JWT" );
 		cmdline . addOption ( params . isPem, "", "is-pem", "Indicates private key is a pem file" );
-        cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
-								 "", "priv-key", "", "Private signing key; provide only 1" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
 							 "", "pwd", "" , "Private pem file password for decryption");
         cmdline . addOption ( params . duration, & params . numDurationOpts,
 							 "", "duration", "" ,"amount of time JWT is valid" );
+        cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
+								 "", "priv-key", "", "Private signing key; provide only 1" );
         cmdline . addListOption ( params . jwsPolicySettings, ',', 256,
 								 "", "jws-policy", "",
                                   "Overrite default policy settings for JWS" );

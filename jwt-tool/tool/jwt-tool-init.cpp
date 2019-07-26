@@ -266,12 +266,12 @@ namespace ncbi
 		
         // save keys to text files
         if ( privKeyFilePaths . empty () )
-            writeTextFile ( privKeys -> readableJSON (), "tool/input/extPemPrivKey.txt" );
+            writeTextFile ( privKeys -> readableJSON (), "tool/input/extPemPrivKey.jwk" );
         else
             writeTextFile ( privKeys -> readableJSON (), privKeyFilePaths [ 0 ] );
         
         if ( pubKeyFilePaths . empty () )
-            writeTextFile ( pubKeys -> readableJSON (), "tool/input/extPemPubKeys.txt" );
+            writeTextFile ( pubKeys -> readableJSON (), "tool/input/extPemPubKey.jwk" );
         else
             writeTextFile ( pubKeys -> readableJSON (), pubKeyFilePaths [ 0 ] );
 
