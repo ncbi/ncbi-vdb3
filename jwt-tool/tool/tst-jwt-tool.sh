@@ -29,6 +29,12 @@ PUBKEY=$OUTDIR/extPubPem.jwk
 (! $TOOL import-pem $OUTDIR/test_priv.pem --pwd incorrectpassword 2> /dev/null &&
     echo "import-pem test - Incorrect password: Pass") ||
     { echo "import-pem test - Incorrect password: Failed"; exit 1; }
+(! $TOOL import-pem $OUTDIR/test_priv.pem --pwd $PWD --kids 2> /dev/null &&
+    echo "import-pem test - Missing kid(s): Pass") ||
+    { echo "import-pem test - Missing kid(s): Failed"; exit 1; }
+
+if [ 1 -eq 0 ]
+then
 (! $TOOL import-pem $OUTDIR/test_priv.pem --pwd $PWD --jws-policy 2> /dev/null &&
     echo "import-pem test - Missing jws policy options: Pass") ||
     { echo "import-pem test - Missing jws policy options: Failed"; exit 1; }
@@ -47,7 +53,8 @@ PUBKEY=$OUTDIR/extPubPem.jwk
 (! $TOOL import-pem $OUTDIR/test_priv.pem --pwd $PWD --jwt-policy blark=flark 2> /dev/null  &&
     echo "import-pem test - Invalid jwt policy options2: Pass") ||
     { echo "import-pem test - Invalid jwt policy options2: Failed"; exit 1; }
-
+fi
+   
 # import pem to hard-coded file path
 $TOOL import-pem $OUTDIR/test_priv.pem --pwd $PWD 2> /dev/null
 [ ! -e $OUTDIR/extPemPrivKey.jwk ] && { echo "Failed to create file: OUTDIR/extPemPrivKey.jwk"; exit 1; }
@@ -77,6 +84,7 @@ PAYLOAD='{"iss":"https://dbgap.nlm.nih.gov/aa","sub":"00000","vcard":{"email":"u
 (! $TOOL sign $PAYLOAD --priv-key tool/input/extEmptyPrivPem.jwk 2> /dev/null &&
     echo "sign test - Empty Key: Pass") ||
     { echo "sign test - Empty Key: Failed"; exit 1; }
+
 (! $TOOL sign $PAYLOAD --priv-key tool/input/extPrivPem.jwk --jws-policy 2> /dev/null &&
     echo "sign test - Missing jws policy options: Pass") ||
     { echo "sign test - Missing jws policy options: Failed"; exit 1; }
@@ -119,6 +127,7 @@ JWT=$($TOOL sign $PAYLOAD --priv-key tool/input/extPrivPem.jwk 2> /dev/null)
 (! $TOOL decode $JWT --pub-key tool/input/extEmptyPubPem.jwk 2> /dev/null &&
     echo "decode test - Missing public decoding key3: Pass") ||
     { echo "decode test - Missing public decoding key3: Failed"; exit 1; }
+
 (! $TOOL decode $PAYLOAD --pub-key tool/input/extPubPem.jwk --jws-policy 2> /dev/null &&
     echo "decode test - Missing jws policy options: Pass") ||
     { echo "decode test - Missing jws policy options: Failed"; exit 1; }
@@ -159,6 +168,7 @@ echo ------------------------------------------------------------------
 (! $TOOL examine $JWT --pub-key tool/input/extEmptyPubPem.jwk 2> /dev/null &&
     echo "examine test - Missing public decoding key3: Pass") ||
     { echo "examine test - Missing public decoding key3: Failed"; exit 1; }
+
 (! $TOOL examine $PAYLOAD --pub-key tool/input/extPubPem.jwk --jws-policy 2> /dev/null &&
     echo "examine test - Missing jws policy options: Pass") ||
     { echo "examine test - Missing jws policy options: Failed"; exit 1; }

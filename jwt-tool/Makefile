@@ -676,9 +676,9 @@ $(LIBDIR)/libncbi-token.a: $(OBJDIR) $(LIBTOKOBJ) $(MAKEFILE)
 ## jwt-tool
 JWTTOOLSRC =            \
 	jwt-tool            \
-	jwt-tool-init       \
-	jwt-tool-exec       \
-	jwt-tool-cleanup    \
+	init-jwt-tool       \
+	exec-jwt-tool       \
+	cleanup-jwt-tool    \
 	env                 \
 	cmdline             \
 	log                 \

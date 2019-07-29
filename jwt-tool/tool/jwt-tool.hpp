@@ -58,13 +58,14 @@ namespace ncbi
             {
             }
         
+        std :: vector <String> inputKIDs;
         std :: vector <String> inputParams;
         std :: vector <String> jwsPolicySettings;
         std :: vector <String> jwtPolicySettings;
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
 
-        bool isPem;
+
         
         I64 duration;
 
@@ -92,23 +93,20 @@ namespace ncbi
         void cleanup () noexcept;
 
 		void loadPublicKey ( const JWKRef & key );
-		void loadPublicKey ( const String & path );
 		void loadPrivateKey ( const JWKRef & key );
-		void loadPrivateKey ( const String & path );
 		void loadKeyorKeySet ( const String & path );
-		void importPemFile ( const String & path );
+		void importPemFile ( const String & path, const String & kid );
 
         void createJWT ( const String & json );
         void decodeJWT ( const JWT & jwt );
         void examineJWT ( const JWT & jwt );
         
+        std :: vector <String> inputKIDs;
         std :: vector <String> inputParams;
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
         String privPwd;
 		
-		bool isPem;
-        
         long long int duration;
 
         JWTMode jwtMode;

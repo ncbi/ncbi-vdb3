@@ -240,14 +240,6 @@ namespace ncbi
                     XP ( XLOC, rc_param_err )
                     << "Multiple private key paths"
                     );
-			if ( isPem )
-			{
-				if ( privPwd . isEmpty () )
-					throw InvalidArgument (
-										   XP ( XLOC, rc_param_err )
-										   << "Missing pem file password"
-										   );
-			}
             if ( duration < 0 )
             {
                 throw InvalidArgument (
@@ -280,15 +272,13 @@ namespace ncbi
                     << "Multiple private key paths"
                     );
             
-            isPem = true;
             break;
         }
         }
     }
 
     ParamBlock :: ParamBlock ()
-        : isPem ( false )
-        , duration ( 5 * 60 )
+        : duration ( 5 * 60 )
         , numDurationOpts ( 0 )
 	    , numPubKeyFilePaths ( 0 )
 	    , numPrivKeyFilePaths ( 0 )
@@ -297,11 +287,11 @@ namespace ncbi
     }
 
     JWTTool :: JWTTool ( const ParamBlock & params, JWTMode mode )
-        : inputParams ( params . inputParams )
+        : inputKIDs ( params . inputKIDs )
+        , inputParams ( params . inputParams )
         , pubKeyFilePaths ( params . pubKeyFilePaths )
         , privKeyFilePaths ( params . privKeyFilePaths )
         , privPwd ( params . privPwd )
-	    , isPem ( params . isPem )
         , duration ( params . duration )
         , jwtMode ( mode )
     {
@@ -360,9 +350,6 @@ namespace ncbi
         cmdline . setCurrentMode ( "sign" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "JSON text", "JSON text to convert into a JWT" );
-		cmdline . addOption ( params . isPem, "", "is-pem", "Indicates private key is a pem file" );
-        cmdline . addOption ( params . privPwd, & params . numPwds,
-							 "", "pwd", "" , "Private pem file password for decryption");
         cmdline . addOption ( params . duration, & params . numDurationOpts,
 							 "", "duration", "" ,"amount of time JWT is valid" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
@@ -394,19 +381,23 @@ namespace ncbi
         cmdline . addParam ( params . inputParams, 0, 256, "pem file(s)", "one or more pem files" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
 							 "", "pwd", "" , "Private pem file password for decryption" );
+        cmdline . addListOption ( params . inputKIDs, ',', 256,
+								 "", "kids", "kid(s) ",
+								 "One kid per pem file. Kids will auto-gen if not found. Ignored if in excess of pem files" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
 								 "", "priv-key", "",
 								 "Write to private key file; default location if unspecified; will overrite" );
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
 								 "", "pub-key", "",
                                   "Write to public key file; default location if unspecified; will overrite" );
+        /*
         cmdline . addListOption ( params . jwsPolicySettings, ',', 256,
 								 "", "jws-policy", "",
                                   "Overrite default policy settings for JWS" );
         cmdline . addListOption ( params . jwtPolicySettings, ',', 256,
 								 "", "jwt-policy", "",
                                   "Overrite default policy settings for JWT" );
-
+        */
 
         
         // pre-parse to look for any configuration file path
