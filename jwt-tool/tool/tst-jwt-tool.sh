@@ -11,8 +11,6 @@ OUTDIR=$PWD/tool/input
 # import-pem
 
 PWD=testjwttool
-PRIVKEY=$OUTDIR/extPrivPem.jwk
-PUBKEY=$OUTDIR/extPubPem.jwk
 
 (! $TOOL import-pem "" 2> /dev/null &&
     echo "import-pem test - Missing pem file: Pass") ||
@@ -54,16 +52,21 @@ then
     echo "import-pem test - Invalid jwt policy options2: Pass") ||
     { echo "import-pem test - Invalid jwt policy options2: Failed"; exit 1; }
 fi
-   
+
+PRIVKEY=$OUTDIR/ec_PrivPem.jwk
+PUBKEY=$OUTDIR/ec_PubPem.jwk
+
 # import pem to hard-coded file path
-$TOOL import-pem $OUTDIR/test_priv.pem --pwd $PWD 2> /dev/null
-[ ! -e $OUTDIR/extPemPrivKey.jwk ] && { echo "Failed to create file: OUTDIR/extPemPrivKey.jwk"; exit 1; }
-[ ! -e $OUTDIR/extPemPubKey.jwk ] && { echo "Failed to create file: OUTDIR/extPemPubKey.jwkY"; exit 1; }
+rm $OUTDIR/extPemPrivKey.jwk $OUTDIR/extPemPubKey.jwk $PRIVKEY $PUBKEY
+
+$TOOL import-pem $OUTDIR/rs_private.pem --pwd $PWD 2> /dev/null
+( [ -e $OUTDIR/extPemPrivKey.jwk ] && echo "Create default file: Pass" ) ||
+    { echo "Create default file: Failed"; exit 1; }
 
 #import pem to user specified file path
-$TOOL import-pem $OUTDIR/test_priv.pem --pwd $PWD --priv-key $PRIVKEY --pub-key $PUBKEY 2> /dev/null
-[ ! -e $PRIVKEY ] && { echo "Failed to create file: $PRIVKEY"; exit 1; }
-[ ! -e $PUBKEY ] && { echo "Failed to create file: $PUBKEY"; exit 1; }
+$TOOL import-pem $OUTDIR/ec_private.pem --pwd $PWD --priv-key $PRIVKEY --pub-key $PUBKEY
+( [ -e $PRIVKEY ] && echo "Create user defined file: Pass") ||
+    { echo "Create user defined file: Failed"; exit 1; }
 
 echo ------------------------------------------------------------------
 

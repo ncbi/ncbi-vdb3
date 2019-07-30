@@ -618,8 +618,32 @@ namespace ncbi
                                     jwk = new JWK ( props_ref );
                                 }
                             }
-                            else if ( 0 )
+                            else if ( mbedtls_pk_get_type ( &pk ) == MBEDTLS_PK_ECKEY )
                             {
+                                props . setValue ( "kty", JSON :: makeString ( "EC" ) );
+
+                                mbedtls_ecp_keypair * ec = mbedtls_pk_ec ( pk );
+
+                                if ( key_is_public )
+                                {
+                                    size_t olen;
+                                    unsigned char buf [ 256 ];
+                                    size_t blen = sizeof buf;
+
+                                    status = mbedtls_ecp_tls_write_group ( & ec -> grp, & olen, buf, blen );
+                                    if ( status != 0 )
+                                    {
+                                        throw CryptoException (
+                                            XP ( XLOC )
+                                            << "mbedtls_ecp_tls_write_group failed to obtain group"
+                                            << xcause
+                                            << crypterr ( status )
+                                            );
+                                    }
+
+                                    writeKeyParameter ( props, "n", N );
+                                    writeKeyParameter ( props, "p", P );
+                                }
                             }
                             else
                             {

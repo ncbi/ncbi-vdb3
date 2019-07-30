@@ -192,17 +192,15 @@ namespace ncbi
 		<< endm
 		;
 
-		JWKRef priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", kid );
-
-        if ( ! priv_key -> isPrivate () )
+        JWKRef priv_key;
+        if ( contents . find ( "BEGIN RSA PRIVATE KEY" ) != String :: npos )
+            priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", kid );
+        else if ( contents . find ( "BEGIN EC PRIVATE KEY" ) != String :: npos )
+            priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "ES256", kid );
+        else
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
-                << "Pem file is not private"
-                );
-        if ( ! priv_key -> isRSA () )
-            throw RuntimeException (
-                XP ( XLOC, rc_param_err )
-                << "Pem file is not RSA"
+                << "Invalid pem file"
                 );
 
         loadPrivateKey ( priv_key );
@@ -211,8 +209,6 @@ namespace ncbi
 		
 		log . msg ( LOG_INFO )
 		<< "Attempting to translate a private key to public '"
-		<< path
-		<< '\''
 		<< endm
 		;
 		
