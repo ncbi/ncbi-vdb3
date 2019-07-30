@@ -1738,7 +1738,8 @@ namespace ncbi
     void String :: Wiper :: append ( const Wiper & str )
     {
         s . append ( str . s );
-        wipe |= str . wipe;
+        if ( str . wipe )
+            wipe = true;
     }
 
     String :: Wiper :: Wiper ()
