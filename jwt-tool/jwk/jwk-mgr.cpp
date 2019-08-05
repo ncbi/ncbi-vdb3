@@ -39,6 +39,19 @@
 
 namespace ncbi
 {
+    
+#ifndef HAVE_SAFE_MPI
+#define HAVE_SAFE_MPI 1
+    struct safe_mpi : mbedtls_mpi
+    {
+        safe_mpi ()
+        { mbedtls_mpi_init ( this ); }
+
+        ~ safe_mpi ()
+        { mbedtls_mpi_free ( this ); }
+    };
+#endif
+
     void JWKMgr :: InvalKey :: make ()
     {
         // not extremely worried about thread safety here
@@ -524,165 +537,151 @@ namespace ncbi
                             );
                     }
 
-                    // extract the components
-                    mbedtls_mpi N, P, Q, D, E, DP, DQ, QP;
-                    mbedtls_mpi_init ( & N );
-                    mbedtls_mpi_init ( & P );
-                    mbedtls_mpi_init ( & Q );
-                    mbedtls_mpi_init ( & D );
-                    mbedtls_mpi_init ( & E );
-                    mbedtls_mpi_init ( & DP );
-                    mbedtls_mpi_init ( & DQ );
-                    mbedtls_mpi_init ( & QP );
-                    
+                    JSONObjectRef props_ref = JSON :: makeObject ();
+                    JSONObject & props = * props_ref;
+
+                    // create a catch block to invalidate stored props
                     try
                     {
-                        JSONObjectRef props_ref = JSON :: makeObject ();
-                        JSONObject & props = * props_ref;
-
-                        // create a catch block to invalidate stored props
-                        try
-                        {
-                            // set some JSON properties
-                            props . setValue ( "use", JSON :: makeString ( use ) );
-                            props . setValue ( "alg", JSON :: makeString ( alg ) );
-                            props . setValue ( "kid", JSON :: makeString ( kid ) );
+                        // set some JSON properties
+                        props . setValue ( "use", JSON :: makeString ( use ) );
+                        props . setValue ( "alg", JSON :: makeString ( alg ) );
+                        props . setValue ( "kid", JSON :: makeString ( kid ) );
                             
-                            if ( mbedtls_pk_get_type ( & pk ) == MBEDTLS_PK_RSA )
-                            {
-                                // set type property
-                                props . setValue ( "kty", JSON :: makeString ( "RSA" ) );
+                        switch ( mbedtls_pk_get_type ( & pk ) )
+                        {
+                        case MBEDTLS_PK_RSA:
+                        {
+                            // set type property
+                            props . setValue ( "kty", JSON :: makeString ( "RSA" ) );
                                 
-                                // extract the RSA context
-                                mbedtls_rsa_context * rsa = mbedtls_pk_rsa ( pk );
+                            // extract the RSA context
+                            mbedtls_rsa_context * rsa = mbedtls_pk_rsa ( pk );
 
-                                // handle RSA PUBLIC key
-                                if ( key_is_public )
-                                {
-                                    // extract the public-only portions
-                                    status = mbedtls_rsa_export ( rsa, & N, nullptr, nullptr, nullptr, & E );
-                                    if ( status != 0 )
-                                    {
-                                        throw CryptoException (
-                                            XP ( XLOC )
-                                            << "mbedtls_rsa_export failed to obtain key parameters"
-                                            << xcause
-                                            << crypterr ( status )
-                                            );
-                                    }
-
-                                    // write the key parameters into JSON
-                                    writeKeyParameter ( props, "n", N );
-                                    writeKeyParameter ( props, "e", E );
-
-                                    // create the key
-                                    // NB - MUST be last step within try block
-                                    jwk = new JWK ( props_ref );
-                                }
-                                else
-                                {
-                                    // extract the full RSA portions
-                                    status = mbedtls_rsa_export ( rsa, & N, & P, & Q, & D, & E );
-                                    if ( status != 0 )
-                                    {
-                                        throw CryptoException (
-                                            XP ( XLOC )
-                                            << "mbedtls_rsa_export failed to obtain key parameters"
-                                            << xcause
-                                            << crypterr ( status )
-                                            );
-                                    }
-                                    status = mbedtls_rsa_export_crt ( rsa, & DP, & DQ, & QP );
-                                    if ( status != 0 )
-                                    {
-                                        throw CryptoException (
-                                            XP ( XLOC )
-                                            << "mbedtls_rsa_export_crt failed to obtain key parameters"
-                                            << xcause
-                                            << crypterr ( status )
-                                            );
-                                    }
-
-                                    // write the key parameters into JSON
-                                    writeKeyParameter ( props, "n", N );
-                                    writeKeyParameter ( props, "e", E );
-                                    writeKeyParameter ( props, "d", D );
-                                    writeKeyParameter ( props, "p", P );
-                                    writeKeyParameter ( props, "q", Q );
-                                    writeKeyParameter ( props, "dp", DP );
-                                    writeKeyParameter ( props, "dq", DQ );
-                                    writeKeyParameter ( props, "qi", QP );
-
-                                    // create the key
-                                    // NB - MUST be last step within try block
-                                    jwk = new JWK ( props_ref );
-                                }
-                            }
-                            else if ( mbedtls_pk_get_type ( &pk ) == MBEDTLS_PK_ECKEY )
+                            // handle RSA PUBLIC key
+                            if ( key_is_public )
                             {
-                                props . setValue ( "kty", JSON :: makeString ( "EC" ) );
+                                safe_mpi N, E;
 
-                                mbedtls_ecp_keypair * ec = mbedtls_pk_ec ( pk );
-
-                                if ( key_is_public )
+                                // extract the public-only portions
+                                status = mbedtls_rsa_export ( rsa, & N, nullptr, nullptr, nullptr, & E );
+                                if ( status != 0 )
                                 {
-                                    size_t olen;
-                                    unsigned char buf [ 256 ];
-                                    size_t blen = sizeof buf;
-
-                                    status = mbedtls_ecp_tls_write_group ( & ec -> grp, & olen, buf, blen );
-                                    if ( status != 0 )
-                                    {
-                                        throw CryptoException (
-                                            XP ( XLOC )
-                                            << "mbedtls_ecp_tls_write_group failed to obtain group"
-                                            << xcause
-                                            << crypterr ( status )
-                                            );
-                                    }
-
-                                    writeKeyParameter ( props, "n", N );
-                                    writeKeyParameter ( props, "p", P );
+                                    throw CryptoException (
+                                        XP ( XLOC )
+                                        << "mbedtls_rsa_export failed to obtain key parameters"
+                                        << xcause
+                                        << crypterr ( status )
+                                        );
                                 }
+
+                                // write the key parameters into JSON
+                                writeKeyParameter ( props, "n", N );
+                                writeKeyParameter ( props, "e", E );
+
+                                // create the key
+                                // NB - MUST be last step within try block
+                                jwk = new JWK ( props_ref );
                             }
                             else
                             {
-                                // exception case
-                                throw InternalError (
-                                    XP ( XLOC )
-                                    << "INTERNAL ERROR - unknown mbedtls key type: "
-                                    << mbedtls_pk_get_type ( & pk )
-                                    );
+                                // extract the components
+                                safe_mpi N, P, Q, D, E, DP, DQ, QP;
+                    
+                                // extract the full RSA portions
+                                status = mbedtls_rsa_export ( rsa, & N, & P, & Q, & D, & E );
+                                if ( status != 0 )
+                                {
+                                    throw CryptoException (
+                                        XP ( XLOC )
+                                        << "mbedtls_rsa_export failed to obtain key parameters"
+                                        << xcause
+                                        << crypterr ( status )
+                                        );
+                                }
+                                status = mbedtls_rsa_export_crt ( rsa, & DP, & DQ, & QP );
+                                if ( status != 0 )
+                                {
+                                    throw CryptoException (
+                                        XP ( XLOC )
+                                        << "mbedtls_rsa_export_crt failed to obtain key parameters"
+                                        << xcause
+                                        << crypterr ( status )
+                                        );
+                                }
+
+                                // write the key parameters into JSON
+                                writeKeyParameter ( props, "n", N );
+                                writeKeyParameter ( props, "e", E );
+                                writeKeyParameter ( props, "d", D );
+                                writeKeyParameter ( props, "p", P );
+                                writeKeyParameter ( props, "q", Q );
+                                writeKeyParameter ( props, "dp", DP );
+                                writeKeyParameter ( props, "dq", DQ );
+                                writeKeyParameter ( props, "qi", QP );
+                                
+                                // create the key
+                                // NB - MUST be last step within try block
+                                jwk = new JWK ( props_ref );
                             }
-                        }
-                        catch ( ... )
+                            break;
+
+                        } // end case MBEDTLS_PK_RSA
+
+                        case MBEDTLS_PK_ECKEY:
                         {
-                            props . invalidate ();
-                            throw;
-                        }
+                            props . setValue ( "kty", JSON :: makeString ( "EC" ) );
+                            
+                            mbedtls_ecp_keypair * ec = mbedtls_pk_ec ( pk );
+                            
+                            if ( key_is_public )
+                            {
+#if 0
+                                // TBD - public EC key stuff
+                                size_t olen;
+                                unsigned char buf [ 256 ];
+                                size_t blen = sizeof buf;
+                                
+                                status = mbedtls_ecp_tls_write_group ( & ec -> grp, & olen, buf, blen );
+                                if ( status != 0 )
+                                {
+                                    throw CryptoException (
+                                        XP ( XLOC )
+                                        << "mbedtls_ecp_tls_write_group failed to obtain group"
+                                        << xcause
+                                        << crypterr ( status )
+                                        );
+                                }
+                                
+                                writeKeyParameter ( props, "n", N );
+                                writeKeyParameter ( props, "p", P );
+#endif
+                            }
+                            else
+                            {
+                                // TBD - private EC key stuff
+                                ( void ) ec;
+                            }
+                            break;
+
+                        } // end case MBEDTLS_PK_ECKEY
+
+                        default:
+
+                            // exception case
+                            throw InternalError (
+                                XP ( XLOC )
+                                << "INTERNAL ERROR - unknown mbedtls key type: "
+                                << mbedtls_pk_get_type ( & pk )
+                                );
+
+                        } // end switch
                     }
                     catch ( ... )
                     {
-                        mbedtls_mpi_free ( & N );
-                        mbedtls_mpi_free ( & P );
-                        mbedtls_mpi_free ( & Q );
-                        mbedtls_mpi_free ( & D );
-                        mbedtls_mpi_free ( & E );
-                        mbedtls_mpi_free ( & DP );
-                        mbedtls_mpi_free ( & DQ );
-                        mbedtls_mpi_free ( & QP );
+                        props . invalidate ();
                         throw;
                     }
-                    
-                    mbedtls_mpi_free ( & N );
-                    mbedtls_mpi_free ( & P );
-                    mbedtls_mpi_free ( & Q );
-                    mbedtls_mpi_free ( & D );
-                    mbedtls_mpi_free ( & E );
-                    mbedtls_mpi_free ( & DP );
-                    mbedtls_mpi_free ( & DQ );
-                    mbedtls_mpi_free ( & QP );
-                    
                 }
                 catch ( ... )
                 {
