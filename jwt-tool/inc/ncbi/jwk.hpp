@@ -97,6 +97,14 @@ namespace ncbi
          * this key can be used instead and it will not segfault.
          */
         static JWKRef getInvalidKey () noexcept;
+        
+        /**
+         * generateJWK
+         * @brief generate RSA or EC keys and store them in a JWK
+         * @return JWKRef
+         */
+        static JWKRef generateJWK ( const String & key_type, const String & curve, 
+            const String & use, const String & alg, const String & kid );
 
         /**
          * makeJWKSet
