@@ -219,12 +219,12 @@ namespace ncbi
 		
         // save keys to text files
         if ( privKeyFilePaths . empty () )
-            writeTextFile ( privKeys -> readableJSON (), "tool/input/extPemPrivKey.jwk" );
+            writeTextFile ( privKeys -> readableJSON (), "tool/input/importPemPrivKey.jwk" );
         else
             writeTextFile ( privKeys -> readableJSON (), privKeyFilePaths [ 0 ] );
         
         if ( pubKeyFilePaths . empty () )
-            writeTextFile ( pubKeys -> readableJSON (), "tool/input/extPemPubKey.jwk" );
+            writeTextFile ( pubKeys -> readableJSON (), "tool/input/importPemPubKey.jwk" );
         else
             writeTextFile ( pubKeys -> readableJSON (), pubKeyFilePaths [ 0 ] );
     }
@@ -319,13 +319,52 @@ namespace ncbi
             {
                 String path = inputParams . at ( i );
                 String kid;
-                if ( i < inputKIDs . size () )
-                    kid = inputKIDs . at ( i );
+                if ( i < keyKids . size () )
+                    kid = keyKids . at ( i );
                 else
                     kid = JWKMgr :: makeID ();
 
                 importPemFile ( path, kid );
             }
+            break;
+        }
+        case gen_key:
+        {
+            log . msg ( LOG_INFO )
+                << "Attempting to generate a new private key '"
+                << endm;
+            
+            JWKRef priv_key = JWKMgr :: generateJWK ( keyType . at ( 0 ),
+                                                      keyCurve . empty () ? "" : keyCurve . at ( 0 ),
+                                                      keyUse . at ( 0 ),
+                                                      keyAlg . at ( 0 ),
+                                                      keyKids . empty () ? JWKMgr :: makeID () : keyKids . at ( 0 ) );
+
+            loadPrivateKey ( priv_key );
+            
+            assert ( privKeys -> count () == 1 ); 
+            
+            log . msg ( LOG_INFO )
+                << "Attempting to translate a private key to public '"
+                << endm
+                ;
+            
+            // translate private key to public
+            JWKRef pub_key = privKeys -> getKey ( 0 ) -> toPublic ();
+            
+            loadPublicKey ( pub_key );
+		
+            // save keys to text files
+            if ( privKeyFilePaths . empty () )
+                writeTextFile ( privKeys -> readableJSON (), "tool/input/generatePrivKey.jwk" );
+            else
+                writeTextFile ( privKeys -> readableJSON (), privKeyFilePaths [ 0 ] );
+            
+            if ( pubKeyFilePaths . empty () )
+                writeTextFile ( pubKeys -> readableJSON (), "tool/input/generatePubKey.jwk" );
+            else
+                writeTextFile ( pubKeys -> readableJSON (), pubKeyFilePaths [ 0 ] );
+            
             break;
         }
         

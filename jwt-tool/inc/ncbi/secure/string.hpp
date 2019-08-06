@@ -981,6 +981,19 @@ v         * toSTLString
         bool operator > ( const String & s ) const noexcept
         { return compare ( s ) > 0; }
 
+        bool operator < ( const UTF8 * s ) const
+        { return compare ( s ) < 0; }
+        bool operator <= ( const UTF8 * s ) const
+        { return compare ( s ) <= 0; }
+        bool operator == ( const UTF8 * s ) const
+        { return equal ( s ); }
+        bool operator != ( const UTF8 * s ) const
+        { return ! equal ( s ); }
+        bool operator >= ( const UTF8 * s ) const
+        { return compare ( s ) >= 0; }
+        bool operator > ( const UTF8 * s ) const
+        { return compare ( s ) > 0; }
+
         String operator + ( const String & s ) const
         { return concat ( s ); }
         String operator + ( const UTF8 * zstr ) const

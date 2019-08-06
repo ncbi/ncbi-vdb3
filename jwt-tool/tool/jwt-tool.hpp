@@ -45,12 +45,15 @@ namespace ncbi
         decode = 1,
         sign, 
         examine,
-        import_pem
+        import_pem,
+        gen_key
     };
     
     struct ParamBlock
     {
+        void getInputParams ();
         void validate ( JWTMode mode );
+        void validatePolicySettings ();
         
         ParamBlock ();
         
@@ -58,13 +61,18 @@ namespace ncbi
             {
             }
         
-        std :: vector <String> inputKIDs;
+        std :: vector <String> keyType;
+        std :: vector <String> keyCurve;
+        std :: vector <String> keyUse;
+        std :: vector <String> keyAlg;
+        std :: vector <String> keyKids;
+
         std :: vector <String> inputParams;
-        std :: vector <String> jwsPolicySettings;
-        std :: vector <String> jwtPolicySettings;
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
 
+        std :: vector <String> jwsPolicySettings;
+        std :: vector <String> jwtPolicySettings;
 
         
         I64 duration;
@@ -101,7 +109,12 @@ namespace ncbi
         void decodeJWT ( const JWT & jwt );
         void examineJWT ( const JWT & jwt );
         
-        std :: vector <String> inputKIDs;
+        std :: vector <String> keyType;
+        std :: vector <String> keyCurve;
+        std :: vector <String> keyUse;
+        std :: vector <String> keyAlg;
+        std :: vector <String> keyKids;
+
         std :: vector <String> inputParams;
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;

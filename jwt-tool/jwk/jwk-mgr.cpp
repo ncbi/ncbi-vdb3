@@ -708,18 +708,14 @@ namespace ncbi
     JWKRef JWKMgr :: generateJWK ( const String & key_type, const String & curve, 
         const String & use, const String & alg, const String & kid )
     {
-        if ( key_type != "RSA" || key_type != "EC" )
+        if ( key_type != "RSA" && key_type != "EC" )
+        {
             throw CryptoException (
                 XP ( XLOC )
                 << "invalid key_type"
                 );
+        }
             
-        if ( ! alg . beginsWith ( key_type ) )
-            throw CryptoException (
-                XP ( XLOC )
-                << "key_type and alg mismatch"
-                );
-
         JWKRef jwk;
         
         mbedtls_pk_context pk;
@@ -756,7 +752,7 @@ namespace ncbi
                 props . setValue ( "kid", JSON :: makeString ( kid ) );
 
                 // Generate the key
-                if ( key_type == "rsa" )
+                if ( key_type == "RSA" )
                 {
                     props . setValue ( "kty", JSON :: makeString ( "RSA" ) );
                     
@@ -811,7 +807,8 @@ namespace ncbi
                 else // ec
                 {
                     props . setValue ( "kty", JSON :: makeString ( "EC" ) );
-
+                    props . setValue ( "crv", JSON :: makeString ( curve ) );
+                    
                     status = mbedtls_pk_setup ( & pk, mbedtls_pk_info_from_type ( ( mbedtls_pk_type_t ) MBEDTLS_PK_ECKEY ) );
                     if ( status != 0 )
                         throw CryptoException (
@@ -820,9 +817,9 @@ namespace ncbi
                             << xcause
                             << crypterr ( status )
                             );
-                    
-                    NULTerminatedString zcurve ( curve );
-                    const mbedtls_ecp_curve_info *curve_info = mbedtls_ecp_curve_info_from_name ( zcurve . c_str () );
+
+                    const mbedtls_ecp_curve_info *curve_info
+                        = mbedtls_ecp_curve_info_from_name ( NULTerminatedString ( curve ) . c_str () );
                     
                     status = mbedtls_ecp_gen_key ( ( mbedtls_ecp_group_id ) curve_info -> grp_id, mbedtls_pk_ec ( pk ),
                                                    mbedtls_ctr_drbg_random, & ctr_drbg );
@@ -837,10 +834,10 @@ namespace ncbi
                     assert ( mbedtls_pk_get_type ( & pk ) == MBEDTLS_PK_ECKEY );
 
                     mbedtls_ecp_keypair *ecp = mbedtls_pk_ec ( pk );
-
-                    writeKeyParameter ( props, "X_Q", ecp -> Q.X );
-                    writeKeyParameter ( props, "Y_Q", ecp -> Q.Y );
-                    writeKeyParameter ( props, "D", ecp -> d );
+                    
+                    writeKeyParameter ( props, "d", ecp -> d );
+                    writeKeyParameter ( props, "x", ecp -> Q.X );
+                    writeKeyParameter ( props, "y", ecp -> Q.Y );
 
                     jwk = new JWK ( props_ref );
 

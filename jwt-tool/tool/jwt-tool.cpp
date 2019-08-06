@@ -39,20 +39,8 @@ namespace ncbi
     static LocalLogger local_logger;
     Log log ( local_logger );
 
-    void ParamBlock :: validate ( JWTMode mode )
+    void ParamBlock :: getInputParams ()
     {
-		if ( numDurationOpts > 1 )
-			throw InvalidArgument (
-                XP ( XLOC, rc_param_err )
-                << "Multiple duration values"
-                );
-		
-		if ( numPwds > 1 )
-			throw InvalidArgument (
-                XP ( XLOC, rc_param_err )
-                << "Multiple password values"
-                );
-
         if ( inputParams . empty () )
         {
             // take from stdin
@@ -72,7 +60,10 @@ namespace ncbi
 
             inputParams . emplace_back ( String ( line ) );            
         }
-        
+    }
+
+    void ParamBlock :: validatePolicySettings ()
+    {
         if ( ! jwsPolicySettings . empty () )
         {
             JWSMgr :: Policy jwsPolicy = JWSMgr :: getPolicy ();
@@ -215,12 +206,28 @@ namespace ncbi
 
             JWTMgr :: setPolicy ( jwtPolicy );
         }
+    }
+    
+    void ParamBlock :: validate ( JWTMode mode )
+    {
+		if ( numDurationOpts > 1 )
+			throw InvalidArgument (
+                XP ( XLOC, rc_param_err )
+                << "Multiple duration values"
+                );
+		
+		if ( numPwds > 1 )
+			throw InvalidArgument (
+                XP ( XLOC, rc_param_err )
+                << "Multiple password values"
+                );        
 
         switch ( mode )
         {
         case decode:
         {
-            // Options
+            getInputParams ();
+            
             if ( pubKeyFilePaths . empty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -230,6 +237,8 @@ namespace ncbi
         }
         case sign:
         {
+            getInputParams ();
+
             if ( privKeyFilePaths . empty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -251,7 +260,8 @@ namespace ncbi
         }
         case examine:
         {
-            // Options
+            getInputParams ();
+            
             if ( pubKeyFilePaths . empty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -261,6 +271,8 @@ namespace ncbi
         }
         case import_pem:
         {          
+            getInputParams ();
+
             if ( privPwd . isEmpty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -271,7 +283,69 @@ namespace ncbi
                     XP ( XLOC, rc_param_err )
                     << "Multiple private key paths"
                     );
+            if ( pubKeyFilePaths . size () > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Multiple private key paths"
+                    );
             
+            break;
+        }
+        case gen_key:
+        {
+            if ( keyType . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing key type"
+                    );
+            if ( keyType . size () > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Multiple key type"
+                    );
+            if ( keyType . at ( 0 ) == "EC" )
+            {
+                if ( keyCurve . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing key curve"
+                    );
+                if ( keyCurve . size () > 1 )
+                    throw InvalidArgument (
+                        XP ( XLOC, rc_param_err )
+                        << "Multiple key curves"
+                        );
+            }
+            if ( keyUse . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing key use"
+                    );
+            if ( keyUse . size () > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Multiple key use"
+                    );
+            if ( keyAlg . empty () )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing key alg"
+                    );
+            if ( keyAlg . size () > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Missing key alg"
+                    );
+            if ( privKeyFilePaths . size () > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Multiple private key paths"
+                    );
+            if ( pubKeyFilePaths . size () > 1 )
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Multiple private key paths"
+                    );
             break;
         }
         }
@@ -287,7 +361,11 @@ namespace ncbi
     }
 
     JWTTool :: JWTTool ( const ParamBlock & params, JWTMode mode )
-        : inputKIDs ( params . inputKIDs )
+        : keyType ( params . keyType )
+        , keyCurve ( params . keyCurve )
+        , keyUse ( params . keyUse )
+        , keyAlg ( params . keyAlg )
+        , keyKids ( params . keyKids )
         , inputParams ( params . inputParams )
         , pubKeyFilePaths ( params . pubKeyFilePaths )
         , privKeyFilePaths ( params . privKeyFilePaths )
@@ -329,6 +407,7 @@ namespace ncbi
         cmdline . addMode ( "sign", "Sign a JSON claim set object" );
         cmdline . addMode ( "examine", "Examine a JWT without verification" );
         cmdline . addMode ( "import-pem", "Import a private pem file to extract and save private and public keys to files" );
+        cmdline . addMode ( "gen-key", "Generate an RSA or Eliptic Curve key and save private and public keys to files" );
         
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
@@ -375,15 +454,15 @@ namespace ncbi
 								 "", "jwt-policy", "",
                                   "Overrite default policy settings for JWT" );
 
-        // import_pem
+        // import-pem
         cmdline . setCurrentMode ( "import-pem" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "pem file(s)", "one or more pem files" );
         cmdline . addOption ( params . privPwd, & params . numPwds,
 							 "", "pwd", "" , "Private pem file password for decryption" );
-        cmdline . addListOption ( params . inputKIDs, ',', 256,
-								 "", "kids", "kid(s) ",
-								 "One kid per pem file. Kids will auto-gen if not found. Ignored if in excess of pem files" );
+        cmdline . addListOption ( params . keyKids, ',', 256,
+								 "", "kid", "kid(s) ",
+								 "One kid per pem file. kids will auto-gen if not found. Ignored if in excess of pem files" );
         cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
 								 "", "priv-key", "",
 								 "Write to private key file; default location if unspecified; will overrite" );
@@ -398,6 +477,27 @@ namespace ncbi
 								 "", "jwt-policy", "",
                                   "Overrite default policy settings for JWT" );
         */
+
+        // gen-key
+        cmdline . setCurrentMode ( "gen-key" );
+        cmdline . startOptionalParams ();
+        cmdline . addListOption ( params . keyType, ',', 256,
+								 "", "type", "key-type", "Req. RSA or EC" );
+        cmdline . addListOption ( params . keyCurve, ',', 256,
+								 "", "curve", "ec-curve", "Req if EC. Elipctic curve name" );
+        cmdline . addListOption ( params . keyUse, ',', 256,
+								 "", "use", "key-use", "Req. sig or enc" );
+        cmdline . addListOption ( params . keyAlg, ',', 256,
+								 "", "alg", "algorithm", "Req. <RSA256, ES256...>" );
+        cmdline . addListOption ( params . keyKids, ',', 256,
+								 "", "kid", "kid", "kid will auto-gen if not found." );
+        cmdline . addListOption ( params . privKeyFilePaths, ',', 256,
+								 "", "priv-key", "",
+								 "Write to private key file; default location if unspecified; will overrite" );
+        cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
+								 "", "pub-key", "",
+                                  "Write to public key file; default location if unspecified; will overrite" );
+
 
         
         // pre-parse to look for any configuration file path
