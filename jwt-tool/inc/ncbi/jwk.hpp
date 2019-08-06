@@ -99,12 +99,19 @@ namespace ncbi
         static JWKRef getInvalidKey () noexcept;
         
         /**
-         * generateJWK
-         * @brief generate RSA or EC keys and store them in a JWK
+         * generateRSAJWK
+         * @brief generate RSA private key
          * @return JWKRef
          */
-        static JWKRef generateJWK ( const String & key_type, const String & curve, 
-            const String & use, const String & alg, const String & kid );
+        static JWKRef generateRSAKey ( const String & use, const String & alg, const String & kid );
+
+        /**
+         * generateECJWK
+         * @brief generate EC private key 
+         * @return JWKRef
+         */
+        static JWKRef generateECKey (  const String & curve, const String & use,
+           const String & alg, const String & kid );
 
         /**
          * makeJWKSet

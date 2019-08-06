@@ -165,7 +165,7 @@ namespace ncbi
     void validateEC ( const JSONObject & props )
     {
         const char * pub_props [] = { "crv", "x", "y" };
-
+        
         size_t i;
         for ( i = 0; i < sizeof pub_props / sizeof pub_props [ 0 ]; ++ i )
         {
@@ -586,6 +586,7 @@ namespace ncbi
 
                                 // create the key
                                 // NB - MUST be last step within try block
+                                validateJWK ( props );
                                 jwk = new JWK ( props_ref );
                             }
                             else
@@ -627,6 +628,7 @@ namespace ncbi
                                 
                                 // create the key
                                 // NB - MUST be last step within try block
+                                validateJWK ( props );
                                 jwk = new JWK ( props_ref );
                             }
                             break;
@@ -701,18 +703,128 @@ namespace ncbi
     }
 
     /**
-     * generateJWK
+     * generateRSAKey
+     * @brief generate RSA private key
+     * @return JWKRef
+     */
+    JWKRef JWKMgr :: generateRSAKey ( const String & use, const String & alg, const String & kid )
+    {
+        JWKRef jwk;
+        
+        mbedtls_pk_context pk;
+        mbedtls_entropy_context entropy;
+        mbedtls_ctr_drbg_context ctr_drbg;
+
+        mbedtls_pk_init ( & pk );
+        mbedtls_entropy_init ( & entropy );
+        mbedtls_ctr_drbg_init ( & ctr_drbg );
+
+        try
+        {
+
+            int status = 0;
+            NULTerminatedString zpers ( String ( "gen_key" ) );
+            status = mbedtls_ctr_drbg_seed ( & ctr_drbg, mbedtls_entropy_func, & entropy,
+                                             ( const unsigned char * ) zpers . c_str(),
+                                             zpers . size () + 1 );
+            if ( status != 0 )
+                throw CryptoException (
+                    XP ( XLOC )
+                    << "mbedtls_ctr_drbg_seed failed"
+                    << xcause
+                    << crypterr ( status )
+                    );
+            
+            JSONObjectRef props_ref = JSON :: makeObject ();
+            JSONObject & props = * props_ref;
+            
+            try
+            {                    
+                props . setValue ( "kty", JSON :: makeString ( "RSA" ) );
+                props . setValue ( "use", JSON :: makeString ( use ) );
+                props . setValue ( "alg", JSON :: makeString ( alg ) );
+                props . setValue ( "kid", JSON :: makeString ( kid ) );
+
+                status = mbedtls_pk_setup ( & pk, mbedtls_pk_info_from_type ( ( mbedtls_pk_type_t ) MBEDTLS_PK_RSA ) );
+                if ( status != 0 )
+                    throw CryptoException (
+                        XP ( XLOC )
+                        << "mbedtls_pk_setup failed"
+                        << xcause
+                        << crypterr ( status )
+                        );
+                
+                // TBD key size and prime number will likely be taken as options
+                status = mbedtls_rsa_gen_key ( mbedtls_pk_rsa ( pk ), mbedtls_ctr_drbg_random, & ctr_drbg, 2048, 65537 );
+                if ( status != 0 )
+                    throw CryptoException (
+                        XP ( XLOC )
+                        << "mbedtls_gen_key failed"
+                        << xcause
+                        << crypterr ( status )
+                        );
+                
+                assert ( mbedtls_pk_get_type ( & pk ) == MBEDTLS_PK_RSA );
+                    
+                mbedtls_rsa_context *rsa = mbedtls_pk_rsa ( pk );
+                safe_mpi N, P, Q, D, E, DP, DQ, QP;
+                
+                if ( mbedtls_rsa_export ( rsa, & N, & P, & Q, & D, & E ) != 0 ||
+                     mbedtls_rsa_export_crt ( rsa, & DP, & DQ, & QP ) != 0 )
+                    throw CryptoException (
+                        XP ( XLOC )
+                        << "mbedtls_rsa_export/_crt failed"
+                        << xcause
+                        << crypterr ( status )
+                        );
+                
+                
+                // write the key parameters into JSON
+                writeKeyParameter ( props, "n", N );
+                writeKeyParameter ( props, "e", E );
+                writeKeyParameter ( props, "d", D );
+                writeKeyParameter ( props, "p", P );
+                writeKeyParameter ( props, "q", Q );
+                writeKeyParameter ( props, "dp", DP );
+                writeKeyParameter ( props, "dq", DQ );
+                writeKeyParameter ( props, "qi", QP );
+                
+                validateJWK ( props );
+                jwk = new JWK ( props_ref );
+            }
+            catch ( ... )
+            {
+                props . invalidate ();
+                throw;
+            }
+        }
+        catch ( ... )
+        {
+            mbedtls_pk_free ( & pk );
+            mbedtls_entropy_free ( & entropy );
+            mbedtls_ctr_drbg_free ( & ctr_drbg );
+            throw;
+        }
+                
+        mbedtls_pk_free ( & pk );
+        mbedtls_entropy_free ( & entropy );
+        mbedtls_ctr_drbg_free ( & ctr_drbg );
+        
+        return jwk;
+    }
+
+    /* generateECKey
      * @brief generate RSA or EC keys and store them in a JWK
      * @return JWKRef
      */
-    JWKRef JWKMgr :: generateJWK ( const String & key_type, const String & curve, 
-        const String & use, const String & alg, const String & kid )
+    JWKRef JWKMgr :: generateECKey ( const String & curve, const String & use,
+       const String & alg, const String & kid )
     {
-        if ( key_type != "RSA" && key_type != "EC" )
+        if ( curve == "" )
         {
-            throw CryptoException (
+            throw MalformedJWK (
                 XP ( XLOC )
-                << "invalid key_type"
+                << "expected curve name'"
                 );
         }
             
@@ -747,102 +859,44 @@ namespace ncbi
             
             try
             {                    
+                props . setValue ( "kty", JSON :: makeString ( "EC" ) );
+                props . setValue ( "crv", JSON :: makeString ( curve ) );
                 props . setValue ( "use", JSON :: makeString ( use ) );
                 props . setValue ( "alg", JSON :: makeString ( alg ) );
                 props . setValue ( "kid", JSON :: makeString ( kid ) );
-
-                // Generate the key
-                if ( key_type == "RSA" )
-                {
-                    props . setValue ( "kty", JSON :: makeString ( "RSA" ) );
                     
-                    status = mbedtls_pk_setup ( & pk, mbedtls_pk_info_from_type ( ( mbedtls_pk_type_t ) MBEDTLS_PK_RSA ) );
-                    if ( status != 0 )
-                        throw CryptoException (
-                            XP ( XLOC )
-                            << "mbedtls_pk_setup failed"
-                            << xcause
-                            << crypterr ( status )
-                            );
-
-                    // TBD key size and prime number will likely be taken as options
-                    status = mbedtls_rsa_gen_key ( mbedtls_pk_rsa ( pk ), mbedtls_ctr_drbg_random, & ctr_drbg, 2048, 65537 );
-                    if ( status != 0 )
-                        throw CryptoException (
-                            XP ( XLOC )
-                            << "mbedtls_gen_key failed"
-                            << xcause
-                            << crypterr ( status )
-                            );
-                    
-                    assert ( mbedtls_pk_get_type ( & pk ) == MBEDTLS_PK_RSA );
-                    
-                    mbedtls_rsa_context *rsa = mbedtls_pk_rsa ( pk );
-                    safe_mpi N, P, Q, D, E, DP, DQ, QP;
-                    
-                    if ( mbedtls_rsa_export ( rsa, & N, & P, & Q, & D, & E ) != 0 ||
-                         mbedtls_rsa_export_crt ( rsa, & DP, & DQ, & QP ) != 0 )
-                        throw CryptoException (
-                            XP ( XLOC )
-                            << "mbedtls_rsa_export/_crt failed"
-                            << xcause
-                            << crypterr ( status )
-                            );
-                    
-                    
-                    // write the key parameters into JSON
-                    writeKeyParameter ( props, "n", N );
-                    writeKeyParameter ( props, "e", E );
-                    writeKeyParameter ( props, "d", D );
-                    writeKeyParameter ( props, "p", P );
-                    writeKeyParameter ( props, "q", Q );
-                    writeKeyParameter ( props, "dp", DP );
-                    writeKeyParameter ( props, "dq", DQ );
-                    writeKeyParameter ( props, "qi", QP );
-
-                    jwk = new JWK ( props_ref );
-
-                    std :: cout << "Successful generation of RSA key: \n" << jwk -> readableJSON () << std :: endl; 
-                }
-                else // ec
-                {
-                    props . setValue ( "kty", JSON :: makeString ( "EC" ) );
-                    props . setValue ( "crv", JSON :: makeString ( curve ) );
-                    
-                    status = mbedtls_pk_setup ( & pk, mbedtls_pk_info_from_type ( ( mbedtls_pk_type_t ) MBEDTLS_PK_ECKEY ) );
-                    if ( status != 0 )
-                        throw CryptoException (
-                            XP ( XLOC )
-                            << "mbedtls_pk_setup failed"
-                            << xcause
-                            << crypterr ( status )
-                            );
-
-                    const mbedtls_ecp_curve_info *curve_info
-                        = mbedtls_ecp_curve_info_from_name ( NULTerminatedString ( curve ) . c_str () );
-                    
-                    status = mbedtls_ecp_gen_key ( ( mbedtls_ecp_group_id ) curve_info -> grp_id, mbedtls_pk_ec ( pk ),
-                                                   mbedtls_ctr_drbg_random, & ctr_drbg );
-                    if ( status != 0 )
-                        throw CryptoException (
-                            XP ( XLOC )
-                            << "mbedtls_ecp_gen_key failed"
-                            << xcause
-                            << crypterr ( status )
-                            );
-
-                    assert ( mbedtls_pk_get_type ( & pk ) == MBEDTLS_PK_ECKEY );
-
-                    mbedtls_ecp_keypair *ecp = mbedtls_pk_ec ( pk );
-                    
-                    writeKeyParameter ( props, "d", ecp -> d );
-                    writeKeyParameter ( props, "x", ecp -> Q.X );
-                    writeKeyParameter ( props, "y", ecp -> Q.Y );
-
-                    jwk = new JWK ( props_ref );
-
-                    std :: cout << "Successful generation of EC key: \n" << jwk -> readableJSON () << std :: endl; 
-                }
+                status = mbedtls_pk_setup ( & pk, mbedtls_pk_info_from_type ( ( mbedtls_pk_type_t ) MBEDTLS_PK_ECKEY ) );
+                if ( status != 0 )
+                    throw CryptoException (
+                        XP ( XLOC )
+                        << "mbedtls_pk_setup failed"
+                        << xcause
+                        << crypterr ( status )
+                        );
+                
+                const mbedtls_ecp_curve_info *curve_info
+                    = mbedtls_ecp_curve_info_from_name ( NULTerminatedString ( curve ) . c_str () );
+                
+                status = mbedtls_ecp_gen_key ( ( mbedtls_ecp_group_id ) curve_info -> grp_id, mbedtls_pk_ec ( pk ),
+                                               mbedtls_ctr_drbg_random, & ctr_drbg );
+                if ( status != 0 )
+                    throw CryptoException (
+                        XP ( XLOC )
+                        << "mbedtls_ecp_gen_key failed"
+                        << xcause
+                        << crypterr ( status )
+                        );
+                
+                assert ( mbedtls_pk_get_type ( & pk ) == MBEDTLS_PK_ECKEY );
+                
+                mbedtls_ecp_keypair *ecp = mbedtls_pk_ec ( pk );
+                
+                writeKeyParameter ( props, "d", ecp -> d );
+                writeKeyParameter ( props, "x", ecp -> Q.X );
+                writeKeyParameter ( props, "y", ecp -> Q.Y );
+                
+                validateJWK ( props );
+                jwk = new JWK ( props_ref );
             }
             catch ( ... )
             {

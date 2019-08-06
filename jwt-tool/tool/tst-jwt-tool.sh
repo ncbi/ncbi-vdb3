@@ -54,14 +54,12 @@ then
     { echo "import-pem test - Invalid jwt policy options2: Failed"; exit 1; }
 fi
 
-
-# import pem to hard-coded file path
-rm $OUTDIR/importPemPrivKey.jwk $OUTDIR/importPemPubKey.jwk
+rm $OUTDIR/importRSAPrivKey.jwk $OUTDIR/importRSAPubKey.jwk
 
 $TOOL import-pem $OUTDIR/rs_private.pem --pwd $PWD 2> /dev/null
-( [ -e $OUTDIR/extPemPrivKey.jwk ] && echo "import-pem test - Create default priv file: Pass" ) ||
+( [ -e $OUTDIR/importRSAPrivKey.jwk ] && echo "import-pem test - Create default priv file: Pass" ) ||
     { echo "import-pem test - Create default priv file: Failed"; exit 1; }
-( [ -e $OUTDIR/extPemPubKey.jwk ] && echo "import-pem test - Create default pub file: Pass" ) ||
+( [ -e $OUTDIR/importRSAPubKey.jwk ] && echo "import-pem test - Create default pub file: Pass" ) ||
     { echo "import-pem test - Create default pub file: Failed"; exit 1; }
 
 #import pem to user specified file path
@@ -84,12 +82,37 @@ echo ------------------------------------------------------------------
 (! $TOOL gen-key --type "" --use "" 2> /dev/null &&
     echo "gen-key test - Missing 'alg' argument: Pass") ||
     { echo "gen-key test - Missing 'alg' argument: Failed"; exit 1; }
-(! $TOOL gen-key --type "" --use "" --alg ""  2> /dev/null &&
-    echo "gen-key test - Invalid key-type: Pass") ||
-    { echo "gen-key test - invalid key-type: Failed"; exit 1; }
-(! $TOOL gen-key --type RSA --use "" --alg ""  2> /dev/null &&
-    echo "gen-key test - Invalid use: Pass") ||
-    { echo "gen-key test - invalid use: Failed"; exit 1; }
+(! $TOOL gen-key --type "" --use "" --alg "" 2> /dev/null &&
+    echo "gen-key test - Invalid 'key' type: Pass") ||
+    { echo "gen-key test - invalid 'key' type: Failed"; exit 1; }
+(! $TOOL gen-key --type RSA --use "" --alg RS256 2> /dev/null &&
+    echo "gen-key test - Invalid 'use' type: Pass") ||
+    { echo "gen-key test - invalid 'use' type: Failed"; exit 1; }
+(! $TOOL gen-key --type RSA --use sig --alg "" 2> /dev/null &&
+    echo "gen-key test - Invalid 'alg' type: Pass") ||
+    { echo "gen-key test - invalid 'alg' type: Failed"; exit 1; }
+(! $TOOL gen-key --type EC --use sig --alg "" 2> /dev/null &&
+    echo "gen-key test - Missing 'curve' argument: Pass") ||
+    { echo "gen-key test - Missing 'curve' argument: Failed"; exit 1; }
+(! $TOOL gen-key --type EC --curve "" --use sig --alg ES256 2> /dev/null &&
+    echo "gen-key test - Invalid 'curve' type: Pass") ||
+    { echo "gen-key test - invalid 'curve' type: Failed"; exit 1; }
+
+rm $OUTDIR/generateRSAPrivKey.jwk $OUTDIR/generateRSAPubKey.jwk
+
+$TOOL gen-key --type RSA --use sig --alg RS256 2> /dev/null
+( [ -e $OUTDIR/generateRSAPrivKey.jwk ] && echo "gen-key test - Create default RSA priv file: Pass" ) ||
+    { echo "gen-key test - Create default RSA priv file: Failed"; exit 1; }
+( [ -e $OUTDIR/generateRSAPubKey.jwk ] && echo "gen-key test - Create default RSA pub file: Pass" ) ||
+    { echo "gen-key test - Create default RSA pub file: Failed"; exit 1; }
+
+rm $OUTDIR/generateECPrivKey.jwk $OUTDIR/generateECPubKey.jwk
+
+$TOOL gen-key --type EC --curve secp256r1 --use sig --alg ES256 2> /dev/null
+( [ -e $OUTDIR/generateECPrivKey.jwk ] && echo "gen-key test - Create default EC priv file: Pass" ) ||
+    { echo "gen-key test - Create default EC priv file: Failed"; exit 1; }
+( [ -e $OUTDIR/generateECPubKey.jwk ] && echo "gen-key test - Create default EC pub file: Pass" ) ||
+    { echo "gen-key test - Create default EC pub file: Failed"; exit 1; }
 
 exit 1;
 

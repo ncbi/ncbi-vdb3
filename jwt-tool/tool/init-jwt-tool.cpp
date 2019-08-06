@@ -192,11 +192,19 @@ namespace ncbi
 		<< endm
 		;
 
+        bool isRSA = false;
+        bool isEC = false;
         JWKRef priv_key;
         if ( contents . find ( "BEGIN RSA PRIVATE KEY" ) != String :: npos )
+        {
             priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "RS256", kid );
+            isRSA = true;
+        }
         else if ( contents . find ( "BEGIN EC PRIVATE KEY" ) != String :: npos )
+        {
             priv_key = JWKMgr :: parsePEM ( contents, privPwd, "sig", "ES256", kid );
+            isEC = true;
+        }
         else
             throw RuntimeException (
                 XP ( XLOC, rc_param_err )
@@ -217,16 +225,31 @@ namespace ncbi
 		
 		loadPublicKey ( pub_key );
 		
-        // save keys to text files
+        String privOut;
         if ( privKeyFilePaths . empty () )
-            writeTextFile ( privKeys -> readableJSON (), "tool/input/importPemPrivKey.jwk" );
+        {
+            if ( isRSA )
+                privOut = "tool/input/importRSAPrivKey.jwk";
+            else if ( isEC )
+                privOut = "tool/input/importECPrivKey.jwk";
+        }
         else
-            writeTextFile ( privKeys -> readableJSON (), privKeyFilePaths [ 0 ] );
+            privOut = privKeyFilePaths . at ( 0 );
         
+        String pubOut;
         if ( pubKeyFilePaths . empty () )
-            writeTextFile ( pubKeys -> readableJSON (), "tool/input/importPemPubKey.jwk" );
+        {
+            if ( isRSA )
+                pubOut = "tool/input/importRSAPubKey.jwk";
+            else if ( isEC )
+                pubOut = "tool/input/importECPubKey.jwk";                    
+        }
         else
-            writeTextFile ( pubKeys -> readableJSON (), pubKeyFilePaths [ 0 ] );
+            pubOut = pubKeyFilePaths . at ( 0 );
+        
+        // save keys to text files
+        writeTextFile ( privKeys -> readableJSON (), privOut );
+        writeTextFile ( privKeys -> readableJSON (), pubOut );
     }
 
     void JWTTool :: init ()
@@ -333,13 +356,32 @@ namespace ncbi
             log . msg ( LOG_INFO )
                 << "Attempting to generate a new private key '"
                 << endm;
+
             
-            JWKRef priv_key = JWKMgr :: generateJWK ( keyType . at ( 0 ),
-                                                      keyCurve . empty () ? "" : keyCurve . at ( 0 ),
-                                                      keyUse . at ( 0 ),
-                                                      keyAlg . at ( 0 ),
+            JWKRef priv_key;
+            if ( keyType . at ( 0 ) == "RSA" )
+            {            
+                priv_key = JWKMgr :: generateRSAKey ( keyUse . at ( 0 ), keyAlg . at ( 0 ),
                                                       keyKids . empty () ? JWKMgr :: makeID () : keyKids . at ( 0 ) );
 
+            }
+            else if ( keyType . at ( 0 ) == "EC" )
+            {
+                priv_key = JWKMgr :: generateECKey ( keyCurve . at ( 0 ), keyUse . at ( 0 ), keyAlg . at ( 0 ),
+                                                     keyKids . empty () ? JWKMgr :: makeID () : keyKids . at ( 0 ) );
+            }
+            else
+            {
+                throw InvalidArgument (
+                    XP ( XLOC, rc_param_err )
+                    << "Invalid key type"
+                    );            
+            }
+            
+            log . msg ( LOG_INFO )
+                << "Success generating a new private key '"
+                << endm;
+            
             loadPrivateKey ( priv_key );
             
             assert ( privKeys -> count () == 1 ); 
@@ -353,18 +395,32 @@ namespace ncbi
             JWKRef pub_key = privKeys -> getKey ( 0 ) -> toPublic ();
             
             loadPublicKey ( pub_key );
-		
-            // save keys to text files
+            
+            String privOut;
             if ( privKeyFilePaths . empty () )
-                writeTextFile ( privKeys -> readableJSON (), "tool/input/generatePrivKey.jwk" );
+            {
+                if ( keyType . at ( 0 ) == "RSA" )
+                    privOut = "tool/input/generateRSAPrivKey.jwk";
+                else
+                    privOut = "tool/input/generateECPrivKey.jwk";
+            }
             else
-                writeTextFile ( privKeys -> readableJSON (), privKeyFilePaths [ 0 ] );
+                privOut = privKeyFilePaths . at ( 0 );
             
+            String pubOut;
             if ( pubKeyFilePaths . empty () )
-                writeTextFile ( pubKeys -> readableJSON (), "tool/input/generatePubKey.jwk" );
+            {
+                if ( keyType . at ( 0 ) == "RSA" )
+                    pubOut = "tool/input/generateRSAPubKey.jwk";
+                else
+                    pubOut = "tool/input/generateECPubKey.jwk";                    
+            }
             else
-                writeTextFile ( pubKeys -> readableJSON (), pubKeyFilePaths [ 0 ] );
-            
+                pubOut = pubKeyFilePaths . at ( 0 );
+
+                // save keys to text files
+            writeTextFile ( privKeys -> readableJSON (), privOut );
+            writeTextFile ( privKeys -> readableJSON (), pubOut );
             break;
         }
         
