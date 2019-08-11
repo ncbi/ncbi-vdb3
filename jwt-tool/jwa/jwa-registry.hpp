@@ -53,6 +53,10 @@ namespace ncbi
         void registerSigner ( const String & alg, const JWASignerRef & signer ) noexcept;
         void registerVerifier ( const String & alg, const JWAVerifierRef & verifier ) noexcept;
 
+        String mapCurveNameToNIST ( const String & crv ) const noexcept;
+        String mapCurveNameToSECG ( const String & crv ) const noexcept;
+        String mapCurveNameToANSI ( const String & crv ) const noexcept;
+
         void doNothing () noexcept;
 
         JWARegistry () noexcept;
@@ -67,13 +71,36 @@ namespace ncbi
             Maps ();
             ~ Maps ();
 
+            // acceptance of signature and verification algorithm names
+            // these are NOT necessarily symmetrical
             std :: set < String > sign_accept;
             std :: set < String > verify_accept;
+
+            // signature and verification algorithms
             std :: map < String, JWASignerRef > signers;
             std :: map < String, JWAVerifierRef > verifiers;
+
+            // mapping from key-type to supported algorithm set
             std :: map < String, std :: set < String > > key_accept;
 
+            // mappings from curve names to standard namespace
+            std :: map < String, String > crv_to_nist;
+            std :: map < String, String > crv_to_secg;
+            std :: map < String, String > crv_to_ansi;
+
+            // metrics on curve, algorithm and key-type names
+            // gathered from constants when the mappings are created
+            count_t jws_alg_max_length;
+            count_t jwk_typ_max_length;
+            count_t crv_name_max_length;
+            bool jws_alg_is_ascii;
+            bool jwk_typ_is_ascii;
+            bool crv_name_is_ascii;
+
         };
+
+        static bool testJWSAlgorithm ( const String & alg, const Maps * cmaps );
+        static bool testCurveName ( const String & crv, const Maps * cmaps );
 
         mutable Maps * maps;
 

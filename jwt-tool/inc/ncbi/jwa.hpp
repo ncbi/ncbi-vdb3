@@ -127,6 +127,30 @@ namespace ncbi
          */
         static JWAVerifierRef getVerifier ( const String & alg );
 
+        /**
+         * @fn mapCurveNameToNIST
+         * @brief translates a curve name to its NIST equivalent
+         * @param crv is the name in NIST, ANSI or SECG
+         * @return String with NIST name or empty if not found
+         */
+        static String mapCurveNameToNIST ( const String & crv );
+
+        /**
+         * @fn mapCurveNameToSECG
+         * @brief translates a curve name to its SECG equivalent
+         * @param crv is the name in NIST, ANSI or SECG
+         * @return String with SECG name or empty if not found
+         */
+        static String mapCurveNameToSECG ( const String & crv );
+
+        /**
+         * @fn mapCurveNameToANSI
+         * @brief translates a curve name to its ANSI equivalent
+         * @param crv is the name in NIST, ANSI or SECG
+         * @return String with ANSI name or empty if not found
+         */
+        static String mapCurveNameToANSI ( const String & crv );
+
     private:
 
         JWAMgr ();

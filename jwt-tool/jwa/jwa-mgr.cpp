@@ -55,6 +55,21 @@ namespace ncbi
         return gJWARegistry . getVerifier ( alg );
     }
 
+    String JWAMgr :: mapCurveNameToNIST ( const String & crv )
+    {
+        return gJWARegistry . mapCurveNameToNIST ( crv );
+    }
+
+    String JWAMgr :: mapCurveNameToSECG ( const String & crv )
+    {
+        return gJWARegistry . mapCurveNameToSECG ( crv );
+    }
+
+    String JWAMgr :: mapCurveNameToANSI ( const String & crv )
+    {
+        return gJWARegistry . mapCurveNameToANSI ( crv );
+    }
+
     String JWASigner :: getKeyProp ( const JWK & key, const String & name )
     {
         return key . props -> getValue ( name ) . toString ();

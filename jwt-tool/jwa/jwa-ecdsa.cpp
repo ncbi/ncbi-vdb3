@@ -47,6 +47,7 @@
 #include <errno.h>
 
 #define USE_DETERMINISTIC_SIGN 1
+#define USE_JWAMGR_NIST_TO_SECG_MAP 1
 
 namespace ncbi
 {
@@ -55,6 +56,18 @@ namespace ncbi
     {
         const mbedtls_ecp_curve_info *  getCurveInfo ( const String & curve_name ) const
         {
+#if USE_JWAMGR_NIST_TO_SECG_MAP
+            String secg_name = JWAMgr :: mapCurveNameToSECG ( curve_name );
+            if ( secg_name . isEmpty () )
+            {
+                throw MalformedJWK (
+                    XP ( XLOC )
+                    << "unrecognized elliptic curve name '"
+                    << curve_name
+                    << '\''
+                    );
+            }
+#else
             if ( curve_name . isEmpty () )
             {
                 throw MalformedJWK (
@@ -95,9 +108,11 @@ namespace ncbi
                     << '\''
                     );
             }
+            String secg_name = it -> second;
+#endif
 
             const mbedtls_ecp_curve_info * info
-                = mbedtls_ecp_curve_info_from_name ( NULTerminatedString ( it -> second ) . c_str () );
+                = mbedtls_ecp_curve_info_from_name ( NULTerminatedString ( secg_name ) . c_str () );
             if ( info == nullptr )
             {
                 throw UnsupportedCurve (
@@ -105,7 +120,7 @@ namespace ncbi
                     << "unsupported elliptic curve name '"
                     << curve_name
                     << "' ( '"
-                    << it -> second
+                    << secg_name
                     << "' )"
                     << xcause
                     << "curve is not supported by crypto-library"
@@ -136,6 +151,11 @@ namespace ncbi
             }
         }
 
+#if USE_JWAMGR_NIST_TO_SECG_MAP
+        ECDSA_Curve_Map ()
+        {
+        }
+#else
         ECDSA_Curve_Map ()
             : max_length ( 0 )
             , only_ascii ( true )
@@ -196,14 +216,17 @@ namespace ncbi
                     max_length = name . length ();
             }
         }
+#endif
 
         ~ ECDSA_Curve_Map ()
         {
         }
 
+#if ! USE_JWAMGR_NIST_TO_SECG_MAP
         std :: map < String, String > map;
         count_t max_length;
         bool only_ascii;
+#endif
     };
 
 #ifndef HAVE_MPI_READ
