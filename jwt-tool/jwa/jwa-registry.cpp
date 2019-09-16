@@ -305,24 +305,32 @@ namespace ncbi
             "ES256", "ES384", "ES512"
         };
 
+        const char * OKP_key_accept_algs [] =
+        {
+            // TBD - examine more thoroughly
+            "EdDSA"
+        };
+
         struct { const char * nist, * secg; } NIST_SECG_curve_names [] =
         {
-            { "K-163",  "sect163k1" },
             { "B-163",  "sect163r2" },
-            { "K-233",  "sect233k1" },
             { "B-233",  "sect233r1" },
-            { "K-283",  "sect283k1" },
             { "B-283",  "sect283r1" },
-            { "K-409",  "sect409k1" },
             { "B-409",  "sect409r1" },
-            { "K-571",  "sect571k1" },
             { "B-571",  "sect571r1" },
+
+            { "K-163",  "sect163k1" },
+            { "K-233",  "sect233k1" },
+            { "K-283",  "sect283k1" },
+            { "K-409",  "sect409k1" },
+            { "K-571",  "sect571k1" },
+
             { "P-192",  "secp192r1" },
             { "P-224",  "secp224r1" },
-            { "P-256",  "secp256r1" },
+            { "P-256",  "secp256r1" }, // JOSE
             { "P-256K", "secp256k1" },
-            { "P-384",  "secp384r1" },
-            { "P-521",  "secp521r1" }
+            { "P-384",  "secp384r1" }, // JOSE
+            { "P-521",  "secp521r1" }  // JOSE
         };
 
         struct { const char * ansi, * secg; } ANSI_SECG_curve_names [] =
@@ -363,11 +371,16 @@ namespace ncbi
         for ( i = 0; i < sizeof EC_key_accept_algs / sizeof EC_key_accept_algs [ 0 ]; ++ i )
             EC_set . emplace ( String ( EC_key_accept_algs [ i ] ) );
 
+        std :: set < String > OKP_set;
+        for ( i = 0; i < sizeof OKP_key_accept_algs / sizeof OKP_key_accept_algs [ 0 ]; ++ i )
+            OKP_set . emplace ( String ( OKP_key_accept_algs [ i ] ) );
+
         // this is currently a hard-coded set of key types
         // they are ASCII with length 3
         key_accept . emplace ( "oct", oct_set );
         key_accept . emplace ( "RSA", RSA_set );
         key_accept . emplace ( "EC",  EC_set  );
+        key_accept . emplace ( "OKP", OKP_set  );
 
         for ( i = 0; i < sizeof NIST_SECG_curve_names / sizeof NIST_SECG_curve_names [ 0 ]; ++ i )
         {
