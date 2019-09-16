@@ -180,6 +180,8 @@ namespace ncbi
             }
         }
 
+        // check for proper curve name
+
         const char * priv_props [] = { "d" };
 
         assert ( sizeof priv_props / sizeof priv_props [ 0 ] != 0 );
@@ -204,6 +206,21 @@ namespace ncbi
     {
         // key type
         String kty = props . getValue ( "kty" ) . toString ();
+#if 0
+        // this test is performed below
+        if ( kty != "oct" &&
+             kty != "RSA" &&
+             kty != "EC"  &&
+             kty != "OKP" )
+        {
+            throw MalformedJWK (
+                XP ( XLOC )
+                << "unsupported kty value for JWK: '"
+                << kty
+                << '\''
+                );
+        }
+#endif
 
         // check the alg
         if ( props . exists ( "alg" ) )
@@ -246,7 +263,7 @@ namespace ncbi
                 }
             }
         }
-        else if ( props . exists ( "use" ) )
+        if ( props . exists ( "use" ) )
         {
             String use = props . getValue ( "use" ) . toString ();
             if ( use != "sig" &&
@@ -268,6 +285,16 @@ namespace ncbi
             validateRSA ( props );
         else if ( kty == "EC" )
             validateEC ( props );
+        else if ( kty == "OKP" )
+        {
+            // TBD - see RFC-8037
+            throw UnsupportedKeyType (
+                XP ( XLOC )
+                << "unsupported kty value for JWK: '"
+                << kty
+                << '\''
+                );
+        }
         else
         {
             throw MalformedJWK (
