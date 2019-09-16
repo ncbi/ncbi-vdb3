@@ -576,6 +576,7 @@ namespace ncbi
     DECLARE_SEC_MSG_EXCEPTION ( MalformedPEM, InvalidArgument );
     DECLARE_SEC_MSG_EXCEPTION ( JWKUniqueConstraintViolation, UniqueConstraintViolation );
     DECLARE_SEC_MSG_EXCEPTION ( JWKKeyNotFound, NotFoundException );
+    DECLARE_SEC_MSG_EXCEPTION ( UnsupportedKeyType, UnsupportedException );
     DECLARE_SEC_MSG_EXCEPTION ( UnsupportedCurve, UnsupportedException );
 
 
