@@ -44,9 +44,6 @@ clean:
 build:
 	@ $(MAKE_CMD) $(BINDIR)/toolb
 
-test:
-	@ $(MAKE) -C test
-
 #
 # subdirectory-specific part
 #

@@ -46,9 +46,6 @@ clean:
 build:
 	@ $(MAKE_CMD) $(BINDIR)/serviceb
 
-test:
-	@ $(MAKE) -C test
-
 subinstall:
 	$(MAKE_CMD) $(INSTDIR)/serviceb
 

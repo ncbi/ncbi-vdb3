@@ -67,12 +67,17 @@ $(SUBDIRS_CLEAN):
 #-------------------------------------------------------------------------------
 # test, check
 #
+# If a 'test' subdirectory exists, 'make test' in it. Do not list 'test' in SUBDIRS
+
 SUBDIRS_TEST ?= $(addsuffix _test,$(SUBDIRS))
 
 $(SUBDIRS_TEST):
 	@ $(MAKE) -s -C $(subst _test,,$@) test
 
-test: build $(SUBDIRS_TEST)
+test: build $(SUBDIRS_TEST) own_test
+
+own_test:
+	if [ -d test ] ; then $(MAKE) -C test; fi
 
 check: test
 

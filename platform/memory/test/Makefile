@@ -23,38 +23,52 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of services/
-#   Can be used as a template for produciton Makefiles under services/
+#	Tests for the VDB3 platform library
 #
+# to build/run all test projects, use target 'test' or 'check'
 
-# need this line to be able run tests on the build system itself;
-# not needed in the production Makefile
-override SUBDIRS =
+default: test
 
-default: build
+TOP ?= $(abspath ../../..)
+MODULE = platform/memory/test
 
-TOP ?= $(abspath ../..)
-MODULE = services/servicea
+TESTS = test-memory
 
-include $(TOP)/services/Makefile.env
-
-OBJ = $(addsuffix .$(OBJX),$(SRC))
-
-clean:
-	rm -f $(BINDIR)/servicea
-
-build:
-	@ $(MAKE_CMD) $(BINDIR)/servicea
-
-subinstall:
-	$(MAKE_CMD) $(INSTDIR)/servicea
+include $(TOP)/platform/Makefile.test
 
 #
 # subdirectory-specific part
 #
 
-SRC = main servicea
+# project memory
+SRC = \
+	../MemoryBlockItf \
+	../MemoryManagerItf \
+	../TrackingMemoryManagerItf \
+	../FillingMemoryMgr \
+	../PinnedMemoryMgr \
+	../QuotaMemoryMgr \
+	../SharedMemoryMgr \
+	../UniqueRawMemoryBlock \
+	../PrimordialMemoryMgr \
+	../RawMemoryBlock \
+	../TypedMemoryBlock \
+	test-main \
+	test-MemoryManagerItf \
+	test-MemoryBlockItf \
+	test-TrackingMemoryManager \
+	test-PrimordialMemoryMgr \
+	test-FillingMemoryMgr \
+	test-PinnedMemoryMgr \
+	test-QuotaMemoryMgr \
+	test-SharedMemoryMgr \
+	test-UniqueRawMemoryBlock \
+	test-RawMemoryBlock \
+	test-TypedMemoryBlock \
 
-$(BINDIR)/servicea: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform -lncbi-vdb3-db
+
+OBJ = $(addsuffix .$(OBJX),$(SRC))
+
+$(TEST_BINDIR)/test-memory: $(OBJ)
+	$(LP) $(OBJ) -o $@ -lgtest -lpthread
 

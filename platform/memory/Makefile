@@ -23,38 +23,38 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of services/
-#   Can be used as a template for produciton Makefiles under services/
+#	Test for the VDB3 build system, subdirectory of platform/
 #
-
-# need this line to be able run tests on the build system itself;
-# not needed in the production Makefile
-override SUBDIRS =
 
 default: build
 
 TOP ?= $(abspath ../..)
-MODULE = services/servicea
+MODULE = platform/memory
+SUBDIRS =
 
-include $(TOP)/services/Makefile.env
+include $(TOP)/build/Makefile.env
 
-OBJ = $(addsuffix .$(OBJX),$(SRC))
-
-clean:
-	rm -f $(BINDIR)/servicea
+OBJ = $(addsuffix .$(LOBX),$(SRC))
 
 build:
-	@ $(MAKE_CMD) $(BINDIR)/servicea
-
-subinstall:
-	$(MAKE_CMD) $(INSTDIR)/servicea
+	@ $(MAKE_CMD) $(OBJ)
 
 #
 # subdirectory-specific part
 #
 
-SRC = main servicea
+SRC = \
+	MemoryBlockItf \
+	MemoryManagerItf \
+	TrackingMemoryManagerItf \
+	FillingMemoryMgr \
+	PinnedMemoryMgr \
+	QuotaMemoryMgr \
+	SharedMemoryMgr \
+	UniqueRawMemoryBlock \
+	PrimordialMemoryMgr \
+	RawMemoryBlock \
+	TypedMemoryBlock
 
-$(BINDIR)/servicea: $(OBJ)
-	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform -lncbi-vdb3-db
+
 

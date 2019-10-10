@@ -31,7 +31,7 @@
 #
 default: build
 
-SUBDIRS = test
+SUBDIRS =
 
 TOP ?= $(abspath ..)
 MODULE = build

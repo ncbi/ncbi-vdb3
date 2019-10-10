@@ -44,9 +44,6 @@ clean:
 build:
 	@ $(MAKE_CMD) $(BINDIR)/toola
 
-test:
-	@ $(MAKE) -C test
-
 #
 # subdirectory-specific part
 #
