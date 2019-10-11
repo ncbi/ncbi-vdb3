@@ -1,1 +1,0 @@
-'{"iss": "https://dbgap.nlm.nih.gov/aa","sub": "00000","vcard": {"email": "user@nih.gov","fname": "My","lname": "Name","orgs": ["NIH"],"roles": ["have_approved_access","downloader"]}}'

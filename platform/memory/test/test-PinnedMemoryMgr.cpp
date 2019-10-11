@@ -207,7 +207,7 @@ TEST ( PinnedMemoryMgr, Alloc_NoTracking )
     // is not tracked by mgr
     ASSERT_THROW( mgr -> getBlockSize( rmb . ptr () ), logic_error  ); //TODO: use VDB3 exception type
     // is pinned
-    ASSERT_EQ ( 1, tl . blocks [ rmb . ptr () ] );
+    ASSERT_EQ ( 1, tl . blocks [ (MemoryManagerItf :: pointer) rmb . ptr () ] );
 }
 
 TEST ( PinnedMemoryMgr, Dealloc_NoTracking )

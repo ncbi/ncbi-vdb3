@@ -43,7 +43,7 @@ clean:
 	rm -rf $(ALL_TESTS)
 
 test: build
-	$(foreach Exe,$(ALL_TESTS), echo "Running $(Exe)"; $(Exe) --gtest_output=xml; )
+	$(warning ALL_TESTS=$(ALL_TESTS))$(foreach Exe,$(ALL_TESTS), echo "Running $(Exe)"; $(Exe) --gtest_output=xml; )
 
 vg: build
 	$(foreach Exe,$(ALL_TESTS), valgrind --leak-check=full $(Exe) --gtest_output=xml; )

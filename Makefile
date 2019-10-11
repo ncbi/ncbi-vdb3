@@ -50,7 +50,7 @@ default: build
 # environment
 #
 TOP ?= $(abspath .)
-SUBDIRS = build platform db services tools tests
+SUBDIRS = build external platform db services tools tests
 
 ifeq (no, $(shell test -f $(TOP)/Makefile.config && echo yes || echo no))
 # handle missing Makefile.config

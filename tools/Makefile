@@ -33,6 +33,6 @@ default: build
 
 TOP ?= $(abspath ..)
 MODULE = tools
-SUBDIRS ?=
+SUBDIRS ?= jwt-tool
 
 include $(TOP)/$(MODULE)/Makefile.env

@@ -375,7 +375,7 @@ endif
 	@ #TODO: test on iebdev (when googletest is installed)
 	@ #TODO: add "this is a test/template" comments throughout the test makefiles
 	@ #
-	@ rm -rf Makefile.config actual
+	@ #rm -rf Makefile.config actual
 endif
 
 .phony: config build clean test

@@ -31,7 +31,7 @@ default: test
 TOP ?= $(abspath ../../..)
 MODULE = db/bdb/test
 
-TESTS = test-bdb
+TESTS = test-bdbb
 
 include $(TOP)/db/Makefile.test
 
@@ -43,5 +43,5 @@ SRC = test-bdb
 
 OBJ = $(addsuffix .$(OBJX),$(SRC))
 
-$(TEST_BINDIR)/test-bdb: $(OBJ)
+$(TEST_BINDIR)/test-bdbb: $(OBJ)
 	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lncbi-vdb3-platform
