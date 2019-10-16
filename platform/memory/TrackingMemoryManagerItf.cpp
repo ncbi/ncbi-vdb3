@@ -92,7 +92,7 @@ TrackingMemoryManager :: reallocate( pointer ptr, size_type new_size )
 {
     if ( ptr == nullptr )
     {
-        return reallocateUntracked( ptr, 0, new_size );
+        return allocate( new_size );
     }
     if ( new_size == 0 )
     {

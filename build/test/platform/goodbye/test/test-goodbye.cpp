@@ -41,7 +41,7 @@ TEST(Goodbye, Fatal)
 
 TEST(Goodbye, nonFatal)
 {
-    // uncomment the next line if you want to see non-fatal asseretions in action
+    // uncomment the next line if you want to see non-fatal assertions in action
     // EXPECT_TRUE(false); // reoports non-fatal failure and continues the function
     ASSERT_EQ( "Goodbye", NCBI::VDB3::GoodbyeMsg() );
 }
