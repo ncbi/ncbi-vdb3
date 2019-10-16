@@ -42,6 +42,7 @@ include $(TOP)/platform/Makefile.test
 SRC = test-goodbye
 
 OBJ = $(addsuffix .$(OBJX),$(SRC))
+$(warning $(LP) $(OBJ) -o $@ -lgtest -lpthread)
 
 $(TEST_BINDIR)/test-goodbye: $(OBJ)
 	$(LP) $(OBJ) -o $@ -lgtest -lpthread

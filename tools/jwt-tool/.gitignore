@@ -16,4 +16,5 @@ leak-*
 *.profraw
 fuzz-corpus
 tst
+*.jwk
 

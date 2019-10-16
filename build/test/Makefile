@@ -54,6 +54,11 @@ define Setup
     cp Makefile.config.test-default Makefile.config && \
     cp $(TOP)/docs/doxygen.config ./docs/ && \
 	rm -rf $(ACTUAL)/outdir docs/html
+    # some tests require googletest library
+    if [ "gtest" = "$(1)" ]; then \
+        mkdir -p $(ACTUAL)/outdir/dbg/lib; \
+        LIBDIR=$(abspath $(ACTUAL)/outdir/dbg/lib) $(MAKE) -C $(TOP)/external gtest;\
+    fi
 endef
 
 #
@@ -173,7 +178,7 @@ test:
 							! test -f $(ACTUAL)/outdir/dbg/lib/$(LIBPLATFORM))
 	@ #
 	@ # test; expect 3 unit tests to be run
-	@ $(call Setup); \
+	@ $(call Setup,gtest); \
 	  $(call ExpectPass,3.5, -C platform test, \
 	  						[ 3 -eq $$(grep -i --count Passed $(ACTUAL)/3.5.stdout) ] )
 	@ #
@@ -322,7 +327,7 @@ test:
 	  						! test -f $(ACTUAL)/outdir/dbg)
 	@ #
 	@ # test
-	@ $(call Setup); \
+	@ $(call Setup,gtest); \
 	  $(call ExpectPass,8.9,-f $(TOP)/Makefile BUILD_TESTING=1 test, \
 	  						grep --quiet Hello $(ACTUAL)/8.9.stdout && \
 							grep --quiet BDB $(ACTUAL)/8.9.stdout && \

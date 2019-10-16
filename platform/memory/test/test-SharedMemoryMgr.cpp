@@ -63,14 +63,15 @@ TEST ( SharedMemoryMgr, Sharing )
     if ( pid == 0 )
     {   // child
         memset (p, 0xda, Size );
-        exit(1);
     }
-
-    wait ( nullptr );
-    const byte_t* bp = (const byte_t*)p;
-    for (int i = 0; i < Size; ++i)
+    else
     {
-        ASSERT_EQ( byte_t ( 0xda ), bp [ i ] );
+        wait ( nullptr );
+        const byte_t* bp = (const byte_t*)p;
+        for (int i = 0; i < Size; ++i)
+        {
+            ASSERT_EQ( byte_t ( 0xda ), bp [ i ] );
+        }
     }
 }
 

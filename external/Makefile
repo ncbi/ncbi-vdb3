@@ -50,7 +50,7 @@ $(OBJDIR)/gtest-all.$(OBJX): googletest/googletest/src/gtest-all.cc
 	$(CP) -g -c $< -o $@ $(CFLAGS) -Igoogletest/googletest/include -Igoogletest/googletest -MD
 
 $(LIBDIR)/libgtest.a: $(OBJDIR)/gtest-all.$(OBJX)
-	$(AR) $(LIBDIR)/libgtest.a $^
+	@ $(AR) $(LIBDIR)/libgtest.a $^
 
 gtest_clean:
 	@ rm -rf $(GTESTLIBS)
