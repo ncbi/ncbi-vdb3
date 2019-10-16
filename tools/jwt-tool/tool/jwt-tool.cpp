@@ -29,8 +29,8 @@
 #include "jwt-tool.hpp"
 #include <ncbi/jws.hpp>
 
-#include "cmdline.hpp"
-#include "logging.hpp"
+#include <ncbi/cmdline.hpp>
+#include <ncbi/logging.hpp>
 
 #include <iostream>
 
@@ -58,7 +58,7 @@ namespace ncbi
                     << "Missing input parameter from stdin"
                     );
 
-            inputParams . emplace_back ( String ( line ) );            
+            inputParams . emplace_back ( String ( line ) );
         }
     }
 
@@ -85,16 +85,16 @@ namespace ncbi
 
                 if ( policy_name . equal ( "kid_required" ) )
                     jwsPolicy . kid_required = toggle;
-                
+
                 else if ( policy_name . equal ( "kid_gen" ) )
                     jwsPolicy . kid_gen = toggle;
-                
+
                 else if ( policy_name . equal ( "require_simple_hdr" ) )
                     jwsPolicy . require_simple_hdr = toggle;
-                
+
                 else if ( policy_name . equal ( "require_prestored_kid" ) )
                     jwsPolicy . require_prestored_kid = toggle;
-                
+
                 else if ( policy_name . equal ( "require_prestored_key" ) )
                     jwsPolicy . require_prestored_key = toggle;
 
@@ -106,7 +106,7 @@ namespace ncbi
                         << policy_name
                         );
                 }
-                
+
             log . msg ( LOG_INFO )
                 << "Set JWS policy: "
                 << policy_name
@@ -114,7 +114,7 @@ namespace ncbi
                 << policy_val
                 << endm
                 ;
-                
+
             }
 
             JWSMgr :: setPolicy ( jwsPolicy );
@@ -142,10 +142,10 @@ namespace ncbi
 
                 else if ( policy_name . equal ( "sig_val_required" ) )
                     jwtPolicy . sig_val_required = policy_val . equal ( "true" ) ? true : false;
-                
+
                 else if ( policy_name . equal ( "nested_sig_val_required" ) )
                     jwtPolicy . nested_sig_val_required = policy_val . equal ( "true" ) ? true : false;
-                
+
                 else if ( policy_name . equal ( "iss_required" ) )
                     jwtPolicy . iss_required = policy_val . equal ( "true" ) ? true : false;
 
@@ -169,7 +169,7 @@ namespace ncbi
 
                 else if ( policy_name . equal ( "exp_gen" ) )
                     jwtPolicy . exp_gen = policy_val . equal ( "true" ) ? true : false;
-                
+
                 else if ( policy_name . equal ( "nbf_gen" ) )
                     jwtPolicy . nbf_gen = policy_val . equal ( "true" ) ? true : false;
 
@@ -178,7 +178,7 @@ namespace ncbi
 
                 else if ( policy_name . equal ( "jti_gen" ) )
                     jwtPolicy . jti_gen = policy_val . equal ( "true" ) ? true : false;
-                
+
                 else if ( policy_name . equal ( "pre_serial_verify" ) )
                     jwtPolicy . pre_serial_verify = policy_val . equal ( "true" ) ? true : false;
 
@@ -193,7 +193,7 @@ namespace ncbi
                         << policy_name
                         );
                 }
-                
+
                 log . msg ( LOG_INFO )
                 << "Set JWT policy: "
                 << policy_name
@@ -201,13 +201,13 @@ namespace ncbi
                 << policy_val
                 << endm
                 ;
-                
+
             }
 
             JWTMgr :: setPolicy ( jwtPolicy );
         }
     }
-    
+
     void ParamBlock :: validate ( JWTMode mode )
     {
 		if ( numDurationOpts > 1 )
@@ -215,19 +215,19 @@ namespace ncbi
                 XP ( XLOC, rc_param_err )
                 << "Multiple duration values"
                 );
-		
+
 		if ( numPwds > 1 )
 			throw InvalidArgument (
                 XP ( XLOC, rc_param_err )
                 << "Multiple password values"
-                );        
+                );
 
         switch ( mode )
         {
         case decode:
         {
             getInputParams ();
-            
+
             if ( pubKeyFilePaths . empty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -261,7 +261,7 @@ namespace ncbi
         case examine:
         {
             getInputParams ();
-            
+
             if ( pubKeyFilePaths . empty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -270,14 +270,14 @@ namespace ncbi
             break;
         }
         case import_pem:
-        {          
+        {
             getInputParams ();
 
             if ( privPwd . isEmpty () )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
                     << "Missing pem file password"
-                    );            
+                    );
             if ( privKeyFilePaths . size () > 1 )
                 throw InvalidArgument (
                     XP ( XLOC, rc_param_err )
@@ -288,7 +288,7 @@ namespace ncbi
                     XP ( XLOC, rc_param_err )
                     << "Multiple private key paths"
                     );
-            
+
             break;
         }
         case gen_key:
@@ -374,7 +374,7 @@ namespace ncbi
         , jwtMode ( mode )
     {
     }
-    
+
     JWTTool :: ~ JWTTool () noexcept
     {
     }
@@ -402,13 +402,13 @@ namespace ncbi
     JWTMode handle_params ( ParamBlock & params, int argc, char * argv [] )
     {
         Cmdline cmdline ( argc, argv );
-        
+
         cmdline . addMode ( "decode", "Extract and verify JWT claims" );
         cmdline . addMode ( "sign", "Sign a JSON claim set object" );
         cmdline . addMode ( "examine", "Examine a JWT without verification" );
         cmdline . addMode ( "import-pem", "Import a private pem file to extract and save private and public keys to files" );
         cmdline . addMode ( "gen-key", "Generate an RSA or Eliptic Curve key and save private and public keys to files" );
-        
+
         // to the cmdline parser, all params are optional
         // we will enforce their presence manually
 
@@ -444,7 +444,7 @@ namespace ncbi
         cmdline . setCurrentMode ( "examine" );
         cmdline . startOptionalParams ();
         cmdline . addParam ( params . inputParams, 0, 256, "token(s)", "optional list of tokens to process" );
-        
+
         cmdline . addListOption ( params . pubKeyFilePaths, ',', 256,
                                   "", "pub-key", "", "provide one or more public JWK or JWKSets" );
         cmdline . addListOption ( params . jwsPolicySettings, ',', 256,
@@ -499,19 +499,19 @@ namespace ncbi
                                   "Write to public key file; default location if unspecified; will overrite" );
 
 
-        
+
         // pre-parse to look for any configuration file path
         cmdline . parse ( true );
-        
+
         // configure params from file
-        
+
         // normal parse
         cmdline . parse ();
 
         String ignore;
         JWTMode mode = static_cast <JWTMode> ( cmdline . getModeInfo ( ignore ) );
         params . validate ( mode );
-        
+
         return mode;
     }
 
@@ -572,7 +572,7 @@ namespace ncbi
                 ;
             throw;
         }
-        
+
         return 0;
     }
 }
@@ -605,7 +605,7 @@ extern "C"
         catch ( ... )
         {
         }
-        
+
         return status;
     }
 }

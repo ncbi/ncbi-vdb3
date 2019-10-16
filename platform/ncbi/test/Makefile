@@ -23,27 +23,32 @@
 # ===========================================================================
 
 #
-#	Makefile for the platform subsystem of VDB3
+#	Tests for the VDB3 platform library
+#
+# to build/run all test projects, use target 'test' or 'check'
+
+default: test
+
+TOP ?= $(abspath ../../..)
+MODULE = platform/ncbi/test
+
+TESTS = \
+	test-ncbi
+
+include $(TOP)/platform/Makefile.test
+
+#
+# subdirectory-specific part
 #
 
-#-------------------------------------------------------------------------------
-# default
-#
-default: build
+SRC = \
+	main
 
-TOP ?= $(abspath ..)
-MODULE = platform
-SUBDIRS ?= memory secure json ncbi
+# this looks unfinished (does not compile, dose not use gtest, requires cmdline arguments to work)
+#	cmdline-tst \
 
-include $(TOP)/$(MODULE)/Makefile.env
+OBJ = $(addsuffix .$(OBJX),$(SRC))
 
-LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
-
-SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
-
-build: makedirs
-	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
-
-clean:
-	@ rm -rf $(LIBRARY)
+$(TEST_BINDIR)/test-ncbi: $(OBJ)
+	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lgtest -lpthread
 

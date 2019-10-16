@@ -23,27 +23,31 @@
 # ===========================================================================
 
 #
-#	Makefile for the platform subsystem of VDB3
+#	Tests for the VDB3 platform library
+#
+# to build/run all test projects, use target 'test' or 'check'
+
+default: test
+
+TOP ?= $(abspath ../../..)
+MODULE = platform/json/test
+
+TESTS = test-json
+
+CFLAGS_COMMON += -I $(abspath $(SRCDIR)/..)
+
+include $(TOP)/platform/Makefile.test
+
+#
+# subdirectory-specific part
 #
 
-#-------------------------------------------------------------------------------
-# default
-#
-default: build
+# project memory
+SRC = \
+	json-tst \
 
-TOP ?= $(abspath ..)
-MODULE = platform
-SUBDIRS ?= memory secure json ncbi
+OBJ = $(addsuffix .$(OBJX),$(SRC))
 
-include $(TOP)/$(MODULE)/Makefile.env
-
-LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
-
-SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
-
-build: makedirs
-	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
-
-clean:
-	@ rm -rf $(LIBRARY)
+$(TEST_BINDIR)/test-json: $(OBJ)
+	$(LP) $(OBJ) -o $@ -L$(LIBDIR) -lgtest -lpthread -lncbi-vdb3-platform -lutf8proc -lmbedcrypto
 

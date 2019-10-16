@@ -26,7 +26,7 @@
  *
  */
 
-#include "logging.hpp"
+#include <ncbi/logging.hpp>
 
 #include <unistd.h>
 #include <stdlib.h>

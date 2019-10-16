@@ -26,63 +26,13 @@
  *
  */
 
-#include <ncbi/jwa.hpp>
-#include "jwa-registry.hpp"
+#include <gtest/gtest.h>
 
-namespace ncbi
+extern "C"
 {
-
-    struct NONE_Signer : JWASigner
+    int main ( int argc, const char * argv [], const char * envp []  )
     {
-        virtual Payload sign ( const JWK & key,
-            const void * data, size_t bytes ) const override
-        {
-            return Payload ();
-        }
-
-        NONE_Signer ()
-        {
-        }
-    };
-
-    struct NONE_Verifier : JWAVerifier
-    {
-        virtual bool verify ( const JWK & key, const void * data, size_t bytes,
-            const Payload & binary_signature ) const override
-        {
-            return true;
-        }
-
-        virtual size_t expectedSignatureSize () const override
-        {
-            return 0;
-        }
-
-        NONE_Verifier ()
-        {
-        }
-    };
-
-
-    static struct NONE_Registry
-    {
-        NONE_Registry ()
-        {
-            String alg ( "none" );
-            gJWARegistry . registerSigner ( alg, new NONE_Signer () );
-            gJWARegistry . registerVerifier ( alg, new NONE_Verifier () );
-        }
-
-        void avoidDeadStrip ()
-        {
-            gJWARegistry . doNothing ();
-        }
-
-    } none_registry;
-
-    void includeJWA_none ( bool always_false )
-    {
-        if ( always_false )
-            none_registry . avoidDeadStrip ();
+        testing :: InitGoogleTest ( & argc, ( char ** ) argv );
+        return RUN_ALL_TESTS ();
     }
 }

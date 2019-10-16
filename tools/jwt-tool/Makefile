@@ -9,7 +9,6 @@ SUBDIRS ?=
 include ../Makefile.env
 
 ALL_LIBS =      \
-	ncbi-json   \
 	ncbi-jwa    \
 	ncbi-jwk    \
 	ncbi-jws    \
@@ -68,24 +67,6 @@ CFLAGS += -I $(TOP)/external/googletest/googletest/include
 CFLAGS += -I $(TOP)/interfaces
 
 ## rules to build object files from source
-$(OBJDIR)/%.dbg.$(OBJX): json/%.cpp
-	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Ijson -Iinc -MD -Wall
-$(OBJDIR)/%.tst.dbg.$(OBJX): json/%.cpp
-	$(GPP) -g -c $< -DJSON_TESTING -o $@ $(CFLAGS) -D_DEBUGGING -Ijson -Iinc -MD -Wall
-$(OBJDIR)/%.dbg.$(LOBX): json/%.cpp
-	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Ijson -Iinc -fPIC -MD -Wall
-$(OBJDIR)/%.tst.dbg.$(LOBX): json/%.cpp
-	$(GPP) -g -c $< -DJSON_TESTING -o $@ $(CFLAGS) -D_DEBUGGING -Ijson -Iinc -fPIC -MD -Wall
-
-$(OBJDIR)/%.rel.$(OBJX): json/%.cpp
-	$(GPP) -O3 -c $< -o $@ $(CFLAGS) -Ijson -Iinc -MD -Wall
-$(OBJDIR)/%.tst.rel.$(OBJX): json/%.cpp
-	$(GPP) -O3 -c $< -DJSON_TESTING -o $@ $(CFLAGS) -Ijson -Iinc -MD -Wall
-$(OBJDIR)/%.rel.$(LOBX): json/%.cpp
-	$(GPP) -O3 -c $< -o $@ $(CFLAGS) -Ijson -Iinc -fPIC -MD -Wall
-$(OBJDIR)/%.tst.rel.$(LOBX): json/%.cpp
-	$(GPP) -O3 -c $< -DJSON_TESTING -o $@ $(CFLAGS) -Ijson -Iinc -fPIC -MD -Wall
-
 $(OBJDIR)/%.dbg.$(OBJX): jwa/%.cpp
 	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Ijwa -Iinc -MD -Wall
 $(OBJDIR)/%.tst.dbg.$(OBJX): jwa/%.cpp
@@ -209,49 +190,6 @@ TESTLIBS =       \
 	$(PTHREADLIB)\
 	$(LQUADMATH) \
 
-## ncbi-json
-LIBJSONSRC =       \
-	json           \
-	json-object    \
-	json-array     \
-	json-value     \
-	json-wrapper   \
-	json-primitive
-
-LIBJSONDBGOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(LOBX),$(LIBJSONSRC)))
-
-LIBJSONRELOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBJSONSRC)))
-
-ncbi-json: $(LIBDIR) $(LIBDIR)/libncbi-json-dbg.a $(LIBDIR)/libncbi-json-rel.a
-
-LIBJSONTESTS =                    \
-	$(TSTDIR)/json-test.passed    \
-
-$(LIBDIR)/libncbi-json-dbg.a: $(LIBJSONTESTS) $(OBJDIR) $(LIBJSONDBGOBJ) $(MAKEFILE)
-	ar -rc $@ $(LIBJSONDBGOBJ)
-
-$(LIBDIR)/libncbi-json-rel.a: $(LIBJSONTESTS) $(OBJDIR) $(LIBJSONRELOBJ) $(MAKEFILE)
-	ar -rc $@ $(LIBJSONRELOBJ)
-
-JSON_TSTSRC =  \
-	json-tst
-
-JSON_TSTOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JSON_TSTSRC)))
-
-JSONTESTLIBS =        \
-	-lncbi-vdb3-platform \
-	-L$(LIBDIR)       \
-	$(TESTLIBS)
-
-$(TSTDIR)/json-test: $(TSTDIR) $(OBJDIR) $(JSON_TSTOBJ) $(MAKEFILE)
-	$(GPP) -g -o $@ $(JSON_TSTOBJ) $(JSONTESTLIBS)
-
-$(TSTDIR)/json-test.passed: $(TSTDIR)/json-test
-	$< > $<.result && touch $@ || ( cat $<.result && false )
-
 ## ncbi-jwa
 LIBJWASRC =        \
 	jwa-rsa        \
@@ -286,11 +224,9 @@ JWA_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWA_TSTSRC)))
 
 JWATESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-json-dbg.a
 
 JWATESTLIBS =         \
 	-L$(LIBDIR)       \
-	-lncbi-json-dbg   \
 	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
@@ -331,11 +267,9 @@ JWK_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWK_TSTSRC)))
 
 JWKTESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-json-dbg.a
 
 JWKTESTLIBS =         \
 	-L$(LIBDIR)       \
-	-lncbi-json-dbg   \
 	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
@@ -374,7 +308,6 @@ JWS_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWS_TSTSRC)))
 
 JWSTESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a
 
@@ -382,7 +315,6 @@ JWSTESTLIBS =         \
 	-L$(LIBDIR)       \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
-	-lncbi-json-dbg   \
 	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
@@ -420,7 +352,6 @@ JWE_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWE_TSTSRC)))
 
 JWETESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a
 
@@ -428,7 +359,6 @@ JWETESTLIBS =         \
 	-L$(LIBDIR)       \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
-	-lncbi-json-dbg   \
 	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
@@ -469,7 +399,6 @@ JWT_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWT_TSTSRC)))
 
 JWTTESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a    \
 	$(LIBDIR)/libncbi-jws-dbg.a    \
@@ -481,7 +410,6 @@ JWTTESTLIBS =         \
 	-lncbi-jws-dbg    \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
-	-lncbi-json-dbg   \
 	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
@@ -511,12 +439,6 @@ JWTTOOLSRC =            \
 	init-jwt-tool       \
 	exec-jwt-tool       \
 	cleanup-jwt-tool    \
-	env                 \
-	cmdline             \
-	log                 \
-	log-local           \
-	logger              \
-	fmt
 
 JWTTOOLDBGOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWTTOOLSRC)))
@@ -525,7 +447,6 @@ JWTTOOLRELOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(OBJX),$(JWTTOOLSRC)))
 
 JWTTOOLDBGDEPLIBS =                \
-	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a    \
 	$(LIBDIR)/libncbi-jws-dbg.a    \
@@ -539,12 +460,10 @@ JWTTOOLDBGLIBS =      \
 	-lncbi-jws-dbg    \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
-	-lncbi-json-dbg   \
 	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 JWTTOOLRELDEPLIBS =                \
-	$(LIBDIR)/libncbi-json-rel.a   \
 	$(LIBDIR)/libncbi-jwa-rel.a    \
 	$(LIBDIR)/libncbi-jwk-rel.a    \
 	$(LIBDIR)/libncbi-jws-rel.a    \
@@ -558,7 +477,6 @@ JWTTOOLRELLIBS =      \
 	-lncbi-jws-rel    \
 	-lncbi-jwk-rel    \
 	-lncbi-jwa-rel    \
-	-lncbi-json-rel   \
 	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
@@ -633,5 +551,5 @@ clean:
 
 test: $(LIBSECTESTS) $(LIBJSONTESTS) $(LIBJWATESTS) $(LIBJWKTESTS) $(LIBJWSTESTS) $(LIBJWETESTS) $(LIBJWTTESTS) $(JWTTOOLTESTS)
 
-.PHONY: default all ncbi-json ncbi-jwt ncbi-token jwt-tool mbedtls utf8proc
+.PHONY: default all ncbi-jwt ncbi-token jwt-tool
 

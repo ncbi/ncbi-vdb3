@@ -47,7 +47,7 @@
 namespace ncbi
 {
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * FmtWriter
      */
     struct FmtWriter
@@ -62,7 +62,7 @@ namespace ncbi
         virtual ~ FmtWriter () {}
     };
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * Fmt
      */
     class Fmt
@@ -154,7 +154,7 @@ namespace ncbi
     // this is how to indicate flushing
     Fmt & flushm ( Fmt & f );
 
-    
+
     // somehow, placing these as global operators helps
     // with C++ ostream, so I won't argue
     inline Fmt & operator << ( Fmt & f, char c )

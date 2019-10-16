@@ -26,7 +26,7 @@
  *
  */
 
-#include "logging.hpp"
+#include <ncbi/logging.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -201,5 +201,5 @@ namespace ncbi
             }
         }
     }
-    
+
 }

@@ -28,8 +28,8 @@
 
 #include <ncbi/secure/except.hpp>
 
-#include "env.hpp"
-#include "logging.hpp"
+#include <ncbi/env.hpp>
+#include <ncbi/logging.hpp>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -251,5 +251,5 @@ namespace ncbi
     {
         dad = 0;
     }
-    
+
 }

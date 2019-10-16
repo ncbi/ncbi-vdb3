@@ -183,7 +183,7 @@ namespace ncbi
         {
             gJWARegistry . doNothing ();
         }
-        
+
     } hmac_registry;
 
     void includeJWA_hmac ( bool always_false )

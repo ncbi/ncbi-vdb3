@@ -34,7 +34,7 @@
 #include <ncbi/jwk.hpp>
 #include <ncbi/jwt.hpp>
 
-#include "logging.hpp"
+#include <ncbi/logging.hpp>
 
 #include <vector>
 
@@ -43,24 +43,24 @@ namespace ncbi
     enum JWTMode
     {
         decode = 1,
-        sign, 
+        sign,
         examine,
         import_pem,
         gen_key
     };
-    
+
     struct ParamBlock
     {
         void getInputParams ();
         void validate ( JWTMode mode );
         void validatePolicySettings ();
-        
+
         ParamBlock ();
-        
+
         ~ ParamBlock ()
             {
             }
-        
+
         std :: vector <String> keyType;
         std :: vector <String> keyCurve;
         std :: vector <String> keyUse;
@@ -74,7 +74,7 @@ namespace ncbi
         std :: vector <String> jwsPolicySettings;
         std :: vector <String> jwtPolicySettings;
 
-        
+
         I64 duration;
 
         U32 numDurationOpts;
@@ -85,14 +85,14 @@ namespace ncbi
         String privPwd;
         String alg;
     };
-    
+
     class JWTTool
     {
     public:
         JWTTool ( const ParamBlock & params, JWTMode mode );
         ~ JWTTool () noexcept;
-        
-        
+
+
         void run ();
 
     private:
@@ -108,7 +108,7 @@ namespace ncbi
         void createJWT ( const String & json );
         void decodeJWT ( const JWT & jwt );
         void examineJWT ( const JWT & jwt );
-        
+
         std :: vector <String> keyType;
         std :: vector <String> keyCurve;
         std :: vector <String> keyUse;
@@ -119,7 +119,7 @@ namespace ncbi
         std :: vector <String> pubKeyFilePaths;
         std :: vector <String> privKeyFilePaths;
         String privPwd;
-		
+
         long long int duration;
 
         JWTMode jwtMode;

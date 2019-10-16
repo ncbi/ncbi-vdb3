@@ -31,8 +31,8 @@
 
 #include <ncbi/secure/except.hpp>
 
-#include "cmdline.hpp"
-#include "env.hpp"
+#include <ncbi/cmdline.hpp>
+#include <ncbi/env.hpp>
 
 #include <iostream>
 
@@ -154,7 +154,7 @@ namespace ncbi
                 << "'"
                 );
         }
-        
+
         if ( u64 > UINT32_MAX )
         {
             throw InvalidArgument (
@@ -295,7 +295,7 @@ namespace ncbi
         {
             NULTerminatedString zlong_name ( long_name );
             NULTerminatedString zparam_name ( param_name );
-            
+
             throw LogicException (
                 XP ( XLOC, rc_param_err )
                 << "option '--"
@@ -1113,7 +1113,7 @@ namespace ncbi
                 << help_str . subString ( 0, sep )
                 << '\n'
                 ;
-                        
+
             help_str = help_str . subString ( sep + 1 );
             help_width = right_edge - help_start - 2;
 
@@ -1302,7 +1302,7 @@ namespace ncbi
                     std :: cout . fill ( ' ' );
                     std :: cout . width ( short_name_field_width );
                     std :: cout << ' ';
-                    
+
                     std :: cout
                         << "  --"
                         << opt -> long_name
@@ -1323,21 +1323,21 @@ namespace ncbi
                         << "  -"
                         << opt -> short_name
                         ;
-                    
+
                     if ( opt -> short_name . size () < longest_short_name )
                     {
                         std :: cout . fill ( ' ' );
                         std :: cout . width ( longest_short_name - opt -> short_name . size () );
                         std :: cout << ' ';
                     }
-                    
+
                     std :: cout
                         << "|--"
                         << opt -> long_name
                         ;
                     chars += short_name_field_width + opt -> long_name . size () + 2;
                 }
-                
+
                 // print option parameters
                 size_t opt_params = opt -> param_names . size ();
                 for ( size_t j = 0; j < opt_params; ++ j )
@@ -1352,7 +1352,7 @@ namespace ncbi
                             ;
                         chars = param_name . size () + 8;
                     }
-                    
+
                     std :: cout
                         << ' '
                         << param_name
@@ -1377,7 +1377,7 @@ namespace ncbi
                         ;
                     chars = 0;
                 }
-                
+
                 // fill to help start - 1
                 if ( chars < help_start )
                 {
@@ -1862,7 +1862,7 @@ namespace ncbi
 
         imports . clear ();
     }
-    
+
     void EnvImport :: addParam ( Import * import )
     {
         if ( import == 0 )

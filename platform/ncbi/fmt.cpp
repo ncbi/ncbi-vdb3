@@ -26,7 +26,7 @@
  *
  */
 
-#include "fmt.hpp"
+#include <ncbi/fmt.hpp>
 
 #include <stdio.h>
 #include <string.h>

@@ -42,7 +42,7 @@ const int LOG_WARN = LOG_WARNING;
 namespace ncbi
 {
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * Logger
      *  base class for log message processing engine
      */
@@ -77,7 +77,7 @@ namespace ncbi
     };
 
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * StreamLogger
      *  a Logger that writes to a stream
      *  such as a file or socket or to a logging daemon
@@ -99,7 +99,7 @@ namespace ncbi
     };
 
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * LocalLogger
      *  a Logger that writes simple text format
      *  to a local file or stream
@@ -127,7 +127,7 @@ namespace ncbi
     };
 
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * ProxyLogger
      *  a Logger that serializes structured format
      *  to a logging daemon process across a socket
@@ -155,7 +155,7 @@ namespace ncbi
     };
 
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * DBLogger
      *  a Logger that writes structured format
      *  directly to a database
@@ -201,7 +201,7 @@ namespace ncbi
 #endif
 
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * LoggerScope
      *  an object that fits into C++ stack cleanup
      *  that can be used to use a Logger while it is in scope
@@ -226,7 +226,7 @@ namespace ncbi
     };
 
 
-    /*-------------------------------------------------------------------
+    /**-------------------------------------------------------------------
      * Log
      *  the front-end formatter for driving a Logger
      *  caller starts message via "msg()", writes to returned Fmt,
