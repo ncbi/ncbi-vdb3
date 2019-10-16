@@ -23,7 +23,7 @@
 # ===========================================================================
 
 #
-#	Test for the VDB3 build system, subdirectory of platform/
+#	platform library, memory subproject
 #
 
 default: build

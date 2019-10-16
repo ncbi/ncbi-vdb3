@@ -9,7 +9,6 @@ SUBDIRS ?=
 include ../Makefile.env
 
 ALL_LIBS =      \
-	ncbi-secure \
 	ncbi-json   \
 	ncbi-jwa    \
 	ncbi-jwk    \
@@ -66,26 +65,9 @@ GPP ?= g++ -std=c++11
 CFLAGS += -I $(TOP)/external/utf8proc
 CFLAGS += -I $(TOP)/external/inc
 CFLAGS += -I $(TOP)/external/googletest/googletest/include
+CFLAGS += -I $(TOP)/interfaces
 
 ## rules to build object files from source
-$(OBJDIR)/%.dbg.$(OBJX): secure/%.cpp
-	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Isecure -Iutf8proc -Iinc -MD -Wall
-$(OBJDIR)/%.tst.dbg.$(OBJX): secure/%.cpp
-	$(GPP) -g -c $< -DSEC_TESTING -o $@ $(CFLAGS) -D_DEBUGGING -Isecure -Iutf8proc -Iinc -MD -Wall
-$(OBJDIR)/%.dbg.$(LOBX): secure/%.cpp
-	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
-$(OBJDIR)/%.tst.dbg.$(LOBX): secure/%.cpp
-	$(GPP) -g -c $< -DSEC_TESTING -o $@ $(CFLAGS) -D_DEBUGGING -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
-
-$(OBJDIR)/%.rel.$(OBJX): secure/%.cpp
-	$(GPP) -O3 -c $< -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -MD -Wall
-$(OBJDIR)/%.tst.rel.$(OBJX): secure/%.cpp
-	$(GPP) -O3 -c $< -DSEC_TESTING -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -MD -Wall
-$(OBJDIR)/%.rel.$(LOBX): secure/%.cpp
-	$(GPP) -O3 -c $< -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
-$(OBJDIR)/%.tst.rel.$(LOBX): secure/%.cpp
-	$(GPP) -O3 -c $< -DSEC_TESTING -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
-
 $(OBJDIR)/%.dbg.$(OBJX): json/%.cpp
 	$(GPP) -g -c $< -o $@ $(CFLAGS) -D_DEBUGGING -Ijson -Iinc -MD -Wall
 $(OBJDIR)/%.tst.dbg.$(OBJX): json/%.cpp
@@ -227,100 +209,6 @@ TESTLIBS =       \
 	$(PTHREADLIB)\
 	$(LQUADMATH) \
 
-## ncbi-secure
-LIBSECSRC =      \
-	base64       \
-	atoi         \
-	string       \
-	payload      \
-	busy         \
-	except       \
-	memset_s
-
-LIBSECDBGOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(LOBX),$(LIBSECSRC)))
-
-LIBSECRELOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBSECSRC)))
-
-#$(OBJDIR)/base64.$(LOBX): secure/base64-tables.hpp
-
-#secure/base64-tables.hpp: $(BINDIR)/gen-base64-tbl
-#	$< > $@
-
-$(BINDIR)/gen-base64-tbl: $(BINDIR) secure/gen-base64-tbl.c
-	gcc -o $@ secure/gen-base64-tbl.c -MD
-
-ncbi-secure: $(LIBDIR) $(LIBDIR)/libncbi-secure-dbg.a $(LIBDIR)/libncbi-secure-rel.a
-
-LIBSECTESTS =                       \
-	$(TSTDIR)/memset-test.passed    \
-	$(TSTDIR)/except-test.passed    \
-	$(TSTDIR)/payload-test.passed   \
-	$(TSTDIR)/string-test.passed    \
-
-$(LIBDIR)/libncbi-secure-dbg.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECDBGOBJ) $(MAKEFILE)
-	ar -rc $@ $(LIBSECDBGOBJ)
-
-$(LIBDIR)/libncbi-secure-rel.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECRELOBJ) $(MAKEFILE)
-	ar -rc $@ $(LIBSECRELOBJ)
-
-MEMSET_TSTSRC =  \
-	memset_s-tst
-
-MEMSET_TSTOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(OBJX),$(MEMSET_TSTSRC)))
-
-$(TSTDIR)/memset-test: $(TSTDIR) $(OBJDIR) $(MEMSET_TSTOBJ) $(MAKEFILE)
-	$(GPP) -O3 -o $@ $(MEMSET_TSTOBJ) $(TESTLIBS)
-
-$(TSTDIR)/memset-test.passed: $(TSTDIR)/memset-test
-	$< > $<.result && touch $@ || ( cat $<.result && false )
-
-EXCEPT_TSTSRC =  \
-	except-tst   \
-	memset_s.tst
-
-EXCEPT_TSTOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(EXCEPT_TSTSRC)))
-
-$(TSTDIR)/except-test: $(TSTDIR) $(OBJDIR) $(EXCEPT_TSTOBJ) $(MAKEFILE)
-	$(GPP) -g -o $@ $(EXCEPT_TSTOBJ) $(TESTLIBS)
-
-$(TSTDIR)/except-test.passed: $(TSTDIR)/except-test
-	$< > $<.result && touch $@ || ( cat $<.result && false )
-
-PAYLOAD_TSTSRC = \
-	payload-tst  \
-	busy.tst     \
-	except.tst   \
-	memset_s.tst
-
-PAYLOAD_TSTOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(PAYLOAD_TSTSRC)))
-
-$(TSTDIR)/payload-test: $(TSTDIR) $(OBJDIR) $(PAYLOAD_TSTOBJ) $(MAKEFILE)
-	$(GPP) -g -o $@ $(PAYLOAD_TSTOBJ) $(TESTLIBS)
-
-$(TSTDIR)/payload-test.passed: $(TSTDIR)/payload-test
-	$< > $<.result && touch $@ || ( cat $<.result && false )
-
-STRING_TSTSRC =  \
-	string-tst   \
-	payload.tst  \
-	busy.tst     \
-	except.tst   \
-	memset_s.tst
-
-STRING_TSTOBJ = \
-	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(STRING_TSTSRC)))
-
-$(TSTDIR)/string-test: $(TSTDIR) $(OBJDIR) $(STRING_TSTOBJ) $(MAKEFILE)
-	$(GPP) -g -o $@ $(STRING_TSTOBJ) $(TESTLIBS)
-
-$(TSTDIR)/string-test.passed: $(TSTDIR)/string-test
-	$< > $<.result && touch $@ || ( cat $<.result && false )
-
 ## ncbi-json
 LIBJSONSRC =       \
 	json           \
@@ -353,15 +241,12 @@ JSON_TSTSRC =  \
 JSON_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JSON_TSTSRC)))
 
-JSONTESTDEPLIBS =                  \
-	$(LIBDIR)/libncbi-secure-dbg.a
-
 JSONTESTLIBS =        \
+	-lncbi-vdb3-platform \
 	-L$(LIBDIR)       \
-	-lncbi-secure-dbg \
 	$(TESTLIBS)
 
-$(TSTDIR)/json-test: $(TSTDIR) $(OBJDIR) $(JSONTESTDEPLIBS) $(JSON_TSTOBJ) $(MAKEFILE)
+$(TSTDIR)/json-test: $(TSTDIR) $(OBJDIR) $(JSON_TSTOBJ) $(MAKEFILE)
 	$(GPP) -g -o $@ $(JSON_TSTOBJ) $(JSONTESTLIBS)
 
 $(TSTDIR)/json-test.passed: $(TSTDIR)/json-test
@@ -401,13 +286,12 @@ JWA_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWA_TSTSRC)))
 
 JWATESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-secure-dbg.a \
 	$(LIBDIR)/libncbi-json-dbg.a
 
 JWATESTLIBS =         \
 	-L$(LIBDIR)       \
 	-lncbi-json-dbg   \
-	-lncbi-secure-dbg \
+	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 $(TSTDIR)/jwa-test: $(TSTDIR) $(OBJDIR) $(JWATESTDEPLIBS) $(JWA_TSTOBJ) $(MAKEFILE)
@@ -447,13 +331,12 @@ JWK_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWK_TSTSRC)))
 
 JWKTESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-secure-dbg.a \
 	$(LIBDIR)/libncbi-json-dbg.a
 
 JWKTESTLIBS =         \
 	-L$(LIBDIR)       \
 	-lncbi-json-dbg   \
-	-lncbi-secure-dbg \
+	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 $(TSTDIR)/jwk-test: $(TSTDIR) $(OBJDIR) $(JWKTESTDEPLIBS) $(JWK_TSTOBJ) $(MAKEFILE)
@@ -491,7 +374,6 @@ JWS_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWS_TSTSRC)))
 
 JWSTESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-secure-dbg.a \
 	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a
@@ -501,7 +383,7 @@ JWSTESTLIBS =         \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
 	-lncbi-json-dbg   \
-	-lncbi-secure-dbg \
+	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 $(TSTDIR)/jws-test: $(TSTDIR) $(OBJDIR) $(JWSTESTDEPLIBS) $(JWS_TSTOBJ) $(MAKEFILE)
@@ -538,7 +420,6 @@ JWE_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWE_TSTSRC)))
 
 JWETESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-secure-dbg.a \
 	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a
@@ -548,7 +429,7 @@ JWETESTLIBS =         \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
 	-lncbi-json-dbg   \
-	-lncbi-secure-dbg \
+	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 $(TSTDIR)/jwe-test: $(TSTDIR) $(OBJDIR) $(JWETESTDEPLIBS) $(JWE_TSTOBJ) $(MAKEFILE)
@@ -588,7 +469,6 @@ JWT_TSTOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JWT_TSTSRC)))
 
 JWTTESTDEPLIBS =                   \
-	$(LIBDIR)/libncbi-secure-dbg.a \
 	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a    \
@@ -602,7 +482,7 @@ JWTTESTLIBS =         \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
 	-lncbi-json-dbg   \
-	-lncbi-secure-dbg \
+	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 $(TSTDIR)/jwt-test: $(TSTDIR) $(OBJDIR) $(JWTTESTDEPLIBS) $(JWT_TSTOBJ) $(MAKEFILE)
@@ -645,7 +525,6 @@ JWTTOOLRELOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(OBJX),$(JWTTOOLSRC)))
 
 JWTTOOLDBGDEPLIBS =                \
-	$(LIBDIR)/libncbi-secure-dbg.a \
 	$(LIBDIR)/libncbi-json-dbg.a   \
 	$(LIBDIR)/libncbi-jwa-dbg.a    \
 	$(LIBDIR)/libncbi-jwk-dbg.a    \
@@ -661,11 +540,10 @@ JWTTOOLDBGLIBS =      \
 	-lncbi-jwk-dbg    \
 	-lncbi-jwa-dbg    \
 	-lncbi-json-dbg   \
-	-lncbi-secure-dbg \
+	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 JWTTOOLRELDEPLIBS =                \
-	$(LIBDIR)/libncbi-secure-rel.a \
 	$(LIBDIR)/libncbi-json-rel.a   \
 	$(LIBDIR)/libncbi-jwa-rel.a    \
 	$(LIBDIR)/libncbi-jwk-rel.a    \
@@ -681,7 +559,7 @@ JWTTOOLRELLIBS =      \
 	-lncbi-jwk-rel    \
 	-lncbi-jwa-rel    \
 	-lncbi-json-rel   \
-	-lncbi-secure-rel \
+	-lncbi-vdb3-platform \
 	$(TESTLIBS)
 
 jwt-tool: $(BINDIR) $(TSTDIR)/jwt-tool-test.passed $(BINDIR)/jwt-tool-dbg $(BINDIR)/jwt-tool-rel

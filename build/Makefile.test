@@ -28,6 +28,8 @@
 # before including, define TESTS to a list of test executables in the project, e.g.
 # TESTS = test1 test2
 
+CFLAGS_COMMON += -I $(TOP)/external/googletest/googletest/include
+
 include $(TOP)/build/Makefile.env
 
 # build/run all test projects
@@ -43,7 +45,7 @@ clean:
 	rm -rf $(ALL_TESTS)
 
 test: build
-	$(warning ALL_TESTS=$(ALL_TESTS))$(foreach Exe,$(ALL_TESTS), echo "Running $(Exe)"; $(Exe) --gtest_output=xml; )
+	$(foreach Exe,$(ALL_TESTS), echo "Running $(Exe)"; $(Exe) --gtest_output=xml; )
 
 vg: build
 	$(foreach Exe,$(ALL_TESTS), valgrind --leak-check=full $(Exe) --gtest_output=xml; )

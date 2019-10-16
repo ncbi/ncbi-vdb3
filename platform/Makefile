@@ -33,7 +33,7 @@ default: build
 
 TOP ?= $(abspath ..)
 MODULE = platform
-SUBDIRS ?= memory
+SUBDIRS ?= memory secure
 
 include $(TOP)/$(MODULE)/Makefile.env
 
