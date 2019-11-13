@@ -1400,14 +1400,14 @@ namespace ncbi
     {
     }
 
-    String & String :: operator = ( const String && s )
+    String & String :: operator = ( String && s )
     {
         str = std :: move ( s . str );
         cnt = s . cnt;
         return * this;
     }
 
-    String :: String ( const String && s )
+    String :: String ( String && s )
         : str ( std :: move ( s . str ) )
         , cnt ( s . cnt )
     {
@@ -1801,16 +1801,16 @@ namespace ncbi
         xright = left + len;                  \
     } while ( 0 )
 
-#define STRING_IT_FIND_DECLARE_VARS_1( ... )      \
-    size_t pos;                                   \
-    __VA_ARGS__;                                  \
-    do {                                          \
-        if ( str == nullptr )                     \
-            return false;                         \
-        if ( len == 0 || ( count_t ) idx >= cnt ) \
-            return false;                         \
-        left = idx;                               \
-        STRING_IT_FIND_CALC_VARS_1 ();            \
+#define STRING_IT_FIND_DECLARE_VARS_1( ... )       \
+    size_t pos;                                    \
+    __VA_ARGS__;                                   \
+    do {                                           \
+        if ( str == nullptr )                      \
+            return false;                          \
+        if ( len == 0 || idx >= ( long int ) cnt ) \
+            return false;                          \
+        left = idx;                                \
+        STRING_IT_FIND_CALC_VARS_1 ();             \
     } while ( 0 )
 
 #define STRING_IT_FIND_CALC_VARS_2()          \
@@ -1822,18 +1822,18 @@ namespace ncbi
         assert ( left <= xright );            \
     } while ( 0 )
 
-#define STRING_IT_FIND_DECLARE_VARS_2( ... )             \
-    size_t pos;                                          \
-    __VA_ARGS__;                                         \
-    do {                                                 \
-        DETECT_MISMATCHED_STRINGS ( xend );              \
-        if ( idx >= xend . idx )                         \
-            return false;                                \
-        if ( xend . idx <= 0 || ( count_t ) idx >= cnt ) \
-            return false;                                \
-        left = idx;                                      \
-        xright = xend . idx;                             \
-        STRING_IT_FIND_CALC_VARS_2 ();                   \
+#define STRING_IT_FIND_DECLARE_VARS_2( ... )              \
+    size_t pos;                                           \
+    __VA_ARGS__;                                          \
+    do {                                                  \
+        DETECT_MISMATCHED_STRINGS ( xend );               \
+        if ( idx >= xend . idx )                          \
+            return false;                                 \
+        if ( xend . idx <= 0 || idx >= ( long int ) cnt ) \
+            return false;                                 \
+        left = idx;                                       \
+        xright = xend . idx;                              \
+        STRING_IT_FIND_CALC_VARS_2 ();                    \
     } while ( 0 )
     
 #define STRING_IT_FIND_DECLARE_VARS_3( meth, query, ... )    \
@@ -1842,7 +1842,7 @@ namespace ncbi
     do {                                                     \
         if ( str == nullptr )                                \
             return false;                                    \
-        if ( len == 0 || idx >= cnt )                        \
+        if ( len == 0 || idx >= ( long int ) cnt )           \
             return false;                                    \
         if ( ! isAscii () || ! is_ascii ( query ) )          \
             return meth ( String ( query ), len );           \
@@ -1857,7 +1857,7 @@ namespace ncbi
         DETECT_MISMATCHED_STRINGS ( xend );                  \
         if ( idx >= xend . idx )                             \
             return false;                                    \
-        if ( xend . idx <= 0 || idx >= cnt )                 \
+        if ( xend . idx <= 0 || idx >= ( long int ) cnt )    \
             return false;                                    \
         if ( ! isAscii () || ! is_ascii ( query ) )          \
             return meth ( String ( query ), xend );          \
@@ -1882,7 +1882,7 @@ namespace ncbi
         off = idx = pos + left;                                       \
         return true;                                                  \
     } while ( 0 )
-
+    
 #define STRING_IT_FIND_UTF8_RETURN_1( meth, str, query )            \
     do {                                                            \
         size_t start = off;                                         \
@@ -1904,21 +1904,21 @@ namespace ncbi
         idx = string_length ( str -> data () + start, pos ) + left; \
         return true;                                                \
     } while ( 0 )
-
-#define STRING_IT_FIND_UTF8_RETURN_2( meth, str, query )           \
-    do {                                                           \
-        size_t start = off;                                        \
-        if ( idx < 0 )                                             \
-            start = 0;                                             \
-        assert ( ( size_t )  xend . off > start );                 \
-        size_t stop = xend . off;                                  \
-        size_t size = stop - start;                                \
+    
+#define STRING_IT_FIND_UTF8_RETURN_2( meth, str, query )            \
+    do {                                                            \
+        size_t start = off;                                         \
+        if ( idx < 0 )                                              \
+            start = 0;                                              \
+        assert ( xend . off > ( long int ) start );                 \
+        size_t stop = xend . off;                                   \
+        size_t size = stop - start;                                 \
         pos = str -> substr ( start, size ) . meth ( query );       \
         if ( pos == str -> npos )                                   \
-            return false;                                          \
-        off = start + pos;                                         \
+            return false;                                           \
+        off = start + pos;                                          \
         idx = string_length ( str -> data () + start, pos ) + left; \
-        return true;                                               \
+        return true;                                                \
     } while ( 0 )
 
 #define STRING_IT_RFIND_CALC_VARS_1()         \
@@ -1929,7 +1929,7 @@ namespace ncbi
             len = xright;                     \
         left = xright - len;                  \
     } while ( 0 )
-
+    
 #define STRING_IT_RFIND_DECLARE_VARS_1( ... ) \
     size_t pos;                               \
     __VA_ARGS__;                              \
@@ -1951,32 +1951,32 @@ namespace ncbi
         assert ( left <= xright );            \
     } while ( 0 )
 
-#define STRING_IT_RFIND_DECLARE_VARS_2( ... )           \
-    size_t pos;                                         \
-    __VA_ARGS__;                                        \
-    do {                                                \
-        DETECT_MISMATCHED_STRINGS ( end );              \
-        if ( end . idx >= idx )                         \
-            return false;                               \
-        if ( idx <= 0 || end . idx >= cnt )             \
-            return false;                               \
-        left = end . idx;                               \
-        xright = idx;                                   \
-        STRING_IT_RFIND_CALC_VARS_2();                  \
+#define STRING_IT_RFIND_DECLARE_VARS_2( ... )            \
+    size_t pos;                                          \
+    __VA_ARGS__;                                         \
+    do {                                                 \
+        DETECT_MISMATCHED_STRINGS ( end );               \
+        if ( end . idx >= idx )                          \
+            return false;                                \
+        if ( idx <= 0 || end . idx >= ( long int ) cnt ) \
+            return false;                                \
+        left = end . idx;                                \
+        xright = idx;                                    \
+        STRING_IT_RFIND_CALC_VARS_2();                   \
     } while ( 0 )
     
 #define STRING_IT_RFIND_DECLARE_VARS_3( meth, query, ... )    \
-    size_t pos;                                              \
-    __VA_ARGS__;                                             \
-    do {                                                     \
-        if ( str == nullptr )                                \
-            return false;                                    \
-        if ( len == 0 || idx <= 0 )                          \
-            return false;                                    \
-        if ( ! isAscii () || ! is_ascii ( query ) )          \
-            return meth ( String ( query ), len );           \
-        xright = idx;                                        \
-        STRING_IT_RFIND_CALC_VARS_1();                       \
+    size_t pos;                                               \
+    __VA_ARGS__;                                              \
+    do {                                                      \
+        if ( str == nullptr )                                 \
+            return false;                                     \
+        if ( len == 0 || idx <= 0 )                           \
+            return false;                                     \
+        if ( ! isAscii () || ! is_ascii ( query ) )           \
+            return meth ( String ( query ), len );            \
+        xright = idx;                                         \
+        STRING_IT_RFIND_CALC_VARS_1();                        \
     } while ( 0 )
     
 #define STRING_IT_RFIND_DECLARE_VARS_4( meth, query, ... )   \
@@ -1986,7 +1986,7 @@ namespace ncbi
         DETECT_MISMATCHED_STRINGS ( end );                   \
         if ( end . idx >= idx )                              \
             return false;                                    \
-        if ( idx <= 0 || end . idx >= cnt )                  \
+        if ( idx <= 0 || end . idx >= ( long int ) cnt )     \
             return false;                                    \
         if ( ! isAscii () || ! is_ascii ( query ) )          \
             return meth ( String ( query ), end );           \
@@ -1994,61 +1994,61 @@ namespace ncbi
         xright = idx;                                        \
         STRING_IT_RFIND_CALC_VARS_2();                       \
     } while ( 0 )
-
-#define STRING_IT_RFIND_ASCII_RETURN_1( meth, str, query, lim )      \
-    do {                                                             \
-        if ( left < lim )                                            \
-        {                                                            \
+    
+#define STRING_IT_RFIND_ASCII_RETURN_1( meth, str, query, lim )       \
+    do {                                                              \
+        if ( left < lim )                                             \
+        {                                                             \
             pos = str -> meth ( query, xright - 1 );                  \
-            if ( pos < left || pos >= xright )                       \
-                return false;                                        \
-            off = idx = pos;                                         \
-            return true;                                             \
-        }                                                            \
+            if ( pos < left || pos >= xright )                        \
+                return false;                                         \
+            off = idx = pos;                                          \
+            return true;                                              \
+        }                                                             \
         pos = str -> substr ( left, xright - left ) . meth ( query ); \
         if ( pos == str -> npos )                                     \
-            return false;                                            \
-        off = idx = pos + left;                                      \
-        return true;                                                 \
+            return false;                                             \
+        off = idx = pos + left;                                       \
+        return true;                                                  \
     } while ( 0 )
 
-#define STRING_IT_RFIND_UTF8_RETURN_1( meth, str, query )          \
-    do {                                                           \
-        size_t start = 0;                                          \
-        if ( left != 0 )                                           \
-        {                                                          \
-            start = char_idx_to_byte_off (                         \
+#define STRING_IT_RFIND_UTF8_RETURN_1( meth, str, query )           \
+    do {                                                            \
+        size_t start = 0;                                           \
+        if ( left != 0 )                                            \
+        {                                                           \
+            start = char_idx_to_byte_off (                          \
                 str -> data (),                                     \
                 str -> size (),                                     \
-                left );                                            \
-        }                                                          \
-        assert ( ( size_t ) off > start );                         \
-        size_t stop = off;                                         \
-        size_t size = stop - start;                                \
+                left );                                             \
+        }                                                           \
+        assert ( ( size_t ) off > start );                          \
+        size_t stop = off;                                          \
+        size_t size = stop - start;                                 \
         pos = str -> substr ( start, size ) . meth ( query );       \
         if ( pos == str -> npos )                                   \
-            return false;                                          \
-        off = start + pos;                                         \
+            return false;                                           \
+        off = start + pos;                                          \
         idx = string_length ( str -> data () + start, pos ) + left; \
-        return true;                                               \
+        return true;                                                \
     } while ( 0 )
-
-#define STRING_IT_RFIND_UTF8_RETURN_2( meth, str, query )          \
-    do {                                                           \
-        size_t start = end . off;                                  \
-        if ( end . idx < 0 )                                       \
-            start = 0;                                             \
-        assert ( ( size_t )  off > start );                        \
-        size_t stop = off;                                         \
-        size_t size = stop - start;                                \
+    
+#define STRING_IT_RFIND_UTF8_RETURN_2( meth, str, query )           \
+    do {                                                            \
+        size_t start = end . off;                                   \
+        if ( end . idx < 0 )                                        \
+            start = 0;                                              \
+        assert ( ( size_t )  off > start );                         \
+        size_t stop = off;                                          \
+        size_t size = stop - start;                                 \
         pos = str -> substr ( start, size ) . meth ( query );       \
         if ( pos == str -> npos )                                   \
-            return false;                                          \
-        off = start + pos;                                         \
+            return false;                                           \
+        off = start + pos;                                          \
         idx = string_length ( str -> data () + start, pos ) + left; \
-        return true;                                               \
+        return true;                                                \
     } while ( 0 )
-
+    
 
     bool String :: Iterator :: find ( const String & sub, count_t len )
     {
@@ -2176,7 +2176,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( idx < ( long int ) cnt );
             return true;
         }
 
@@ -2230,7 +2230,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( idx < ( long int ) cnt );
             return true;
         }
 
@@ -2280,7 +2280,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( idx < ( long int ) cnt );
             return true;
         }
 
@@ -2299,7 +2299,7 @@ namespace ncbi
                 idx = 0;
                 off = 0;
             }
-            assert ( idx < cnt );
+            assert ( idx < ( long int ) cnt );
             return true;
         }
 
@@ -2312,10 +2312,10 @@ namespace ncbi
 
         if ( cset . isEmpty () )
         {
-            if ( idx >= cnt )
+            if ( idx >= ( long int ) cnt )
             {
                 // seek right edge
-                idx = cnt;
+                idx = ( long int ) cnt;
                 off = str -> size ();
 
                 // back up by one
@@ -2362,9 +2362,9 @@ namespace ncbi
 
         if ( cset . isEmpty () )
         {
-            if ( idx >= cnt )
+            if ( idx >= ( long int ) cnt )
             {
-                idx = cnt;
+                idx = ( long int ) cnt;
                 off = str -> size ();
                 -- ( * this );
             }
@@ -2499,11 +2499,11 @@ namespace ncbi
             count_t avail = cnt - idx;
 
             // amount to measure is shorter of "avail" or "adjust"
-            count_t amt = ( avail > adjust ) ? adjust : avail;
+            count_t amt = ( avail > ( count_t ) adjust ) ? ( count_t ) adjust : avail;
 
             // the number of extra characters off end of string
             count_t extra = avail - amt;
-            if ( adjust >= avail )
+            if ( ( count_t ) adjust >= avail )
             {
                 // add in any overage
                 off = str -> size () + extra;
@@ -2539,11 +2539,11 @@ namespace ncbi
             count_t avail = idx;
 
             // amount to measure is shorter of "avail" or "adjust"
-            count_t amt = ( avail > adjust ) ? adjust : avail;
+            count_t amt = ( avail > ( count_t ) adjust ) ? ( count_t ) adjust : avail;
 
             // the number of extra characters off end of string
             count_t extra = avail - amt;
-            if ( adjust >= avail )
+            if ( ( count_t ) adjust >= avail )
             {
                 off = 0L - extra;
             }
@@ -2591,7 +2591,7 @@ namespace ncbi
     {
     }
 
-    String :: Iterator & String :: Iterator :: operator = ( const Iterator && it )
+    String :: Iterator & String :: Iterator :: operator = ( Iterator && it )
     {
         str = std :: move ( it . str );
         cnt = it . cnt;
@@ -2600,7 +2600,7 @@ namespace ncbi
         return * this;
     }
 
-    String :: Iterator :: Iterator ( const Iterator && it )
+    String :: Iterator :: Iterator ( Iterator && it )
         : str ( std :: move ( it . str ) )
         , cnt ( it . cnt )
         , idx ( it . idx )
@@ -2659,13 +2659,13 @@ namespace ncbi
     {
     }
 
-    NULTerminatedString & NULTerminatedString :: operator = ( const NULTerminatedString && zs )
+    NULTerminatedString & NULTerminatedString :: operator = ( NULTerminatedString && zs )
     {
         String :: operator = ( std :: move ( zs ) );
         return * this;
     }
 
-    NULTerminatedString :: NULTerminatedString ( const NULTerminatedString && zs )
+    NULTerminatedString :: NULTerminatedString ( NULTerminatedString && zs )
         : String ( std :: move ( zs ) )
     {
     }
@@ -3002,7 +3002,7 @@ namespace ncbi
         str = sb . str;
     }
 
-    StringBuffer & StringBuffer :: operator = ( const StringBuffer && sb )
+    StringBuffer & StringBuffer :: operator = ( StringBuffer && sb )
     {
         XLocker lock1 ( busy );
         SLocker lock2 ( sb . busy );
@@ -3010,7 +3010,7 @@ namespace ncbi
         return * this;
     }
 
-    StringBuffer :: StringBuffer ( const StringBuffer && sb )
+    StringBuffer :: StringBuffer ( StringBuffer && sb )
     {
         XLocker lock ( sb . busy );
         str = sb . str;
