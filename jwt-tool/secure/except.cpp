@@ -576,7 +576,7 @@ namespace ncbi
         bt . cur_frame = 0;
     }
 
-    void XBackTrace :: operator = ( const XBackTrace && bt ) noexcept
+    void XBackTrace :: operator = ( XBackTrace && bt ) noexcept
     {
         if ( frames != nullptr )
             free ( ( void * ) frames );
@@ -590,7 +590,7 @@ namespace ncbi
         bt . cur_frame = 0;
     }
 
-    XBackTrace :: XBackTrace ( const XBackTrace && bt ) noexcept
+    XBackTrace :: XBackTrace ( XBackTrace && bt ) noexcept
         : frames ( bt . frames )
         , num_frames ( bt . num_frames )
         , cur_frame ( bt . cur_frame )

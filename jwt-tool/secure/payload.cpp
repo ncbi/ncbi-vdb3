@@ -153,7 +153,7 @@ namespace ncbi
         return * this;
     }
 
-    Payload & Payload :: operator = ( const Payload && payload )
+    Payload & Payload :: operator = ( Payload && payload )
     {
         XLocker lock1 ( busy );
         XLocker lock2 ( payload . busy );
@@ -181,7 +181,7 @@ namespace ncbi
         payload . sz = payload . cap = 0;
     }
 
-    Payload :: Payload ( const Payload && payload )
+    Payload :: Payload ( Payload && payload )
         : buff ( nullptr )
         , sz ( payload . sz )
         , cap ( payload . cap )

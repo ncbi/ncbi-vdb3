@@ -345,9 +345,9 @@ namespace ncbi
         JWK ( const JSONObjectRef & props );
 
         void operator = ( const JWK & jwk ) = delete;
-        void operator = ( const JWK && jwk ) = delete;
+        void operator = ( JWK && jwk ) = delete;
         JWK ( const JWK & jwk ) = delete;
-        JWK ( const JWK && jwk ) = delete;
+        JWK ( JWK && jwk ) = delete;
         JWK () = delete;
 
         JSONObjectRef props;
@@ -459,7 +459,7 @@ namespace ncbi
          * Will delete any current contents.
          * Moves contents of source set.
          */
-        JWKSet & operator = ( const JWKSet && ks );
+        JWKSet & operator = ( JWKSet && ks );
 
         /**
          * JWKSet
@@ -477,7 +477,7 @@ namespace ncbi
          *
          * Moves contents of source set.
          */
-        JWKSet ( const JWKSet && ks );
+        JWKSet ( JWKSet && ks );
 
         /**
          * ~JWKSet

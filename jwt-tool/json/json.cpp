@@ -616,14 +616,15 @@ namespace ncbi
     {
         count_t pos = curs . charIndex ();
 
-        bool which;
+        bool which = false;
+        bool known = false;
         do
         {
             try
             {
                 if ( * curs == 't' )
                 {
-                    which = true;
+                    which = known = true;
                     if ( * ++ curs != 'r' )
                         break;
                     if ( * ++ curs != 'u' )
@@ -633,7 +634,7 @@ namespace ncbi
                 }
                 else
                 {
-                    which = false;
+                    known = true;
                     assert ( * curs == 'f' );
                     if ( * ++ curs != 'a' )
                         break;
@@ -664,7 +665,7 @@ namespace ncbi
         throw MalformedJSON (
             XP ( XLOC )
             << "Expected keyword: '"
-            << ( which ? "true" : "false" )
+            << ( known ? ( which ? "true" : "false" ) : "true' or 'false" )
             << "' at position "
             << pos
             ) ;
