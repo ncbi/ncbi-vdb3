@@ -34,8 +34,6 @@
 #define __STDC_FORMAT_MACROS
 #include <cinttypes>
 
-#undef memcpy // Code never copies overlapping regions
-
 namespace VDB3 {
 class Random final // Very fast RNG
 {
