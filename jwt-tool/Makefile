@@ -70,10 +70,18 @@ $(OBJDIR)/%.tst.dbg.$(LOBX): secure/%.cpp
 
 $(OBJDIR)/%.rel.$(OBJX): secure/%.cpp
 	$(GPP) -O3 -c $< -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -Igoogletest/googletest/include -MD -Wall
+$(OBJDIR)/%.no-atomic.rel.$(OBJX): secure/%.cpp
+	$(GPP) -O3 -c $< -o $@ -DNO_ATOMIC_OPS $(CFLAGS) -Isecure -Iutf8proc -Iinc -Igoogletest/googletest/include -MD -Wall
+$(OBJDIR)/%.no-busy.rel.$(OBJX): secure/%.cpp
+	$(GPP) -O3 -c $< -o $@ -DNO_BUSY_LOCK $(CFLAGS) -Isecure -Iutf8proc -Iinc -Igoogletest/googletest/include -MD -Wall
 $(OBJDIR)/%.tst.rel.$(OBJX): secure/%.cpp
 	$(GPP) -O3 -c $< -DSEC_TESTING -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -MD -Wall
 $(OBJDIR)/%.rel.$(LOBX): secure/%.cpp
 	$(GPP) -O3 -c $< -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.no-atomic.rel.$(LOBX): secure/%.cpp
+	$(GPP) -O3 -c $< -o $@ -DNO_ATOMIC_OPS $(CFLAGS) -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
+$(OBJDIR)/%.no-busy.rel.$(LOBX): secure/%.cpp
+	$(GPP) -O3 -c $< -o $@ -DNO_BUSY_LOCK $(CFLAGS) -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
 $(OBJDIR)/%.tst.rel.$(LOBX): secure/%.cpp
 	$(GPP) -O3 -c $< -DSEC_TESTING -o $@ $(CFLAGS) -Isecure -Iutf8proc -Iinc -fPIC -MD -Wall
 
@@ -269,11 +277,35 @@ LIBSECSRC =      \
 	except       \
 	memset_s
 
+LIBSECNOATOMSRC = \
+	base64       \
+	atoi         \
+	string       \
+	payload      \
+	busy.no-atomic \
+	except       \
+	memset_s
+
+LIBSECNOBUSYSRC = \
+	base64       \
+	atoi         \
+	string       \
+	payload      \
+	busy.no-busy \
+	except       \
+	memset_s
+
 LIBSECDBGOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(LOBX),$(LIBSECSRC)))
 
 LIBSECRELOBJ = \
 	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBSECSRC)))
+
+LIBSECRELNOATOMOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBSECNOATOMSRC)))
+
+LIBSECRELNOBUSYOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBSECNOBUSYSRC)))
 
 #$(OBJDIR)/base64.$(LOBX): secure/base64-tables.hpp
 
@@ -283,7 +315,8 @@ LIBSECRELOBJ = \
 $(BINDIR)/gen-base64-tbl: $(BINDIR) secure/gen-base64-tbl.c
 	gcc -o $@ secure/gen-base64-tbl.c -MD
 
-ncbi-secure: $(LIBDIR) $(LIBDIR)/libncbi-secure-dbg.a $(LIBDIR)/libncbi-secure-rel.a
+ncbi-secure: $(LIBDIR) $(LIBDIR)/libncbi-secure-dbg.a $(LIBDIR)/libncbi-secure-rel.a \
+	 $(LIBDIR)/libncbi-secure-rel-no-atomic.a  $(LIBDIR)/libncbi-secure-rel-no-busy.a
 
 LIBSECTESTS =                       \
 	$(TSTDIR)/memset-test.passed    \
@@ -296,6 +329,12 @@ $(LIBDIR)/libncbi-secure-dbg.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECDBGOBJ) $(MAKEF
 
 $(LIBDIR)/libncbi-secure-rel.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECRELOBJ) $(MAKEFILE)
 	ar -rc $@ $(LIBSECRELOBJ)
+
+$(LIBDIR)/libncbi-secure-rel-no-atomic.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECRELNOATOMOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBSECRELNOATOMOBJ)
+
+$(LIBDIR)/libncbi-secure-rel-no-busy.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECRELNOBUSYOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBSECRELNOBUSYOBJ)
 
 MEMSET_TSTSRC =  \
 	memset_s-tst \

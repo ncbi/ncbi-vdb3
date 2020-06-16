@@ -62,7 +62,12 @@ namespace ncbi
         void release ();
 
         // this will probably be changed for r/w locking
+#if NO_ATOMIC_OPS || NO_BUSY_LOCK || 1
+#define BUSY_IS_BOOL 1
+        mutable bool busy;
+#else
         mutable std :: atomic_flag busy;
+#endif
 
         friend class SLocker;
         friend class XLocker;

@@ -30,21 +30,51 @@
 
 namespace ncbi
 {
+#if BUSY_IS_BOOL
+    inline
+    void clear ( bool & busy )
+    {
+        busy = false;
+    }
+
+    inline
+    bool test_and_set ( bool & busy )
+    {
+        bool prior = busy;
+        busy = true;
+        return prior;
+    }
+#else
+    inline
+    void clear ( std :: atomic_flag & busy )
+    {
+        busy . clear ();
+    }
+
+    inline
+    bool test_and_set ( std :: atomic_flag & busy )
+    {
+        return busy . test_and_set ();
+    }
+#endif
 
     BusyLock :: BusyLock ()
     {
-        busy . clear ();
+        clear ( busy );
     }
 
     BusyLock :: ~ BusyLock ()
     {
         // TBD - detect cases where value was true
         // and... throw? log?
+#if BUSY_IS_BOOL
+        busy = false;
+#endif
     }
 
     BusyLock & BusyLock :: acquireShared () const
     {
-        if ( busy . test_and_set () )
+        if ( test_and_set ( busy ) )
         {
             throw ObjectBusyException (
                 XP ( XLOC )
@@ -57,7 +87,7 @@ namespace ncbi
 
     BusyLock & BusyLock :: acquireExclusive () const
     {
-        if ( busy . test_and_set () )
+        if ( test_and_set ( busy ) )
         {
             throw ObjectBusyException (
                 XP ( XLOC )
@@ -72,6 +102,6 @@ namespace ncbi
     {
         // TBD - detect cases where value was false
         // but what to do?
-        busy . clear ();
+        clear ( busy );
     }
 }
