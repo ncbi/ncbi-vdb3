@@ -83,7 +83,7 @@ namespace ncbi
             sz = amt;
         }
     }
-    
+
     void Payload :: increaseCapacity ( size_t amt )
     {
         XLocker lock ( busy );
@@ -147,7 +147,7 @@ namespace ncbi
         buff = payload . buff;
         sz = payload . sz;
         cap = payload . cap;
-        
+
         payload . buff = nullptr;
         payload . sz = payload . cap = 0;
 
@@ -164,7 +164,7 @@ namespace ncbi
         buff = payload . buff;
         sz = payload . sz;
         cap = payload . cap;
-        
+
         payload . buff = nullptr;
         payload . sz = payload . cap = 0;
 
@@ -211,6 +211,8 @@ namespace ncbi
     Payload :: ~ Payload () noexcept
     {
         wipe ();
+
+        delete [] buff;
     }
-    
+
 }
