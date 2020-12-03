@@ -33,7 +33,7 @@ default: build
 
 TOP ?= $(abspath ..)
 MODULE = platform
-SUBDIRS ?=
+SUBDIRS ?= memory
 
 include $(TOP)/$(MODULE)/Makefile.env
 
@@ -41,11 +41,9 @@ LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
 
 SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
 
-build:
+build: makedirs
 	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
 
 clean:
 	@ rm -rf $(LIBRARY)
-
-
 
