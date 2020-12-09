@@ -137,9 +137,9 @@ namespace ncbi
             Policy ();
 
             Policy & operator = ( const Policy & p );
-            Policy & operator = ( const Policy && p ) = delete;
+            Policy & operator = ( Policy && p ) = delete;
             Policy ( const Policy & p );
-            Policy ( const Policy && p ) = delete;
+            Policy ( Policy && p ) = delete;
             ~ Policy ();
 
             // JOSE validation policy

@@ -176,7 +176,7 @@ namespace ncbi
          * operator=
          * @overload move operator
          */
-        Exception & operator = ( const Exception && x ) = delete;
+        Exception & operator = ( Exception && x ) = delete;
 
         /**
          * Exception
@@ -188,7 +188,7 @@ namespace ncbi
          * Exception
          * @overload move constructor
          */
-        Exception ( const Exception && x ) = delete;
+        Exception ( Exception && x ) = delete;
 
         /**
          * Exception
@@ -283,10 +283,10 @@ namespace ncbi
              ReturnCodes status = rc_runtime_err );
 
         XP & operator = ( const XP & xp ) = delete;
-        XP & operator = ( const XP && xp ) = delete;
+        XP & operator = ( XP && xp ) = delete;
 
         XP ( const XP & xp ) = delete;
-        XP ( const XP && xp ) = delete;
+        XP ( XP && xp ) = delete;
 
         ~ XP ();
 
@@ -335,8 +335,8 @@ namespace ncbi
         void operator = ( const XBackTrace & bt ) noexcept;
         XBackTrace ( const XBackTrace & bt ) noexcept;
 
-        void operator = ( const XBackTrace && bt ) noexcept;
-        XBackTrace ( const XBackTrace && bt ) noexcept;
+        void operator = ( XBackTrace && bt ) noexcept;
+        XBackTrace ( XBackTrace && bt ) noexcept;
 
         XBackTrace ( const Exception & x ) noexcept;
 

@@ -313,9 +313,9 @@ namespace ncbi
             Policy ();
 
             Policy & operator = ( const Policy & p );
-            Policy & operator = ( const Policy && p ) = delete;
+            Policy & operator = ( Policy && p ) = delete;
             Policy ( const Policy & p );
-            Policy ( const Policy && p ) = delete;
+            Policy ( Policy && p ) = delete;
             ~ Policy ();
 
             // clock skew
@@ -690,7 +690,7 @@ namespace ncbi
          * Will delete/overwrite any current contents.
          * moves the contents of source claim set.
          */
-        UnverifiedJWTClaims & operator = ( const UnverifiedJWTClaims && claims );
+        UnverifiedJWTClaims & operator = ( UnverifiedJWTClaims && claims );
 
         /**
          * @fn UnverifiedJWTClaims
@@ -708,7 +708,7 @@ namespace ncbi
          *
          * Moves contents of source claim set.
          */
-        UnverifiedJWTClaims ( const UnverifiedJWTClaims && claims );
+        UnverifiedJWTClaims ( UnverifiedJWTClaims && claims );
 
         /**
          * @fn ~UnverifiedJWTClaims
@@ -1078,7 +1078,7 @@ namespace ncbi
          * Will delete any current contents.
          * Moves the contents of source claim set.
          */
-        JWTClaimSet & operator = ( const JWTClaimSet && claims );
+        JWTClaimSet & operator = ( JWTClaimSet && claims );
 
         /**
          * @fn JWTClaimSet
@@ -1096,7 +1096,7 @@ namespace ncbi
          *
          * Moves contents of source claim set.
          */
-        JWTClaimSet ( const JWTClaimSet && claims );
+        JWTClaimSet ( JWTClaimSet && claims );
 
         /**
          * @fn ~JWTClaimSet
@@ -1570,7 +1570,7 @@ namespace ncbi
          * Will delete any current contents, failing if locked.
          * Moves contents of source claim set, failing if source is locked.
          */
-        JWTClaimSetBuilder & operator = ( const JWTClaimSetBuilder && claims );
+        JWTClaimSetBuilder & operator = ( JWTClaimSetBuilder && claims );
 
         /**
          * @fn JWTClaimSetBuilder
@@ -1590,7 +1590,7 @@ namespace ncbi
          *
          * Moves contents of source object, failing if source is locked.
          */
-        JWTClaimSetBuilder ( const JWTClaimSetBuilder && claims );
+        JWTClaimSetBuilder ( JWTClaimSetBuilder && claims );
 
         /**
          * @fn ~JWTClaimSetBuilder

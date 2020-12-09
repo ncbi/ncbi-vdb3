@@ -188,7 +188,7 @@ namespace ncbi
         return * this;
     }
 
-    UnverifiedJWTClaims & UnverifiedJWTClaims :: operator = ( const UnverifiedJWTClaims && ucs )
+    UnverifiedJWTClaims & UnverifiedJWTClaims :: operator = ( UnverifiedJWTClaims && ucs )
     {
         jose = std :: move ( ucs . jose );
         claims = std :: move ( ucs . claims );
@@ -204,7 +204,7 @@ namespace ncbi
     {
     }
 
-    UnverifiedJWTClaims :: UnverifiedJWTClaims ( const UnverifiedJWTClaims && ucs )
+    UnverifiedJWTClaims :: UnverifiedJWTClaims ( UnverifiedJWTClaims && ucs )
         : jose ( std :: move ( ucs . jose ) )
         , claims ( std :: move ( ucs . claims ) )
         , vkeys ( std :: move ( ucs . vkeys ) )

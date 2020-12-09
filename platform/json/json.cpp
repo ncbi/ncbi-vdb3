@@ -708,7 +708,6 @@ namespace ncbi
                 }
                 else
                 {
-                    which = false;
                     assert ( * curs == 'f' );
                     if ( * ++ curs != 'a' )
                         break;

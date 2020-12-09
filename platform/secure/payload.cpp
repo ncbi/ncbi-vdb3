@@ -83,7 +83,7 @@ namespace ncbi
             sz = amt;
         }
     }
-    
+
     void Payload :: increaseCapacity ( size_t amt )
     {
         XLocker lock ( busy );
@@ -95,7 +95,8 @@ namespace ncbi
         memset ( & new_buff [ cap ], 0, amt + 1 );
 
         // copy from old
-        memmove ( new_buff, buff, sz );
+        // only "sz" bytes have content, but cap-sz bytes have been cleared
+        memmove ( new_buff, buff, cap );
 
         // douse the old one
         delete [] buff;
@@ -146,14 +147,14 @@ namespace ncbi
         buff = payload . buff;
         sz = payload . sz;
         cap = payload . cap;
-        
+
         payload . buff = nullptr;
         payload . sz = payload . cap = 0;
 
         return * this;
     }
 
-    Payload & Payload :: operator = ( const Payload && payload )
+    Payload & Payload :: operator = ( Payload && payload )
     {
         XLocker lock1 ( busy );
         XLocker lock2 ( payload . busy );
@@ -163,7 +164,7 @@ namespace ncbi
         buff = payload . buff;
         sz = payload . sz;
         cap = payload . cap;
-        
+
         payload . buff = nullptr;
         payload . sz = payload . cap = 0;
 
@@ -181,7 +182,7 @@ namespace ncbi
         payload . sz = payload . cap = 0;
     }
 
-    Payload :: Payload ( const Payload && payload )
+    Payload :: Payload ( Payload && payload )
         : buff ( nullptr )
         , sz ( payload . sz )
         , cap ( payload . cap )
@@ -210,6 +211,8 @@ namespace ncbi
     Payload :: ~ Payload () noexcept
     {
         wipe ();
+
+        delete [] buff;
     }
-    
+
 }
