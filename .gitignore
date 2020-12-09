@@ -8,3 +8,5 @@ test_detail.xml
 vgcore.*
 core
 .gdb_history
+*.o
+*.a
