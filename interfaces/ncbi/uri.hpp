@@ -92,9 +92,9 @@ namespace ncbi
         const String & toString () const noexcept;
 
         URIScheme & operator = ( const URIScheme & s );
-        URIScheme & operator = ( const URIScheme && s );
+        URIScheme & operator = ( URIScheme && s );
         URIScheme ( const URIScheme & s );
-        URIScheme ( const URIScheme && s );
+        URIScheme ( URIScheme && s );
 
         URIScheme ();
         ~ URIScheme ();
@@ -121,9 +121,9 @@ namespace ncbi
         const String & toString () const noexcept;
 
         URIUser & operator = ( const URIUser & u );
-        URIUser & operator = ( const URIUser && u );
+        URIUser & operator = ( URIUser && u );
         URIUser ( const URIUser & u );
-        URIUser ( const URIUser && u );
+        URIUser ( URIUser && u );
 
         URIUser ();
         ~ URIUser ();
@@ -155,9 +155,9 @@ namespace ncbi
         String toString () const;
 
         URIHost & operator = ( const URIHost & h );
-        URIHost & operator = ( const URIHost && h );
+        URIHost & operator = ( URIHost && h );
         URIHost ( const URIHost & h );
-        URIHost ( const URIHost && h );
+        URIHost ( URIHost && h );
 
         URIHost ();
         ~ URIHost ();
@@ -189,9 +189,9 @@ namespace ncbi
         const String & toString () const;
 
         URIPort & operator = ( const URIPort & p );
-        URIPort & operator = ( const URIPort && p );
+        URIPort & operator = ( URIPort && p );
         URIPort ( const URIPort & p );
-        URIPort ( const URIPort && p );
+        URIPort ( URIPort && p );
 
         URIPort ();
         ~ URIPort ();
@@ -225,9 +225,9 @@ namespace ncbi
         String toString () const;
 
         URIAuth & operator = ( const URIAuth & a );
-        URIAuth & operator = ( const URIAuth && a );
+        URIAuth & operator = ( URIAuth && a );
         URIAuth ( const URIAuth & a );
-        URIAuth ( const URIAuth && a );
+        URIAuth ( URIAuth && a );
 
         URIAuth ();
         ~ URIAuth ();
@@ -263,9 +263,9 @@ namespace ncbi
         String toString () const;
 
         URIPath & operator = ( const URIPath & p );
-        URIPath & operator = ( const URIPath && p );
+        URIPath & operator = ( URIPath && p );
         URIPath ( const URIPath & p );
-        URIPath ( const URIPath && p );
+        URIPath ( URIPath && p );
 
         URIPath ();
         ~ URIPath ();
@@ -293,9 +293,9 @@ namespace ncbi
         String toString () const;
 
         URIQuery & operator = ( const URIQuery & q );
-        URIQuery & operator = ( const URIQuery && q );
+        URIQuery & operator = ( URIQuery && q );
         URIQuery ( const URIQuery & q );
-        URIQuery ( const URIQuery && q );
+        URIQuery ( URIQuery && q );
 
         URIQuery ();
         ~ URIQuery ();
@@ -322,9 +322,9 @@ namespace ncbi
         const String & toString () const noexcept;
 
         URIFrag & operator = ( const URIFrag & f );
-        URIFrag & operator = ( const URIFrag && f );
+        URIFrag & operator = ( URIFrag && f );
         URIFrag ( const URIFrag & f );
-        URIFrag ( const URIFrag && f );
+        URIFrag ( URIFrag && f );
 
         URIFrag ();
         ~ URIFrag ();
@@ -377,9 +377,9 @@ namespace ncbi
          *=================================================*/
 
         UniRsrcID & operator = ( const UniRsrcID & u );
-        UniRsrcID & operator = ( const UniRsrcID && u );
+        UniRsrcID & operator = ( UniRsrcID && u );
         UniRsrcID ( const UniRsrcID & u );
-        UniRsrcID ( const UniRsrcID && u );
+        UniRsrcID ( UniRsrcID && u );
 
         UniRsrcID ();
         ~ UniRsrcID ();

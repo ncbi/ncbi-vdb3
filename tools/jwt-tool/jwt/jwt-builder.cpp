@@ -349,7 +349,7 @@ namespace ncbi
         return * this;
     }
 
-    JWTClaimSetBuilder & JWTClaimSetBuilder :: operator = ( const JWTClaimSetBuilder && csb )
+    JWTClaimSetBuilder & JWTClaimSetBuilder :: operator = ( JWTClaimSetBuilder && csb )
     {
         XLocker lock1 ( busy );
         XLocker lock2 ( csb . busy );
@@ -366,7 +366,7 @@ namespace ncbi
         cs = csb . cs;
     }
 
-    JWTClaimSetBuilder :: JWTClaimSetBuilder ( const JWTClaimSetBuilder && csb )
+    JWTClaimSetBuilder :: JWTClaimSetBuilder ( JWTClaimSetBuilder && csb )
         : cs ( JSONObjectRef ( nullptr ), JSONObjectRef ( nullptr ) )
     {
         XLocker lock ( csb . busy );

@@ -905,14 +905,14 @@ v         * toSTLString
              * @param it the Iterator to be copied
              * @return a C++ reference to self
              */
-            Iterator & operator = ( const Iterator && it );
+            Iterator & operator = ( Iterator && it );
 
             /**
              * Iterator
              * @overload move constructor
              * @param it the Iterator to be copied
              */
-            Iterator ( const Iterator && it );
+            Iterator ( Iterator && it );
 
             /**
              * Iterator
@@ -1009,10 +1009,10 @@ v         * toSTLString
         String ( const String & s );
 
         //!< move source string
-        String & operator = ( const String && s );
+        String & operator = ( String && s );
 
         //!< steal contents of source string
-        String ( const String && s );
+        String ( String && s );
 
         //!< create an empty string
         String ();
@@ -1123,13 +1123,13 @@ v         * toSTLString
          * operator=
          * @overload move operator for a NUL terminated string
          */
-        NULTerminatedString & operator = ( const NULTerminatedString && zs );
+        NULTerminatedString & operator = ( NULTerminatedString && zs );
 
         /**
          * NULTerminatedString
          * @overload move constructor for a NUL terminated string
          */
-        NULTerminatedString ( const NULTerminatedString && zs );
+        NULTerminatedString ( NULTerminatedString && zs );
 
         /**
          * ~NULTerminatedString
@@ -1589,13 +1589,13 @@ v         * toSTLString
         StringBuffer & operator = ( const StringBuffer & s );
 
         //!< move the source
-        StringBuffer & operator = ( const StringBuffer && s );
+        StringBuffer & operator = ( StringBuffer && s );
 
         //!< create a copy of the source string
         StringBuffer ( const StringBuffer & s );
 
         //!< move the source string
-        StringBuffer ( const StringBuffer && s );
+        StringBuffer ( StringBuffer && s );
 
         //!< create an empty buffer
         StringBuffer ();

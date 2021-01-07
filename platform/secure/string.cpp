@@ -1397,14 +1397,14 @@ namespace ncbi
     {
     }
 
-    String & String :: operator = ( const String && s )
+    String & String :: operator = ( String && s )
     {
         str = std :: move ( s . str );
         cnt = s . cnt;
         return * this;
     }
 
-    String :: String ( const String && s )
+    String :: String ( String && s )
         : str ( std :: move ( s . str ) )
         , cnt ( s . cnt )
     {
@@ -1848,16 +1848,16 @@ namespace ncbi
         xright = left + len;                  \
     } while ( 0 )
 
-#define STRING_IT_FIND_DECLARE_VARS_1( ... )      \
-    size_t pos;                                   \
-    __VA_ARGS__;                                  \
-    do {                                          \
-        if ( str == nullptr )                     \
-            return false;                         \
-        if ( len == 0 || ( count_t ) idx >= cnt ) \
-            return false;                         \
-        left = idx;                               \
-        STRING_IT_FIND_CALC_VARS_1 ();            \
+#define STRING_IT_FIND_DECLARE_VARS_1( ... )       \
+    size_t pos;                                    \
+    __VA_ARGS__;                                   \
+    do {                                           \
+        if ( str == nullptr )                      \
+            return false;                          \
+        if ( len == 0 || idx >= ( long int ) cnt ) \
+            return false;                          \
+        left = idx;                                \
+        STRING_IT_FIND_CALC_VARS_1 ();             \
     } while ( 0 )
 
 #define STRING_IT_FIND_CALC_VARS_2()          \
@@ -1869,18 +1869,18 @@ namespace ncbi
         assert ( left <= xright );            \
     } while ( 0 )
 
-#define STRING_IT_FIND_DECLARE_VARS_2( ... )             \
-    size_t pos;                                          \
-    __VA_ARGS__;                                         \
-    do {                                                 \
-        DETECT_MISMATCHED_STRINGS ( xend );              \
-        if ( idx >= xend . idx )                         \
-            return false;                                \
-        if ( xend . idx <= 0 || ( count_t ) idx >= cnt ) \
-            return false;                                \
-        left = idx;                                      \
-        xright = xend . idx;                             \
-        STRING_IT_FIND_CALC_VARS_2 ();                   \
+#define STRING_IT_FIND_DECLARE_VARS_2( ... )              \
+    size_t pos;                                           \
+    __VA_ARGS__;                                          \
+    do {                                                  \
+        DETECT_MISMATCHED_STRINGS ( xend );               \
+        if ( idx >= xend . idx )                          \
+            return false;                                 \
+        if ( xend . idx <= 0 || idx >= ( long int ) cnt ) \
+            return false;                                 \
+        left = idx;                                       \
+        xright = xend . idx;                              \
+        STRING_IT_FIND_CALC_VARS_2 ();                    \
     } while ( 0 )
 
 #define STRING_IT_FIND_DECLARE_VARS_3( meth, query, ... )    \
@@ -1976,7 +1976,7 @@ namespace ncbi
             len = xright;                     \
         left = xright - len;                  \
     } while ( 0 )
-
+    
 #define STRING_IT_RFIND_DECLARE_VARS_1( ... ) \
     size_t pos;                               \
     __VA_ARGS__;                              \
@@ -2095,7 +2095,7 @@ namespace ncbi
         idx = string_length ( str -> s . data () + start, pos ) + left; \
         return true;                                                    \
     } while ( 0 )
-
+    
 
     bool String :: Iterator :: find ( const String & sub, count_t len )
     {
@@ -2638,7 +2638,7 @@ namespace ncbi
     {
     }
 
-    String :: Iterator & String :: Iterator :: operator = ( const Iterator && it )
+    String :: Iterator & String :: Iterator :: operator = ( Iterator && it )
     {
         str = std :: move ( it . str );
         cnt = it . cnt;
@@ -2647,7 +2647,7 @@ namespace ncbi
         return * this;
     }
 
-    String :: Iterator :: Iterator ( const Iterator && it )
+    String :: Iterator :: Iterator ( Iterator && it )
         : str ( std :: move ( it . str ) )
         , cnt ( it . cnt )
         , idx ( it . idx )
@@ -2706,13 +2706,13 @@ namespace ncbi
     {
     }
 
-    NULTerminatedString & NULTerminatedString :: operator = ( const NULTerminatedString && zs )
+    NULTerminatedString & NULTerminatedString :: operator = ( NULTerminatedString && zs )
     {
         String :: operator = ( std :: move ( zs ) );
         return * this;
     }
 
-    NULTerminatedString :: NULTerminatedString ( const NULTerminatedString && zs )
+    NULTerminatedString :: NULTerminatedString ( NULTerminatedString && zs )
         : String ( std :: move ( zs ) )
     {
     }
@@ -3049,7 +3049,7 @@ namespace ncbi
         str = sb . str;
     }
 
-    StringBuffer & StringBuffer :: operator = ( const StringBuffer && sb )
+    StringBuffer & StringBuffer :: operator = ( StringBuffer && sb )
     {
         XLocker lock1 ( busy );
         SLocker lock2 ( sb . busy );
@@ -3057,7 +3057,7 @@ namespace ncbi
         return * this;
     }
 
-    StringBuffer :: StringBuffer ( const StringBuffer && sb )
+    StringBuffer :: StringBuffer ( StringBuffer && sb )
     {
         XLocker lock ( sb . busy );
         str = sb . str;

@@ -123,7 +123,7 @@ namespace ncbi
          *
          * Source object will be empty afterward.
          */
-        Payload & operator = ( const Payload && payload );
+        Payload & operator = ( Payload && payload );
 
         /**
          * Payload
@@ -141,7 +141,7 @@ namespace ncbi
          *
          * Source object will be empty afterward
          */
-        Payload ( const Payload && payload );
+        Payload ( Payload && payload );
 
         /**
          * Payload

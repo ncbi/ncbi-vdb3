@@ -77,7 +77,7 @@ namespace ncbi
         return * this;
     }
 
-    JWTClaimSet & JWTClaimSet :: operator = ( const JWTClaimSet && cs )
+    JWTClaimSet & JWTClaimSet :: operator = ( JWTClaimSet && cs )
     {
         ucs = std :: move ( cs . ucs );
         duration = cs . duration;
@@ -91,7 +91,7 @@ namespace ncbi
     {
     }
 
-    JWTClaimSet :: JWTClaimSet ( const JWTClaimSet && cs )
+    JWTClaimSet :: JWTClaimSet ( JWTClaimSet && cs )
         : ucs ( std :: move ( cs . ucs ) )
         , duration ( cs . duration )
     {

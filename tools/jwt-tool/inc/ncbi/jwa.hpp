@@ -199,8 +199,8 @@ namespace ncbi
         // triply emphasizes that this class cannot be instatiated
         void operator = ( const JWASigner & ignore ) = delete;
         JWASigner ( const JWASigner & ignore ) = delete;
-        void operator = ( const JWASigner && ignore ) = delete;
-        JWASigner ( const JWASigner && ignore ) = delete;
+        void operator = ( JWASigner && ignore ) = delete;
+        JWASigner ( JWASigner && ignore ) = delete;
     };
 
 
@@ -253,8 +253,8 @@ namespace ncbi
         // triply emphasizes that this class cannot be instatiated
         void operator = ( const JWAVerifier & ignore ) = delete;
         JWAVerifier ( const JWAVerifier & ignore ) = delete;
-        void operator = ( const JWAVerifier && ignore ) = delete;
-        JWAVerifier ( const JWAVerifier && ignore ) = delete;
+        void operator = ( JWAVerifier && ignore ) = delete;
+        JWAVerifier ( JWAVerifier && ignore ) = delete;
     };
 
 

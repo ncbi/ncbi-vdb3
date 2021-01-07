@@ -10,4 +10,8 @@ core
 .gdb_history
 *.o
 *.a
+<<<<<<< HEAD
 *.so.*
+=======
+libutf8proc.so.*
+>>>>>>> dece82a4e6776acd7ab32a7330efa84c209becf3

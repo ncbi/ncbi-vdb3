@@ -808,9 +808,9 @@ namespace ncbi
         JSONValueRef removeValueInt ( long int idx );
 
         JSONArray & operator = ( const JSONArray & array );
-        JSONArray & operator = ( const JSONArray && array );
+        JSONArray & operator = ( JSONArray && array );
         JSONArray ( const JSONArray & a );
-        JSONArray ( const JSONArray && a );
+        JSONArray ( JSONArray && a );
         JSONArray ();
 
         std :: vector < JSONValue * > array;
@@ -998,9 +998,9 @@ namespace ncbi
         void setValueInt ( const String & name, const JSONValueRef & val );
 
         JSONObject & operator = ( const JSONObject & obj );
-        JSONObject & operator = ( const JSONObject && obj );
+        JSONObject & operator = ( JSONObject && obj );
         JSONObject ( const JSONObject & obj );
-        JSONObject ( const JSONObject && obj );
+        JSONObject ( JSONObject && obj );
         JSONObject ();
 
         std :: map < String, JSONValue * > members;

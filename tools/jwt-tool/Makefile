@@ -190,6 +190,184 @@ TESTLIBS =       \
 	$(PTHREADLIB)\
 	$(LQUADMATH) \
 
+## ncbi-secure
+LIBSECSRC =      \
+	base64       \
+	atoi         \
+	string       \
+	payload      \
+	busy         \
+	except       \
+	memset_s
+
+LIBSECNOATOMSRC = \
+	base64       \
+	atoi         \
+	string       \
+	payload      \
+	busy.no-atomic \
+	except       \
+	memset_s
+
+LIBSECNOBUSYSRC = \
+	base64       \
+	atoi         \
+	string       \
+	payload      \
+	busy.no-busy \
+	except       \
+	memset_s
+
+LIBSECDBGOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(LOBX),$(LIBSECSRC)))
+
+LIBSECRELOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBSECSRC)))
+
+LIBSECRELNOATOMOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBSECNOATOMSRC)))
+
+LIBSECRELNOBUSYOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBSECNOBUSYSRC)))
+
+#$(OBJDIR)/base64.$(LOBX): secure/base64-tables.hpp
+
+#secure/base64-tables.hpp: $(BINDIR)/gen-base64-tbl
+#	$< > $@
+
+$(BINDIR)/gen-base64-tbl: $(BINDIR) secure/gen-base64-tbl.c
+	gcc -o $@ secure/gen-base64-tbl.c -MD
+
+ncbi-secure: $(LIBDIR) $(LIBDIR)/libncbi-secure-dbg.a $(LIBDIR)/libncbi-secure-rel.a \
+	 $(LIBDIR)/libncbi-secure-rel-no-atomic.a  $(LIBDIR)/libncbi-secure-rel-no-busy.a
+
+LIBSECTESTS =                       \
+	$(TSTDIR)/memset-test.passed    \
+	$(TSTDIR)/except-test.passed    \
+	$(TSTDIR)/payload-test.passed   \
+	$(TSTDIR)/string-test.passed    \
+
+$(LIBDIR)/libncbi-secure-dbg.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECDBGOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBSECDBGOBJ)
+
+$(LIBDIR)/libncbi-secure-rel.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECRELOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBSECRELOBJ)
+
+$(LIBDIR)/libncbi-secure-rel-no-atomic.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECRELNOATOMOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBSECRELNOATOMOBJ)
+
+$(LIBDIR)/libncbi-secure-rel-no-busy.a: $(LIBSECTESTS) $(OBJDIR) $(LIBSECRELNOBUSYOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBSECRELNOBUSYOBJ)
+
+MEMSET_TSTSRC =  \
+	memset_s-tst \
+	gtest-all
+
+MEMSET_TSTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(OBJX),$(MEMSET_TSTSRC)))
+
+$(TSTDIR)/memset-test: $(TSTDIR) $(OBJDIR) $(TESTDEPLIBS) $(MEMSET_TSTOBJ) $(MAKEFILE)
+	$(GPP) -O3 -o $@ $(MEMSET_TSTOBJ) $(TESTLIBS)
+
+$(TSTDIR)/memset-test.passed: $(TSTDIR)/memset-test
+	$< > $<.result && touch $@ || ( cat $<.result && false )
+
+EXCEPT_TSTSRC =  \
+	except-tst   \
+	memset_s.tst \
+	gtest-all
+
+EXCEPT_TSTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(EXCEPT_TSTSRC)))
+
+$(TSTDIR)/except-test: $(TSTDIR) $(OBJDIR) $(TESTDEPLIBS) $(EXCEPT_TSTOBJ) $(MAKEFILE)
+	$(GPP) -g -o $@ $(EXCEPT_TSTOBJ) $(TESTLIBS)
+
+$(TSTDIR)/except-test.passed: $(TSTDIR)/except-test
+	$< > $<.result && touch $@ || ( cat $<.result && false )
+
+PAYLOAD_TSTSRC = \
+	payload-tst  \
+	busy.tst     \
+	except.tst   \
+	memset_s.tst \
+	gtest-all
+
+PAYLOAD_TSTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(PAYLOAD_TSTSRC)))
+
+$(TSTDIR)/payload-test: $(TSTDIR) $(OBJDIR) $(TESTDEPLIBS) $(PAYLOAD_TSTOBJ) $(MAKEFILE)
+	$(GPP) -g -o $@ $(PAYLOAD_TSTOBJ) $(TESTLIBS)
+
+$(TSTDIR)/payload-test.passed: $(TSTDIR)/payload-test
+	$< > $<.result && touch $@ || ( cat $<.result && false )
+
+STRING_TSTSRC =  \
+	string-tst   \
+	payload.tst  \
+	busy.tst     \
+	except.tst   \
+	memset_s.tst \
+	gtest-all
+
+STRING_TSTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(STRING_TSTSRC)))
+
+$(TSTDIR)/string-test: $(TSTDIR) $(OBJDIR) $(TESTDEPLIBS) $(STRING_TSTOBJ) $(MAKEFILE)
+	$(GPP) -g -o $@ $(STRING_TSTOBJ) $(TESTLIBS)
+
+$(TSTDIR)/string-test.passed: $(TSTDIR)/string-test
+	$< > $<.result && touch $@ || ( cat $<.result && false )
+
+## ncbi-json
+LIBJSONSRC =       \
+	json           \
+	json-object    \
+	json-array     \
+	json-value     \
+	json-wrapper   \
+	json-primitive
+
+LIBJSONDBGOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(LOBX),$(LIBJSONSRC)))
+
+LIBJSONRELOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .rel.$(LOBX),$(LIBJSONSRC)))
+
+ncbi-json: $(LIBDIR) $(LIBDIR)/libncbi-json-dbg.a $(LIBDIR)/libncbi-json-rel.a
+
+LIBJSONTESTS =                    \
+	$(TSTDIR)/json-test.passed    \
+
+$(LIBDIR)/libncbi-json-dbg.a: $(LIBJSONTESTS) $(OBJDIR) $(LIBJSONDBGOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBJSONDBGOBJ)
+
+$(LIBDIR)/libncbi-json-rel.a: $(LIBJSONTESTS) $(OBJDIR) $(LIBJSONRELOBJ) $(MAKEFILE)
+	ar -rc $@ $(LIBJSONRELOBJ)
+
+JSON_TSTSRC =  \
+	json-tst   \
+	gtest-all
+
+JSON_TSTOBJ = \
+	$(addprefix $(OBJDIR)/,$(addsuffix .dbg.$(OBJX),$(JSON_TSTSRC)))
+
+JSONTESTDEPLIBS =                  \
+	$(TESTDEPLIBS)                 \
+	$(LIBDIR)/libncbi-secure-dbg.a
+
+JSONTESTLIBS =        \
+	-L$(LIBDIR)       \
+	-lncbi-secure-dbg \
+	$(TESTLIBS)
+
+$(TSTDIR)/json-test: $(TSTDIR) $(OBJDIR) $(JSONTESTDEPLIBS) $(JSON_TSTOBJ) $(MAKEFILE)
+	$(GPP) -g -o $@ $(JSON_TSTOBJ) $(JSONTESTLIBS)
+
+$(TSTDIR)/json-test.passed: $(TSTDIR)/json-test
+	$< > $<.result && touch $@ || ( cat $<.result && false )
+>>>>>>> engineering:jwt-tool/Makefile
+
 ## ncbi-jwa
 LIBJWASRC =        \
 	jwa-rsa        \
