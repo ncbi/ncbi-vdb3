@@ -30,6 +30,10 @@ LOC_INFO = -D__mod_name__=$(MODULE) -D__file_name__=$*
 	$(CC) -o $@ $(OPT) $< $(LOC_INFO) -D__file_ext__=c
 %.$(OBJX): %.cpp
 	$(CP) -o $@ $(OPT) $< $(LOC_INFO) -D__file_ext__=cpp
+ifeq (rel,$(BUILD))
+	$(CP) -o $(subst .$(OBJX),.no-atomic-ops-$(OBJX),$@) -DNO_ATOMIC_OPS=1  $(OPT) $< $(LOC_INFO) -D__file_ext__=cpp
+	$(CP) -o $(subst .$(OBJX),.no-busy-lock-$(OBJX),$@)  -DNO_BUSY_LOCK=1   $< $(LOC_INFO) -D__file_ext__=cpp
+endif
 
 # non-optimized executable image
 %.nopt.$(OBJX): %.c
@@ -42,6 +46,10 @@ LOC_INFO = -D__mod_name__=$(MODULE) -D__file_name__=$*
 	$(CC) -o $@ -fPIC $(OPT) -D_LIBRARY $< $(LOC_INFO) -D__file_ext__=c
 %.$(LOBX): %.cpp
 	$(CP) -o $@ -fPIC $(OPT) -D_LIBRARY $< $(LOC_INFO) -D__file_ext__=cpp
+ifeq (rel,$(BUILD))
+	$(CP) -o $(subst .$(LOBX),.no-atomic-ops-$(LOBX),$@) -DNO_ATOMIC_OPS=1 -fPIC $(OPT) -D_LIBRARY $< $(LOC_INFO) -D__file_ext__=cpp
+	$(CP) -o $(subst .$(LOBX),.no-busy-lock-$(LOBX),$@) -DNO_BUSY_LOCK=1  -fPIC $(OPT) -D_LIBRARY $< $(LOC_INFO) -D__file_ext__=cpp
+endif
 
 # non-optimized relocatable image
 %.nopt.$(LOBX): %.c

@@ -43,7 +43,7 @@ namespace ncbi
     /*=====================================================*
      *                      BusyLock                       *
      *=====================================================*/
-    
+
     /**
      * @class BusyLock
      * @brief an atomic element to maintain busy-state
@@ -62,7 +62,12 @@ namespace ncbi
         void release ();
 
         // this will probably be changed for r/w locking
+#if NO_ATOMIC_OPS || NO_BUSY_LOCK
+#define BUSY_IS_BOOL 1
+        mutable bool busy;
+#else
         mutable std :: atomic_flag busy;
+#endif
 
         friend class SLocker;
         friend class XLocker;
@@ -72,7 +77,7 @@ namespace ncbi
     /*=====================================================*
      *                       SLocker                       *
      *=====================================================*/
-    
+
     /**
      * @class SLocker
      * @brief acquires and releases shared lock
@@ -94,7 +99,7 @@ namespace ncbi
     /*=====================================================*
      *                       XLocker                       *
      *=====================================================*/
-    
+
     /**
      * @class XLocker
      * @brief acquires and releases exclusive lock

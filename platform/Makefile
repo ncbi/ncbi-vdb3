@@ -38,11 +38,19 @@ SUBDIRS ?= memory secure json ncbi
 include $(TOP)/$(MODULE)/Makefile.env
 
 LIBRARY = $(LIBDIR)/libncbi-vdb3-platform.a
+LIBRARY_NO_ATOMIC_OPS = $(LIBDIR)/libncbi-vdb3-platform-no-atomic-ops.a
+LIBRARY_NO_BUSY_LOCK = $(LIBDIR)/libncbi-vdb3-platform-no-busy-lock.a
 
 SUBDIRS_OBJ = $(addprefix $(OBJDIR)/, $(addsuffix /*.$(LOBX),$(SUBDIRS) ) )
+SUBDIRS_NO_ATOMIC_OPS_OBJ = $(subst .$(LOBX),.no-atomic-ops-$(LOBX),$(SUBDIRS_OBJ))
+SUBDIRS_NO_BUSY_LOCK_OBJ = $(subst .$(LOBX),.no-busy-lock-$(LOBX),$(SUBDIRS_OBJ))
 
 build: makedirs
 	$(AR) $(LIBRARY) $(SUBDIRS_OBJ)
+ifeq (rel,$(BUILD))
+	$(AR) $(LIBRARY_NO_ATOMIC_OPS) $(SUBDIRS_NO_ATOMIC_OPS_OBJ)
+	$(AR) $(LIBRARY_NO_BUSY_LOCK) $(SUBDIRS_NO_BUSY_LOCK_OBJ)
+endif
 
 clean:
 	@ rm -rf $(LIBRARY)
