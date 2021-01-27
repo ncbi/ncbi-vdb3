@@ -1,3 +1,5 @@
+# cmake build directory
+build/
 # test output directories
 actual/
 # don't want checkouts to overwrite the current build config
