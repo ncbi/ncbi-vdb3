@@ -29,6 +29,8 @@
 #include <map>
 
 #include <gtest/gtest.h>
+#include <gtest/gtest-typed-test.h>
+
 
 // MemoryManagerItf interface conformance suite
 
