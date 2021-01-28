@@ -124,10 +124,10 @@ TEST ( PinnedMemoryMgr, CustomLocker_Realloc )
 {
     TestLocker tl;
     PinnedMemoryMgr mgr ( & tl );
-    MemoryManagerItf :: pointer p1 = mgr . allocate ( 1 );
+    MemoryManagerItf :: pointer p1 = mgr . allocate ( 10 );
 
     // should call unlock(p1, 1), lock(p2, 100)
-    const MemoryManagerItf :: size_type NewSize = 100;
+    const MemoryManagerItf :: size_type NewSize = 1000;
     MemoryManagerItf :: pointer p2 = mgr . reallocate ( p1, NewSize );
     ASSERT_NE ( p1, p2 );
     ASSERT_EQ ( NewSize, tl . blocks [ p2 ] );
