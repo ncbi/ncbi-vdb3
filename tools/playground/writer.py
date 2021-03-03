@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 
-import os, vdb, argparse, pickle, shutil
-
-def write_blob( outdir : str, blob, blob_nr : int, first_row_written : int,
-        count : int, bytes_written : int, meta ) :
-    fname = f"{outdir}/blob.{blob_nr}"
-    pickle.dump( blob, open( fname, "wb" ) )
-    meta.append( ( first_row_written, count ) )
-    print( f"{fname} : ({first_row_written},{count}) bytes={bytes_written}" ) 
+import os, vdb, argparse, pickle, shutil, run
 
 def copy_table( tbl, first : int, count : int, cutoff : int, outdir : str ) :
     col_names = [ "READ", "(INSDC:quality:text:phred_33)QUALITY" ]
@@ -18,29 +11,13 @@ def copy_table( tbl, first : int, count : int, cutoff : int, outdir : str ) :
     if first != None : first_row = first
     if count != None : row_count = count
 
-    first_row_written = first_row
-    bytes_written = 0
-    blob_nr = 0
-    blob = list()
-    meta = list()
+    writer = run.runobj( outdir, cutoff )
     for row in vdb.xrange( first_row, first_row + row_count ) :
-        if bytes_written >= cutoff :
-            write_blob( outdir, blob, blob_nr, first_row_written,
-                row - first_row_written, bytes_written, meta )
-            blob = list()
-            blob_nr += 1
-            first_row_written = row
-            bytes_written = 0            
         r = cols[ 'READ' ].Read( row )
         q = cols[ '(INSDC:quality:text:phred_33)QUALITY' ].Read( row )
-        blob.append( ( r, q ) )
-        bytes_written += ( len( r ) + len( q ) )
-        #keep recording meta...
-    #after the loop take care of remaining data
-    if bytes_written > 0 :
-        write_blob( outdir, blob, blob_nr, first_row_written,
-            first_row + row_count - 1 - first_row_written, bytes_written, meta )
-    pickle.dump( meta, open( f"{outdir}/meta", "wb" ) )
+        bytes_written = ( len( r ) + len( q ) )
+        writer.append_row( ( r, q ), bytes_written )
+    writer.close_writing()
 
 if __name__ == '__main__' :
     parser = argparse.ArgumentParser()
