@@ -2,6 +2,11 @@
 
 import os, vdb, argparse, pickle, shutil, run
 
+def extract_name( full_path : str ) -> str :
+    ret = os.path.basename( full_path.strip('/') )
+    ret = os.path.splitext( ret )[ 0 ]
+    return ret
+
 def copy_table( tbl, first : int, count : int, cutoff : int, outdir : str, name : str ) :
     col_names = [ "READ", "(INSDC:quality:text:phred_33)QUALITY", "NAME" ]
     col_schema = [ "READ", "QUALITY", "NAME" ]
@@ -50,7 +55,9 @@ if __name__ == '__main__' :
         os.mkdir( args.outdir )
 
         if rd_tbl != None :
-            copy_table( rd_tbl, args.first, args.count, args.cutoff, args.outdir, args.accession[ 0 ] )
+            name = extract_name( args.accession[ 0 ] )
+            print( f"name = {name}" )
+            copy_table( rd_tbl, args.first, args.count, args.cutoff, args.outdir, name )
 
     except vdb.vdb_error as e :
         print( e )
