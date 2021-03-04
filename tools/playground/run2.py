@@ -1,4 +1,4 @@
-import pickle
+import pickle, zlib
 
 """
 blobs :
@@ -55,14 +55,17 @@ class run_writer:
 
     def flush_blob( self ) :
         fname = f"{self.outdir}/blob.{self.blob_nr}"
-        pickle.dump( self.blob, open( fname, "wb" ) )
+        compressed = dict()
+        for k, v in self.blob.items() :
+            compressed[ k ] = zlib.compress( pickle.dumps( v ), 9 )
+        with open( fname, "wb" ) as f :
+            f.write( pickle.dumps( compressed ) )
         self.meta[2].append( ( self.blob_start_row, len( self.blob[ self.schema[ 0 ] ] ) ) )
         for c in self.schema :
             self.blob[ c ] = list()
         self.blob_nr += 1
         self.blob_start_row = self.current_row
         self.bytes_written = 0
-        #print( f"{fname} : ({self.blob_start_row},{len( self.blob )}) bytes={self.bytes_written}" )
 
     def finish( self ) :
         if self.bytes_written > 0 :
@@ -75,37 +78,41 @@ class run_reader:
         self.meta = pickle.load( open( f"{self.indir}/meta", "rb" ) )
         self.schema = self.meta[1]
         self.blob_nr = 0
-        self.last_row = 0
-        self.load_blob()
-        self.cur_row = None
+        self.blob = None
 
     def name( self ):
         return self.meta[0]
 
+    def schema( self ) :
+        return self.schema
+
     def load_blob( self ) :
-        # print(self.meta)
         self.blob_meta = self.meta[2] [ self.blob_nr ]
-        self.blob = pickle.load( open( f"{self.indir}/blob.{self.blob_nr}", "rb" ) )
-        # print( f"{self.indir}/blob.{self.blob_nr}" )
+        fname = f"{self.indir}/blob.{self.blob_nr}"
+        with open( fname, "rb" ) as f :
+            compressed = pickle.loads( f.read() )
+        self.blob = dict()
+        for k, v in compressed.items() :
+            self.blob[ k ] = pickle.loads( zlib.decompress( v ) )
+        self.relative_row_nr = 0
 
     def next_row( self ) :
-        if self.last_row < self.blob_meta[0] + self.blob_meta[1] :
-            self.cur_row = self.blob[ self.last_row - self.blob_meta[0] ]
-            self.last_row += 1
+        if self.blob == None :
+            self.load_blob()
+            return True
+
+        self.relative_row_nr += 1
+        if self.relative_row_nr < self.blob_meta[ 1 ] :
             return True
 
         self.blob_nr += 1
-        if self.blob_nr >= len(self.meta[2]) :
+        if self.blob_nr >= len( self.meta[ 2 ] ) :
             return False
 
         self.load_blob()
-        # print(f"self.last_row={self.last_row}" )
-        self.cur_row = self.blob[ self.last_row - self.blob_meta[0] ]
-        self.last_row += 1
         return True
 
     def get( self, name : str ) :
-        idx = self.schema.index(name)
-        if idx != None :
-            return self.cur_row[idx]
+        if name in self.blob.keys() :
+            return self.blob[ name ][ self.relative_row_nr ]
         return None
