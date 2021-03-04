@@ -18,15 +18,14 @@ if __name__ == '__main__' :
             if args.count != None and row_count >= args.count :
                 break
 
-            row = reader.next_row()
-            if row == None :
+            if not reader.next_row() :
                 break
 
             row_count += 1
 
-            read = row[0]
-            qual = row [1]
-            name = row[2]
+            read = reader.get("READ")
+            qual = reader.get("QUALITY")
+            name = reader.get("NAME")
             print( f"@{reader.name()}.{row_count} {name} length={len(read)}")
             print( read )
             print( f"+{reader.name()}.{row_count} {name} length={len(qual)}")

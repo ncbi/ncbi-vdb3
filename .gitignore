@@ -13,3 +13,5 @@ core
 *.o
 *.a
 *.so.*
+__pycache__/
+.vs/

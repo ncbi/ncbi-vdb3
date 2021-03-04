@@ -4,6 +4,7 @@ import os, vdb, argparse, pickle, shutil, run
 
 def copy_table( tbl, first : int, count : int, cutoff : int, outdir : str, name : str ) :
     col_names = [ "READ", "(INSDC:quality:text:phred_33)QUALITY", "NAME" ]
+    col_schema = [ "READ", "QUALITY", "NAME" ]
 
     cols = tbl.CreateCursor().OpenColumns( col_names )
 
@@ -11,7 +12,7 @@ def copy_table( tbl, first : int, count : int, cutoff : int, outdir : str, name 
     if first != None : first_row = first
     if count != None : row_count = count
 
-    writer = run.run_writer( outdir, name, cutoff )
+    writer = run.run_writer( outdir, name, cutoff, col_schema )
     for row in vdb.xrange( first_row, first_row + row_count ) :
         r = cols[ 'READ' ].Read( row )
         q = cols[ '(INSDC:quality:text:phred_33)QUALITY' ].Read( row )
