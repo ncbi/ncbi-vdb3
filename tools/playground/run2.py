@@ -1,14 +1,17 @@
-import pickle, zlib
+import pickle, zlib, zstd, gzip
 
 class group_writer:
-    def __init__( self, name : str, attrs, outdir : str ) :
+    def __init__( self, name : str, attrs, column_meta, outdir : str ) :
         self.name = name
         self.attrs = attrs
+        self.column_meta = column_meta
         self.cutoff = attrs["cutoff"]
 
         self.outdir = outdir
         self.file_nr = 0
         self.columns = self.attrs["cols"] # list(str)
+        self.compression = self.attrs[ "comp" ]
+        self.level = self.attrs[ "level" ]
 
         self.clear_blob()
         self.start_row = 0
@@ -32,10 +35,28 @@ class group_writer:
         if self.bytes_written > self.cutoff :
             self.flush_blob( blob_map )
 
+    def compress( self, src, compression : str, level : int ) :
+        if compression == 'zlib' :
+            return zlib.compress( pickle.dumps( src ), level )
+        elif compression == 'gzip' :
+            return gzip.compress( pickle.dumps( src ), level )
+        elif compression == 'zstd' :
+            return zstd.compress( pickle.dumps( src ), level )
+        return pickle.dumps( src )
+
     def flush_blob( self, blob_map : list ) : # list( ( start, count ) )
         fname = f"{self.outdir}/{self.name}.{self.file_nr}"
+        #compress each column in the blob seperately
+        compressed = dict()
+        for c in self.columns :
+            compression = self.column_meta[ c ][ 'comp' ]
+            level = self.column_meta[ c ][ 'level' ]
+            compressed[c] = self.compress( self.blob[ c ], compression, level )
+
+        to_write = self.compress( compressed, self.compression, self.level )
         with open( fname, "wb" ) as f :
-             f.write( pickle.dumps( self.blob ) )
+            f.write( to_write )
+
         self.file_nr += 1
         self.clear_blob()
 
@@ -43,19 +64,6 @@ class group_writer:
         self.start_row += self.row_count
         self.row_count = 0
         self.bytes_written = 0
-
-    #     compressed = dict()
-    #     for k, v in self.blob.items() :
-    #         compressed[ k ] = zlib.compress( pickle.dumps( v ), 9 )
-    #     with open( fname, "wb" ) as f :
-    #         f.write( pickle.dumps( compressed ) )
-    #     self.meta[2].append( ( self.blob_start_row, len( self.blob[ self.schema[ 0 ] ] ) ) )
-    #     for c in self.schema :
-    #         self.blob[ c ] = list()
-    #     self.blob_nr += 1
-    #     self.blob_start_row = self.current_row
-    #     self.bytes_written = 0
-
 
 """
 blobs :
@@ -83,7 +91,7 @@ class run_writer:
 
         self.groups = dict() # group name -> group_writer
         for k,v in self.schema[1].items() :
-            self.groups[ k ] = group_writer( k, v, self.outdir )
+            self.groups[ k ] = group_writer( k, v, self.schema[0], self.outdir )
             self.meta[2][k] = list()
 
     def group_of_column( self, col : str ) :
@@ -105,11 +113,13 @@ class run_writer:
 
 
 class group_reader:
-    def __init__( self, name : str, attrs, indir : str, row_map ) : # list( (start, count) )
+    def __init__( self, name : str, attrs, indir : str, row_map, column_meta ) : # list( (start, count) )
         self.name = name
         self.attrs = attrs
         self.indir = indir
         self.row_map = row_map
+        self.column_meta = column_meta
+        self.compression = self.attrs[ 'comp' ]
         self.blob_nr = 0
 
         self.row_count = 0
@@ -121,17 +131,24 @@ class group_reader:
         last = self.row_map[-1]
         return last[0]+last[1]
 
+    def decompress( self, src, compression : str ) :
+        if compression == 'zlib' :
+            return pickle.loads( zlib.decompress( src ) )
+        elif compression == 'gzip' :
+            return pickle.loads( gzip.decompress( src ) )
+        elif compression == 'zstd' :
+            return pickle.loads( zstd.decompress( src ) )
+        return pickle.loads( src )
+
     def load_blob( self ) :
         fname = f"{self.indir}/{self.name}.{self.blob_nr}"
+        decompressed = None
         with open( fname, "rb" ) as f :
-            self.blob = pickle.loads( f.read() )
-
-        #     compressed = pickle.loads( f.read() )
-        # self.blob = dict()
-        # for k, v in compressed.items() :
-        #     self.blob[ k ] = pickle.loads( zlib.decompress( v ) )
-        # self.relative_row_nr = 0
-
+            decompressed = self.decompress( f.read(), self.compression )
+        self.blob = dict()
+        for k, v in decompressed.items() :
+            compression = self.column_meta[ k ][ 'comp' ]
+            self.blob[ k ] = self.decompress( v, compression )
         self.row_count = self.row_map[ self.blob_nr ] [ 1 ]
         self.relative_row_nr = 0
 
@@ -159,7 +176,7 @@ class run_reader:
         self.groups = dict() # group name -> group_reader
         self.total_rows = None
         for k,v in self.meta[1][1].items() :
-            self.groups[ k ] = group_reader( k, v, self.indir, self.meta[2][k] )
+            self.groups[ k ] = group_reader( k, v, self.indir, self.meta[2][k], self.meta[1][0] )
             if self.total_rows == None :
                 self.total_rows = self.groups[ k ].total_rows()
             else:

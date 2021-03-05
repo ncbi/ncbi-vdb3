@@ -15,14 +15,14 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     DefaultCutoff = 128 * 1024 * 1024
     tbl_schema = (
         {  # columns
-            "READ"      : { "comp"  : "zstd", "level" : 19, "group" : "g1" },
+            "READ"      : { "comp"  : "zstd", "level" :  9, "group" : "g1" },
             "QUALITY"   : { "comp"  : "zlib", "level" :  3, "group" : "g1" },
             "NAME"      : { "comp"  : "gzip", "level" :  9, "group" : "default" }
         },
         {   # column groups
             "g1" : {
                 "comp" : "zstd",
-                "level" : 19,
+                "level" : 3,
                 "cutoff" : 16*1024*1024,
                 "cols" : [ "READ", "QUALITY" ]
             },
