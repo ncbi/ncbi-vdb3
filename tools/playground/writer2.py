@@ -23,7 +23,7 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
             "g1" : {
                 "comp" : "zstd",
                 "level" : 19,
-                "cutoff" : 1024, #16*1024*1024,
+                "cutoff" : 16*1024*1024,
                 "cols" : [ "READ", "QUALITY" ]
             },
             "default" : {

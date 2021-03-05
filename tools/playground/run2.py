@@ -8,15 +8,17 @@ class group_writer:
 
         self.outdir = outdir
         self.file_nr = 0
+        self.columns = self.attrs["cols"] # list(str)
 
-        self.blob = dict() # column name -> list() of values
-        columns = self.attrs["cols"] # list(str)
-        for c in columns :
-            self.blob[c] = list()
-
+        self.clear_blob()
         self.start_row = 0
         self.row_count = 0
         self.bytes_written = 0
+
+    def clear_blob( self ) :
+        self.blob = dict() # column name -> list() of values
+        for c in self.columns :
+            self.blob[c] = list()
 
     def write_cell( self, col_name : str, value, val_size : int ) :
         self.blob[ col_name ].append(value)
@@ -35,9 +37,7 @@ class group_writer:
         with open( fname, "wb" ) as f :
              f.write( pickle.dumps( self.blob ) )
         self.file_nr += 1
-
-        for _, c in self.blob.items() :
-            c = list()
+        self.clear_blob()
 
         blob_map.append( ( self.start_row, self.row_count ) )
         self.start_row += self.row_count
