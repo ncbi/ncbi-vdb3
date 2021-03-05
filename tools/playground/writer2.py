@@ -7,9 +7,33 @@ def extract_name( full_path : str ) -> str :
     ret = os.path.splitext( ret )[ 0 ]
     return ret
 
-def copy_table( tbl, first : int, count : int, cutoff : int, outdir : str, name : str ) :
+def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     col_names = [ "READ", "(INSDC:quality:text:phred_33)QUALITY", "NAME" ]
-    col_schema = [ "READ", "QUALITY", "NAME" ]
+
+    # specify compression: none(default), zlib, gzip, zstd, ... + level (with a default)
+    # can compress entire blobs but saw only ~1% gain if all columns are comressed
+    DefaultCutoff = 128 * 1024 * 1024
+    tbl_schema = (
+        {  # columns
+            "READ"      : { "comp"  : "zstd", "level" : 19, "group" : "g1" },
+            "QUALITY"   : { "comp"  : "zlib", "level" :  3, "group" : "g1" },
+            "NAME"      : { "comp"  : "gzip", "level" :  9, "group" : "default" }
+        },
+        {   # column groups
+            "g1" : {
+                "comp" : "zstd",
+                "level" : 19,
+                "cutoff" : 1024, #16*1024*1024,
+                "cols" : [ "READ", "QUALITY" ]
+            },
+            "default" : {
+                "comp" : "None",
+                "level" : 0,
+                "cutoff" : DefaultCutoff,
+                "cols" : [ "NAME" ]
+            }
+        }
+    )
 
     cols = tbl.CreateCursor().OpenColumns( col_names )
 
@@ -17,10 +41,8 @@ def copy_table( tbl, first : int, count : int, cutoff : int, outdir : str, name 
     if first != None : first_row = first
     if count != None : row_count = count
 
-    writer = run2.run_writer( outdir, name, cutoff, col_schema )
+    writer = run2.run_writer( outdir, name, tbl_schema )
     for row in vdb.xrange( first_row, first_row + row_count ) :
-        writer.open_row()
-
         r = cols[ 'READ' ].Read( row )
         writer.write_cell( 'READ', r, len( r ) )
 
@@ -40,7 +62,6 @@ if __name__ == '__main__' :
     parser.add_argument( '-X', '--first', metavar='row-id', help='first row-id', type=int, dest='first' )
     parser.add_argument( '-N', '--count', metavar='rows', help='how many reads', type=int, dest='count' )
     parser.add_argument( '-R', '--readlib', metavar='path', help='read library', type=str, dest='readlib' )
-    parser.add_argument( '-C', '--cutoff', metavar='size', help='bytes per blob-group', type=int, dest='cutoff', default=16*1024*1024 )
     parser.add_argument( '-O', '--output', metavar='path', help='output directory', type=str, dest='outdir', default='out' )
     args = parser.parse_args()
 
@@ -65,7 +86,7 @@ if __name__ == '__main__' :
         if rd_tbl != None :
             name = extract_name( args.accession[ 0 ] )
             print( f"name = {name}" )
-            copy_table( rd_tbl, args.first, args.count, args.cutoff, args.outdir, name )
+            copy_table( rd_tbl, args.first, args.count, args.outdir, name )
 
     except vdb.vdb_error as e :
         print( e )
