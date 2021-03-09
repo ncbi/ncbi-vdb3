@@ -131,7 +131,7 @@ class blob_http_reader:
         self.path = self.url.path
         if self.path == "" or self.path[-1] != '/':
             self.path += "/"
-        self.conn = http.client.HTTPConnection(self.url.netloc)
+        self.conn = http.client.HTTPSConnection(self.url.netloc)
 
     def read_meta( self ):
         self.conn.request("GET", f"{self.path}meta")
