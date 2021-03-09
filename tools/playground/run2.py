@@ -1,18 +1,25 @@
 import pickle, zlib, zstd, gzip
 import http.client, urllib
+from enum import Enum
+from collections import namedtuple
+
+ColumnDef = namedtuple( 'ColumnDef', 'comp level group' )
+GroupDef = namedtuple( 'GroupDef', 'comp level cutoff cols' )
+SchemaDef = namedtuple( 'SchemaDef', 'columns groups' )
+
+MetaDef = namedtuple( 'MetaDef', 'name schema blobmap' )
 
 class group_writer:
-    def __init__( self, name : str, attrs, column_meta, outdir : str ) :
+    def __init__( self, name : str, groupdef : GroupDef, col_defs, outdir : str ) :
         self.name = name
-        self.attrs = attrs
-        self.column_meta = column_meta
-        self.cutoff = attrs["cutoff"]
-
+        self.col_defs = col_defs
         self.outdir = outdir
         self.file_nr = 0
-        self.columns = self.attrs["cols"] # list(str)
-        self.compression = self.attrs[ "comp" ]
-        self.level = self.attrs[ "level" ]
+
+        self.compression = groupdef.comp
+        self.level = groupdef.level
+        self.cutoff = groupdef.cutoff
+        self.columns = groupdef.cols # list(str)
 
         self.clear_blob()
         self.start_row = 0
@@ -50,8 +57,8 @@ class group_writer:
         #compress each column in the blob seperately
         compressed = dict()
         for c in self.columns :
-            compression = self.column_meta[ c ][ 'comp' ]
-            level = self.column_meta[ c ][ 'level' ]
+            compression = self.col_defs[ c ].comp
+            level = self.col_defs[ c ].level
             compressed[c] = self.compress( self.blob[ c ], compression, level )
 
         to_write = self.compress( compressed, self.compression, self.level )
@@ -81,22 +88,29 @@ blobs :
     schema ... flat list of column-names ( ide ['READ','QUALITY','NAME'] )
 """
 class run_writer:
-    def __init__( self, outdir : str, name : str, schema ) :
+    def __init__( self, outdir : str, name : str, schema : SchemaDef ) :
         self.outdir = outdir
         self.name = name
         self.schema = schema
         self.initialize()
 
     def initialize( self ) :
-        self.meta = ( self.name, self.schema, dict() ) # row_group -> list( (start, count) )
+        #schema is tuple of 2 dictionaries:
+        #   (
+        #       { column_name : ColumnDef },
+        #       { group_name : GroupDef }
+        #   )
+        #
+        #blob-map is a dictionary: row_group -> list( (start, count) )
+        self.meta = MetaDef( self.name, self.schema, dict() )
 
         self.groups = dict() # group name -> group_writer
-        for k,v in self.schema[1].items() :
-            self.groups[ k ] = group_writer( k, v, self.schema[0], self.outdir )
-            self.meta[2][k] = list()
+        for k, v in self.schema.groups.items() :
+            self.groups[ k ] = group_writer( k, v, self.schema.columns, self.outdir )
+            self.meta.blobmap[k] = list()
 
     def group_of_column( self, col : str ) :
-        gr_name = self.schema[0][col]["group"]
+        gr_name = self.schema.columns[col].group
         return self.groups[gr_name]
 
     def write_cell( self, column_name : str, value, value_size : int ) :
@@ -105,11 +119,11 @@ class run_writer:
 
     def close_row( self ) :
         for k, v in self.groups.items() :
-            v.close_row( self.meta[2][k] )
+            v.close_row( self.meta.blobmap[k] )
 
     def finish( self ) :
         for k, v in self.groups.items() :
-            v.flush_blob( self.meta[2][k] )
+            v.flush_blob( self.meta.blobmap[k] )
         pickle.dump( self.meta, open( f"{self.outdir}/meta", "wb" ) )
 
 class blob_file_reader:
@@ -131,7 +145,10 @@ class blob_http_reader:
         self.path = self.url.path
         if self.path == "" or self.path[-1] != '/':
             self.path += "/"
-        self.conn = http.client.HTTPSConnection(self.url.netloc)
+        if self.url.scheme == "https" :
+            self.conn = http.client.HTTPSConnection( self.url.netloc )
+        else :
+            self.conn = http.client.HTTPConnection( self.url.netloc )
 
     def read_meta( self ):
         self.conn.request("GET", f"{self.path}meta")
@@ -142,13 +159,13 @@ class blob_http_reader:
         return self.conn.getresponse().read()
 
 class group_reader:
-    def __init__( self, name : str, attrs, blob_reader, row_map, column_meta ) : # list( (start, count) )
+    def __init__( self, name : str, groupdef : GroupDef, blob_reader, row_map, column_meta ) : # list( (start, count) )
         self.name = name
-        self.attrs = attrs
+        self.groupdef = groupdef
         self.blob_reader = blob_reader
         self.row_map = row_map
         self.column_meta = column_meta
-        self.compression = self.attrs[ 'comp' ]
+        self.compression = self.groupdef.comp
         self.blob_nr = 0
 
         self.row_count = 0
@@ -173,7 +190,7 @@ class group_reader:
         decompressed = self.decompress( self.blob_reader.read( self.name, self.blob_nr ), self.compression )
         self.blob = dict()
         for k, v in decompressed.items() :
-            compression = self.column_meta[ k ][ 'comp' ]
+            compression = self.column_meta[ k ].comp
             self.blob[ k ] = self.decompress( v, compression )
         self.row_count = self.row_map[ self.blob_nr ] [ 1 ]
         self.relative_row_nr = 0
@@ -194,31 +211,38 @@ class group_reader:
     def get( self, col : str ):
         return self.blob[col][self.relative_row_nr]
 
+class AccessMode( Enum ) :
+    FileSystem = 0
+    URL = 1
+
 class run_reader:
     def __init__( self,
-                  is_dir : bool, # false = a url
-                  addr : str  ) :
-        if is_dir :
+                  addr : str,       # path or url
+                  wanted : list,    # list of column-names to consider (empty/None: all)
+                  mode : AccessMode = AccessMode.FileSystem ) :
+        if mode == AccessMode.FileSystem :
             br = blob_file_reader( addr )
         else:
             br = blob_http_reader( addr )
 
+        # meta : ( name, schema, blob-map )
         self.meta = pickle.loads( br.read_meta() )
 
         self.groups = dict() # group name -> group_reader
         self.total_rows = None
-        for k,v in self.meta[1][1].items() :
-            self.groups[ k ] = group_reader( k, v, br, self.meta[2][k], self.meta[1][0] )
+        for group_name, groupdef in self.meta.schema.groups.items() :
+            self.groups[ group_name ] = group_reader( group_name, groupdef, br,
+                self.meta.blobmap[group_name], self.meta.schema.columns )
             if self.total_rows == None :
-                self.total_rows = self.groups[ k ].total_rows()
+                self.total_rows = self.groups[ group_name ].total_rows()
             else:
-                if not self.total_rows == self.groups[ k ].total_rows() :
+                if not self.total_rows == self.groups[ group_name ].total_rows() :
                     raise "inconsistent total_rows across column groups"
 
         self.cur_row = 0
 
     def name( self ):
-        return self.meta[0]
+        return self.meta.name
 
     def next_row( self ) :
         self.cur_row += 1
@@ -230,7 +254,7 @@ class run_reader:
         return True
 
     def group_of_column( self, col : str ) :
-        gr_name = self.meta[1][0][col]["group"]
+        gr_name = self.meta.schema.columns[col].group
         return self.groups[gr_name]
 
     def get( self, name : str ) :

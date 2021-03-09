@@ -23,74 +23,21 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     #
     # VDB2 stores reads as 2na packed, we do ASCII text, for now
     #DefaultCutoff = 128 * 1024 * 1024
-    tbl_schema = (
+    cutoff = 16*1024*1024
+    tbl_schema = run2.SchemaDef(
         {  # columns
-            "READ"          : { "comp"  : "zstd", "level" :  3, "group" : "g1" },
-            "QUALITY"       : { "comp"  : "zstd", "level" :  3, "group" : "g1" },
-            "NAME"          : { "comp"  : "zstd", "level" :  3, "group" : "g1" },
+            "READ"          : run2.ColumnDef( "zstd", 3, "g1" ),
+            "QUALITY"       : run2.ColumnDef( "zstd", 3, "g1" ),
+            "NAME"          : run2.ColumnDef( "zstd", 3, "g1" ),
 
-            "READ_LEN"      : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
-            "READ_START"    : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
-            "READ_TYPE"     : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
-            "SPOT_GROUP"    : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
+            "READ_LEN"      : run2.ColumnDef( "zstd", 3, "g2" ),
+            "READ_START"    : run2.ColumnDef( "zstd", 3, "g2" ),
+            "READ_TYPE"     : run2.ColumnDef( "zstd", 3, "g2" ),
+            "SPOT_GROUP"    : run2.ColumnDef( "zstd", 3, "g2" )
         },
         {   # column groups
-            "g1" : {
-                "comp" : "gzip",
-                "level" : 3,
-                "cutoff" : 16*1024*1024,
-                "cols" : [
-                    "READ", "QUALITY", "NAME"
-                ]
-            },
-            "g2" : {
-                "comp" : "gzip",
-                "level" : 3,
-                "cutoff" : 16*1024*1024,
-                "cols" : [
-                    "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP"
-                ]
-            },
-            # "g3" : {
-            #     "comp" : "None",
-            #     "level" : 3,
-            #     "cutoff" : 16*1024*1024,
-            #     "cols" : [
-            #         "READ_START"
-            #     ]
-            # },
-            # "g4" : {
-            #     "comp" : "None",
-            #     "level" : 3,
-            #     "cutoff" : 16*1024*1024,
-            #     "cols" : [
-            #         "READ_TYPE"
-            #     ]
-            # },
-            # "g5" : {
-            #     "comp" : "None",
-            #     "level" : 3,
-            #     "cutoff" : 16*1024*1024,
-            #     "cols" : [
-            #         "SPOT_GROUP"
-            #     ]
-            # },
-            # "g6" : {
-            #     "comp" : "None",
-            #     "level" : 3,
-            #     "cutoff" : 16*1024*1024,
-            #     "cols" : [
-            #         "QUALITY"
-            #     ]
-            # },
-            # "g7" : {
-            #     "comp" : "None",
-            #     "level" : 3,
-            #     "cutoff" : 16*1024*1024,
-            #     "cols" : [
-            #         "NAME"
-            #     ]
-            # },
+            "g1" : run2.GroupDef( "gzip", 3, cutoff, [ "READ", "QUALITY", "NAME" ] ),
+            "g2" : run2.GroupDef( "gzip", 3, cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] )
         }
     )
 
