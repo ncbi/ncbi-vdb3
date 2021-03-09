@@ -4,14 +4,15 @@ import os, argparse, shutil, run2
 
 if __name__ == '__main__' :
     parser = argparse.ArgumentParser()
-    parser.add_argument( 'inputdir', nargs = 1, metavar='path', help='input directory', type=str )
+    parser.add_argument( 'addr', nargs = 1, metavar='URL or path', help='input URL or directory', type=str )
     parser.add_argument( '-N', '--count', metavar='rows', help='how many reads', type=int, dest='count' )
+    parser.add_argument( '-U', '--url', help='read from a URL', action='store_true', dest='url', default=False )
     args = parser.parse_args()
 
     try :
         #print( "reading from : {}".format( args.inputdir[ 0 ] ) )
 
-        reader = run2.run_reader( args.inputdir[0] )
+        reader = run2.run_reader( not args.url, args.addr[0] )
         done = False
         row_count = 0
         while not done :

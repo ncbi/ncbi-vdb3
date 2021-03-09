@@ -1,4 +1,5 @@
 import pickle, zlib, zstd, gzip
+import http.client, urllib
 
 class group_writer:
     def __init__( self, name : str, attrs, column_meta, outdir : str ) :
@@ -111,12 +112,40 @@ class run_writer:
             v.flush_blob( self.meta[2][k] )
         pickle.dump( self.meta, open( f"{self.outdir}/meta", "wb" ) )
 
+class blob_file_reader:
+    def __init__( self, indir : str ) :
+        self.indir = indir
+
+    def read_meta( self ):
+        with open( f"{self.indir}/meta", "rb" ) as f :
+            return f.read()
+
+    def read( self, group_name : str, blob_nr : int ):
+        fname = f"{self.indir}/{group_name}.{blob_nr}"
+        with open( fname, "rb" ) as f :
+            return f.read()
+
+class blob_http_reader:
+    def __init__( self, url : str ) :
+        self.url = urllib.parse.urlparse( url )
+        self.path = self.url.path
+        if self.path == "" or self.path[-1] != '/':
+            self.path += "/"
+        self.conn = http.client.HTTPConnection(self.url.netloc)
+
+    def read_meta( self ):
+        self.conn.request("GET", f"{self.path}meta")
+        return self.conn.getresponse().read()
+
+    def read( self, group_name : str, blob_nr : int ):
+        self.conn.request("GET", f"{self.path}{group_name}.{blob_nr}")
+        return self.conn.getresponse().read()
 
 class group_reader:
-    def __init__( self, name : str, attrs, indir : str, row_map, column_meta ) : # list( (start, count) )
+    def __init__( self, name : str, attrs, blob_reader, row_map, column_meta ) : # list( (start, count) )
         self.name = name
         self.attrs = attrs
-        self.indir = indir
+        self.blob_reader = blob_reader
         self.row_map = row_map
         self.column_meta = column_meta
         self.compression = self.attrs[ 'comp' ]
@@ -141,10 +170,7 @@ class group_reader:
         return pickle.loads( src )
 
     def load_blob( self ) :
-        fname = f"{self.indir}/{self.name}.{self.blob_nr}"
-        decompressed = None
-        with open( fname, "rb" ) as f :
-            decompressed = self.decompress( f.read(), self.compression )
+        decompressed = self.decompress( self.blob_reader.read( self.name, self.blob_nr ), self.compression )
         self.blob = dict()
         for k, v in decompressed.items() :
             compression = self.column_meta[ k ][ 'comp' ]
@@ -169,19 +195,25 @@ class group_reader:
         return self.blob[col][self.relative_row_nr]
 
 class run_reader:
-    def __init__( self, indir : str ) :
-        self.indir = indir
-        self.meta = pickle.load( open( f"{self.indir}/meta", "rb" ) )
+    def __init__( self,
+                  is_dir : bool, # false = a url
+                  addr : str  ) :
+        if is_dir :
+            br = blob_file_reader( addr )
+        else:
+            br = blob_http_reader( addr )
+
+        self.meta = pickle.loads( br.read_meta() )
 
         self.groups = dict() # group name -> group_reader
         self.total_rows = None
         for k,v in self.meta[1][1].items() :
-            self.groups[ k ] = group_reader( k, v, self.indir, self.meta[2][k], self.meta[1][0] )
+            self.groups[ k ] = group_reader( k, v, br, self.meta[2][k], self.meta[1][0] )
             if self.total_rows == None :
                 self.total_rows = self.groups[ k ].total_rows()
             else:
                 if not self.total_rows == self.groups[ k ].total_rows() :
-                    raise "hell, inconsistent total_rows across column groups"
+                    raise "inconsistent total_rows across column groups"
 
         self.cur_row = 0
 
