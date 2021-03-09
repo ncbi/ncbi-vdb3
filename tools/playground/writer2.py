@@ -8,30 +8,89 @@ def extract_name( full_path : str ) -> str :
     return ret
 
 def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
-    col_names = [ "READ", "(INSDC:quality:text:phred_33)QUALITY", "NAME" ]
+    col_names = [
+        "READ",
+        "READ_LEN",
+        "READ_START",
+        "READ_TYPE",
+        "SPOT_GROUP",
+        "(INSDC:quality:text:phred_33)QUALITY",
+        "NAME"
+    ]
 
     # specify compression: none(default), zlib, gzip, zstd, ... + level (with a default)
     # can compress entire blobs but saw only ~1% gain if all columns are comressed
-    DefaultCutoff = 128 * 1024 * 1024
+    #
+    # VDB2 stores reads as 2na packed, we do ASCII text, for now
+    #DefaultCutoff = 128 * 1024 * 1024
     tbl_schema = (
         {  # columns
-            "READ"      : { "comp"  : "zstd", "level" :  9, "group" : "g1" },
-            "QUALITY"   : { "comp"  : "zlib", "level" :  3, "group" : "g1" },
-            "NAME"      : { "comp"  : "gzip", "level" :  9, "group" : "default" }
+            "READ"          : { "comp"  : "zstd", "level" :  3, "group" : "g1" },
+            "QUALITY"       : { "comp"  : "zstd", "level" :  3, "group" : "g1" },
+            "NAME"          : { "comp"  : "zstd", "level" :  3, "group" : "g1" },
+
+            "READ_LEN"      : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
+            "READ_START"    : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
+            "READ_TYPE"     : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
+            "SPOT_GROUP"    : { "comp"  : "zstd", "level" :  3, "group" : "g2" },
         },
         {   # column groups
             "g1" : {
-                "comp" : "zstd",
+                "comp" : "gzip",
                 "level" : 3,
                 "cutoff" : 16*1024*1024,
-                "cols" : [ "READ", "QUALITY" ]
+                "cols" : [
+                    "READ", "QUALITY", "NAME"
+                ]
             },
-            "default" : {
-                "comp" : "None",
-                "level" : 0,
-                "cutoff" : DefaultCutoff,
-                "cols" : [ "NAME" ]
-            }
+            "g2" : {
+                "comp" : "gzip",
+                "level" : 3,
+                "cutoff" : 16*1024*1024,
+                "cols" : [
+                    "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP"
+                ]
+            },
+            # "g3" : {
+            #     "comp" : "None",
+            #     "level" : 3,
+            #     "cutoff" : 16*1024*1024,
+            #     "cols" : [
+            #         "READ_START"
+            #     ]
+            # },
+            # "g4" : {
+            #     "comp" : "None",
+            #     "level" : 3,
+            #     "cutoff" : 16*1024*1024,
+            #     "cols" : [
+            #         "READ_TYPE"
+            #     ]
+            # },
+            # "g5" : {
+            #     "comp" : "None",
+            #     "level" : 3,
+            #     "cutoff" : 16*1024*1024,
+            #     "cols" : [
+            #         "SPOT_GROUP"
+            #     ]
+            # },
+            # "g6" : {
+            #     "comp" : "None",
+            #     "level" : 3,
+            #     "cutoff" : 16*1024*1024,
+            #     "cols" : [
+            #         "QUALITY"
+            #     ]
+            # },
+            # "g7" : {
+            #     "comp" : "None",
+            #     "level" : 3,
+            #     "cutoff" : 16*1024*1024,
+            #     "cols" : [
+            #         "NAME"
+            #     ]
+            # },
         }
     )
 
@@ -45,6 +104,18 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     for row in vdb.xrange( first_row, first_row + row_count ) :
         r = cols[ 'READ' ].Read( row )
         writer.write_cell( 'READ', r, len( r ) )
+
+        rl = cols[ 'READ_LEN' ].Read( row )
+        writer.write_cell( 'READ_LEN', rl, len( rl ) )
+
+        rs = cols[ 'READ_START' ].Read( row )
+        writer.write_cell( 'READ_START', rs, len( rs ) )
+
+        rt = cols[ 'READ_TYPE' ].Read( row )
+        writer.write_cell( 'READ_TYPE', rt, len( rt ) )
+
+        sg = cols[ 'SPOT_GROUP' ].Read( row )
+        writer.write_cell( 'SPOT_GROUP', sg, len( sg ) )
 
         q = cols[ '(INSDC:quality:text:phred_33)QUALITY' ].Read( row )
         writer.write_cell( 'QUALITY', q, len( q ) )
