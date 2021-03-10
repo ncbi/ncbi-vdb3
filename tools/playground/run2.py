@@ -167,7 +167,6 @@ class group_reader:
         self.column_meta = column_meta
         self.compression = self.groupdef.comp
         self.blob_nr = 0
-
         self.row_count = 0
         self.relative_row_nr = 0
 
@@ -231,15 +230,24 @@ class run_reader:
         self.groups = dict() # group name -> group_reader
         self.total_rows = None
         for group_name, groupdef in self.meta.schema.groups.items() :
-            self.groups[ group_name ] = group_reader( group_name, groupdef, br,
-                self.meta.blobmap[group_name], self.meta.schema.columns )
-            if self.total_rows == None :
-                self.total_rows = self.groups[ group_name ].total_rows()
-            else:
-                if not self.total_rows == self.groups[ group_name ].total_rows() :
-                    raise "inconsistent total_rows across column groups"
-
+            if self.is_group_wanted( groupdef, wanted ) :
+                self.groups[ group_name ] = group_reader( group_name, groupdef, br,
+                    self.meta.blobmap[group_name], self.meta.schema.columns )
+                if self.total_rows == None :
+                    self.total_rows = self.groups[ group_name ].total_rows()
+                else:
+                    if not self.total_rows == self.groups[ group_name ].total_rows() :
+                        raise "inconsistent total_rows across column groups"
         self.cur_row = 0
+
+    def is_group_wanted( self, groupdef : GroupDef, wanted : list ) -> bool :
+        if wanted == None :
+            return True
+        if len( wanted ) == 0 :
+            return True
+        set1 = set( groupdef.cols )
+        set2 = set( wanted )
+        return len( set1 & set2 ) > 0
 
     def name( self ):
         return self.meta.name
@@ -254,8 +262,8 @@ class run_reader:
         return True
 
     def group_of_column( self, col : str ) :
-        gr_name = self.meta.schema.columns[col].group
-        return self.groups[gr_name]
+        gr_name = self.meta.schema.columns[col].group # dragon here! can throw...
+        return self.groups[gr_name]     # dragon here! can throw...
 
     def get( self, name : str ) :
         return self.group_of_column(name).get(name)

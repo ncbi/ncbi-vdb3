@@ -12,7 +12,7 @@ if __name__ == '__main__' :
     try :
         #print( "reading from : {}".format( args.inputdir[ 0 ] ) )
         mode = run2.AccessMode.URL if args.url else run2.AccessMode.FileSystem
-        reader = run2.run_reader( args.addr[0], [], mode )
+        reader = run2.run_reader( args.addr[0], [ "READ", "QUALITY", "NAME" ], mode )
         done = False
         row_count = 0
         while not done :
