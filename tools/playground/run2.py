@@ -158,19 +158,28 @@ class blob_http_reader:
         self.conn.request("GET", f"{self.path}{group_name}.{blob_nr}")
         return self.conn.getresponse().read()
 
+#encapsulates a list of dictionaries
+class group_blob:
+    def __init__( self, blob, first : int, count : int ) :
+        self.blob = blob
+        self.first = first
+        self.last = first + count - 1
+        self.count = count
+
+    def get( self, row : int, column_name : str ) :
+        if row < self.first or row > self.last :
+            raise Exception( f"group_blob out of range: {row}" )
+        return self.blob[ column_name ][ row - self.first ] #another dragon...
+
 class group_reader:
     def __init__( self, name : str, groupdef : GroupDef, blob_reader, row_map, column_meta ) : # list( (start, count) )
         self.name = name
         self.groupdef = groupdef
         self.blob_reader = blob_reader
-        self.row_map = row_map
+        self.row_map = row_map  # list of start,count - tuples
         self.column_meta = column_meta
         self.compression = self.groupdef.comp
-        self.blob_nr = 0
-        self.row_count = 0
-        self.relative_row_nr = 0
-
-        self.blob = None
+        self.blobs = dict()     # here are the blob-groups, keyed by blob_nr
 
     def total_rows( self ) :
         last = self.row_map[-1]
@@ -185,30 +194,46 @@ class group_reader:
             return pickle.loads( zstd.decompress( src ) )
         return pickle.loads( src )
 
-    def load_blob( self ) :
-        decompressed = self.decompress( self.blob_reader.read( self.name, self.blob_nr ), self.compression )
-        self.blob = dict()
+    def load_blob( self, blob_nr : int ) -> group_blob :
+        decompressed = self.decompress( self.blob_reader.read( self.name, blob_nr ), self.compression )
+        blob = dict()
         for k, v in decompressed.items() :
             compression = self.column_meta[ k ].comp
-            self.blob[ k ] = self.decompress( v, compression )
-        self.row_count = self.row_map[ self.blob_nr ] [ 1 ]
-        self.relative_row_nr = 0
+            blob[ k ] = self.decompress( v, compression )
+        return group_blob( blob, self.row_map[ blob_nr ][ 0 ], self.row_map[ blob_nr ][ 1 ] )
 
-        self.blob_nr += 1
+    #attention: row has to be zero based ( implicitly written that way by the writer )
+    def row_2_blobnr( self, row : int ) -> int :
+        blob_nr = 0
+        for start, count in self.row_map :  # linear search for now...
+            if row >= start and row < start + count :
+                return blob_nr
+            blob_nr += 1
+        return None
 
-    def next_row( self ) :
-        if self.blob == None :
-            self.load_blob()
+    #returns the number of available rows in the window ( count, except the last one )
+    def set_window( self, start : int, count : int ) :
+        first_blob_nr = self.row_2_blobnr( start )
+        last_blob_nr = self.row_2_blobnr( start + count - 1 )
+        if first_blob_nr == None :
             return
+        if last_blob_nr == None :
+            last_blob_nr = self.row_2_blobnr( self.total_rows() - 1 )
+        to_load = list()
+        for blob_nr in range( first_blob_nr, last_blob_nr + 1 ) :
+            to_load.append( blob_nr )
+        s1 = set( to_load )
+        s2 = set( self.blobs.keys() )
+        s_to_load = s1.difference( s2 )
+        s_to_drop = s2.difference( s1 )
+        for blob_nr in s_to_drop :
+            self.blobs.pop( blob_nr )
+        for blob_nr in s_to_load :
+            self.blobs[ blob_nr ] = self.load_blob( blob_nr )
 
-        if self.relative_row_nr == self.row_count - 1:
-            self.load_blob()
-            return
-
-        self.relative_row_nr += 1
-
-    def get( self, col : str ):
-        return self.blob[col][self.relative_row_nr]
+    def get( self, row : int, col_name : str ):
+        blob_nr = self.row_2_blobnr( row )
+        return self.blobs[ blob_nr ].get( row, col_name )
 
 class AccessMode( Enum ) :
     FileSystem = 0
@@ -237,7 +262,7 @@ class run_reader:
                     self.total_rows = self.groups[ group_name ].total_rows()
                 else:
                     if not self.total_rows == self.groups[ group_name ].total_rows() :
-                        raise "inconsistent total_rows across column groups"
+                        raise Exception( "inconsistent total_rows across column groups" )
         self.cur_row = 0
 
     def is_group_wanted( self, groupdef : GroupDef, wanted : list ) -> bool :
@@ -252,18 +277,27 @@ class run_reader:
     def name( self ):
         return self.meta.name
 
-    def next_row( self ) :
-        self.cur_row += 1
-        if self.cur_row > self.total_rows :
-            return False
+    #returns the number of available rows in the window ( count, except the last one )
+    #attention: start has to be zero based ( implicitly written that way by the writer )    
+    def set_window( self, start : int, count : int ) -> int :
+        for _, group in self.groups.items() :
+            group.set_window( start, count ) # ask the groups to load all these rows
+        res = self.total_rows - start
+        return max( 0, min( count, res ) )
 
-        for _,v in self.groups.items() :
-            v.next_row()
-        return True
+    #def next_row( self ) :
+    #    self.cur_row += 1
+    #    if self.cur_row > self.total_rows :
+    #        return False
+    #    for _,v in self.groups.items() :
+    #        v.next_row()
+    #    return True
 
     def group_of_column( self, col : str ) :
         gr_name = self.meta.schema.columns[col].group # dragon here! can throw...
         return self.groups[gr_name]     # dragon here! can throw...
 
-    def get( self, name : str ) :
-        return self.group_of_column(name).get(name)
+    #attention: row has to be zero based ( implicitly written that way by the writer )
+    def get( self, row : int, name : str ) :
+        # another dragon: group throws eventually a out of range
+        return self.group_of_column( name ).get( row, name )
