@@ -26,9 +26,9 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     cutoff = 16*1024*1024
     tbl_schema = run2.SchemaDef(
         {  # columns
-            "READ"          : run2.ColumnDef( "zstd", 3, "g1" ),
-            "QUALITY"       : run2.ColumnDef( "zstd", 3, "g1" ),
-            "NAME"          : run2.ColumnDef( "zstd", 3, "g1" ),
+            "READ"          : run2.ColumnDef( "zstd", 9, "g1" ),
+            "QUALITY"       : run2.ColumnDef( "zstd", 9, "g3" ),
+            "NAME"          : run2.ColumnDef( "zstd", 9, "g3" ),
 
             "READ_LEN"      : run2.ColumnDef( "zstd", 3, "g2" ),
             "READ_START"    : run2.ColumnDef( "zstd", 3, "g2" ),
@@ -36,8 +36,9 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
             "SPOT_GROUP"    : run2.ColumnDef( "zstd", 3, "g2" )
         },
         {   # column groups
-            "g1" : run2.GroupDef( "gzip", 3, cutoff, [ "READ", "QUALITY", "NAME" ] ),
-            "g2" : run2.GroupDef( "gzip", 3, cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] )
+            "g1" : run2.GroupDef( "None", 3, cutoff, [ "READ" ] ),
+            "g2" : run2.GroupDef( "gzip", 3, cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] ),
+            "g3" : run2.GroupDef( "None", 3, cutoff, [ "QUALITY", "NAME" ] ),
         }
     )
 
