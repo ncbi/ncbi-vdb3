@@ -2,12 +2,19 @@ import pickle, zlib, zstd, gzip
 import http.client, urllib
 from enum import Enum
 from collections import namedtuple
+import protobuf.sra_pb2
 
 ColumnDef = namedtuple( 'ColumnDef', 'comp level group' )
 GroupDef = namedtuple( 'GroupDef', 'comp level cutoff cols' )
 SchemaDef = namedtuple( 'SchemaDef', 'columns groups' )
 
 MetaDef = namedtuple( 'MetaDef', 'name schema blobmap' )
+
+class SerializationMode( Enum ) :
+    Pickle = 0
+    Protobuf = 1
+
+ser_mode = SerializationMode.Pickle
 
 class group_writer:
     def __init__( self, name : str, groupdef : GroupDef, col_defs, outdir : str ) :
@@ -39,7 +46,7 @@ class group_writer:
         self.row_count += 1
 
         #this is an insurance against the case that the user did not
-        #write a value into each column 
+        #write a value into each column
         for _, c in self.blob.items() :
             while len(c) < self.row_count :
                 c.append( None )
@@ -47,14 +54,39 @@ class group_writer:
         if self.bytes_written > self.cutoff :
             self.flush_blob( blob_map )
 
-    def compress( self, src, compression : str, level : int ) :
+    def serialize_column( self, name : str, data ) :
+        if ser_mode == SerializationMode.Pickle:
+            return pickle.dumps( data )
+        else:
+            col = protobuf.sra_pb2.Column()
+            col.name = name
+            for cell in data:
+                pb_cell = protobuf.sra_pb2.Cell()
+                if type(cell) == str:
+                    pb_cell.str_value = cell
+                else:
+                    for i in cell:
+                        pb_cell.int_values.i.append( i )
+                col.cells.append( pb_cell )
+            return col.SerializeToString()
+
+    def serialize_blob( self, data ) :
+        if ser_mode == SerializationMode.Pickle:
+            return pickle.dumps( data )
+        else:
+            pb2_blob = protobuf.sra_pb2.Group()
+            for _, v in data.items() :
+                pb2_blob.encoded_columns.append(v)
+            return pb2_blob.SerializeToString()
+
+    def compress( self, src, compression : str, level : int ) : # src is a bytearray
         if compression == 'zlib' :
-            return zlib.compress( pickle.dumps( src ), level )
+            return zlib.compress( src, level )
         elif compression == 'gzip' :
-            return gzip.compress( pickle.dumps( src ), level )
+            return gzip.compress( src, level )
         elif compression == 'zstd' :
-            return zstd.compress( pickle.dumps( src ), level )
-        return pickle.dumps( src )
+            return zstd.compress( src, level )
+        return src
 
     def flush_blob( self, blob_map : list ) : # list( ( start, count ) )
         fname = f"{self.outdir}/{self.name}.{self.file_nr}"
@@ -63,9 +95,11 @@ class group_writer:
         for c in self.column_names :
             compression = self.col_defs[ c ].comp
             level = self.col_defs[ c ].level
-            compressed[ c ] = self.compress( self.blob[ c ], compression, level )
+            serialized = self.serialize_column( c, self.blob[ c ] )
+            compressed[c] = self.compress( serialized, compression, level )
 
-        to_write = self.compress( compressed, self.compression, self.level )
+        serialized = self.serialize_blob( compressed )
+        to_write = self.compress( serialized, self.compression, self.level )
         with open( fname, "wb" ) as f :
             f.write( to_write )
 
@@ -189,21 +223,38 @@ class group_reader:
         last = self.row_map[-1]
         return last[0]+last[1]
 
+    def deserialize_column( self, data ) :
+        if ser_mode == SerializationMode.Pickle:
+            return pickle.loads( data )
+        else:
+            raise "not implemented"
+
+    def deserialize_blob( self, data ) :
+        if ser_mode == SerializationMode.Pickle:
+            return pickle.loads( data )
+        else:
+            raise "not implemented"
+            pb2_blob = protobuf.sra_pb2.Group()
+            pb2_blob.ParseFromString( data )
+            ret = dict()
+
     def decompress( self, src, compression : str ) :
         if compression == 'zlib' :
-            return pickle.loads( zlib.decompress( src ) )
+            return zlib.decompress( src )
         elif compression == 'gzip' :
-            return pickle.loads( gzip.decompress( src ) )
+            return gzip.decompress( src )
         elif compression == 'zstd' :
-            return pickle.loads( zstd.decompress( src ) )
-        return pickle.loads( src )
+            return zstd.decompress( src )
+        return src
 
     def load_blob( self, blob_nr : int ) -> group_blob :
-        decompressed = self.decompress( self.blob_reader.read( self.name, blob_nr ), self.compression )
+        decomp = self.decompress( self.blob_reader.read( self.name, blob_nr ), self.compression )
+        deserialized = self.deserialize_blob( decomp )
         blob = dict()
-        for k, v in decompressed.items() :
+        for k, v in deserialized.items() :
             compression = self.column_meta[ k ].comp
-            blob[ k ] = self.decompress( v, compression )
+            decomp = self.decompress( v, compression )
+            blob[ k ] = self.deserialize_column( decomp )
         return group_blob( blob, self.row_map[ blob_nr ][ 0 ], self.row_map[ blob_nr ][ 1 ] )
 
     #attention: row has to be zero based ( implicitly written that way by the writer )
@@ -282,7 +333,7 @@ class run_reader:
         return self.meta.name
 
     #returns the number of available rows in the window ( count, except the last one )
-    #attention: start has to be zero based ( implicitly written that way by the writer )    
+    #attention: start has to be zero based ( implicitly written that way by the writer )
     def set_window( self, start : int, count : int ) -> int :
         for _, group in self.groups.items() :
             group.set_window( start, count ) # ask the groups to load all these rows

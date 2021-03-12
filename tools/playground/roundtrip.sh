@@ -1,5 +1,5 @@
 
-ROWS=100000
+ROWS=10000
 
 #create the original fastq
 fastq-dump $1 -X $ROWS -Z > $2.orig.fastq
@@ -11,4 +11,4 @@ fastq-dump $1 -X $ROWS -Z > $2.orig.fastq
 ./reader2.py $2.temp > $2.copy.fastq
 
 #diff the results
-diff -s $2.orig.fastq $2.copy.fastq
+diff --brief -s $2.orig.fastq $2.copy.fastq

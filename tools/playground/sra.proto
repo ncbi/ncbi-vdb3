@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package sra;
+
+message IntArray {
+    repeated int32 i = 1;
+}
+message Cell {
+    oneof Data {
+        string str_value = 1;
+        IntArray int_values = 2;
+    }
+}
+
+message Column {
+    repeated Cell cells = 1;
+}
+
+message Group {
+    repeated string names = 1;
+    repeated bytes encoded_columns = 2;
+}
+
