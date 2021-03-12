@@ -19,7 +19,7 @@ class group_writer:
         self.compression = groupdef.comp
         self.level = groupdef.level
         self.cutoff = groupdef.cutoff
-        self.columns = groupdef.cols # list(str)
+        self.column_names = groupdef.cols # list(str)
 
         self.clear_blob()
         self.start_row = 0
@@ -28,18 +28,22 @@ class group_writer:
 
     def clear_blob( self ) :
         self.blob = dict() # column name -> list() of values
-        for c in self.columns :
-            self.blob[c] = list()
+        for c in self.column_names :
+            self.blob[ c ] = list()
 
     def write_cell( self, col_name : str, value, val_size : int ) :
-        self.blob[ col_name ].append(value)
+        self.blob[ col_name ].append( value )
         self.bytes_written += val_size
 
     def close_row( self, blob_map : list ) : # list( ( start, count ) )
         self.row_count += 1
+
+        #this is an insurance against the case that the user did not
+        #write a value into each column 
         for _, c in self.blob.items() :
             while len(c) < self.row_count :
-                c.append(None)
+                c.append( None )
+
         if self.bytes_written > self.cutoff :
             self.flush_blob( blob_map )
 
@@ -56,10 +60,10 @@ class group_writer:
         fname = f"{self.outdir}/{self.name}.{self.file_nr}"
         #compress each column in the blob seperately
         compressed = dict()
-        for c in self.columns :
+        for c in self.column_names :
             compression = self.col_defs[ c ].comp
             level = self.col_defs[ c ].level
-            compressed[c] = self.compress( self.blob[ c ], compression, level )
+            compressed[ c ] = self.compress( self.blob[ c ], compression, level )
 
         to_write = self.compress( compressed, self.compression, self.level )
         with open( fname, "wb" ) as f :

@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 
-import os, vdb, argparse, pickle, shutil, run2
+import os, vdb, argparse, pickle, shutil, run2, pickle
 
 def extract_name( full_path : str ) -> str :
     ret = os.path.basename( full_path.strip('/') )
     ret = os.path.splitext( ret )[ 0 ]
     return ret
 
+ReadDef1="READ"
+ReadDef2="(INSDC:2na:packed)READ"
+
 def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     col_names = [
-        "READ",
+        ReadDef1,
         "READ_LEN",
         "READ_START",
         "READ_TYPE",
@@ -36,9 +39,9 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
             "SPOT_GROUP"    : run2.ColumnDef( "zstd", 3, "g2" )
         },
         {   # column groups
-            "g1" : run2.GroupDef( "None", 3, cutoff, [ "READ" ] ),
-            "g2" : run2.GroupDef( "gzip", 3, cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] ),
-            "g3" : run2.GroupDef( "None", 3, cutoff, [ "QUALITY", "NAME" ] ),
+            "g1" : run2.GroupDef( "zstd", 9, cutoff, [ "READ" ] ),
+            "g2" : run2.GroupDef( "zstd", 9, cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] ),
+            "g3" : run2.GroupDef( "zstd", 9, cutoff, [ "QUALITY", "NAME" ] ),
         }
     )
 
@@ -50,7 +53,10 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
 
     writer = run2.run_writer( outdir, name, tbl_schema )
     for row in vdb.xrange( first_row, first_row + row_count ) :
-        r = cols[ 'READ' ].Read( row )
+        r = cols[ ReadDef1 ].Read( row )
+        #in case we are reading packed data ( ReadDef2 ):
+        #rp = cols[ ReadDef2 ].Read_bin( row )[ 2 ]
+        #writer.write_cell( 'READ', rp, len( rp ) )
         writer.write_cell( 'READ', r, len( r ) )
 
         rl = cols[ 'READ_LEN' ].Read( row )
