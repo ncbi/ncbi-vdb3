@@ -1,0 +1,36 @@
+
+SRR13360684: 413M bases
+    original:
+        296M total
+        READ column: 99M
+
+    vdb3:
+        total
+
+        395M pickle+zstd(3) on the columns; READ/QUALITY in ASCII
+
+        371M pickle+zstd(9) on the columns; READ/QUALITY in ASCII
+        READ column: 248M
+            SRR13360684-read-separate
+
+        READ in 2na:packed (no compression): total 474M
+        READ column: 248M
+
+        READ in 2na, pickled,zstd(9),pickled: total 355M
+        READ column: 109M
+
+        READ in ascii/pickled+zstd(9): total 369M
+        READ column: 135M
+
+        READ in ascii/protobuf+zstd(9): total 371M (?)
+        READ column: 135M
+
+fastq from a bucket:
+    orginal 1m34s
+    reader2 (locally): 2m04s
+            (bucket): 2m41s
+
+wget all groupBlobs from the bucket: 49s
+
+pickle(array(int)) 2bytes/element
+
