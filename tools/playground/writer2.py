@@ -10,7 +10,12 @@ def extract_name( full_path : str ) -> str :
 ReadDef1="READ"
 ReadDef2="(INSDC:2na:packed)READ"
 
-def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
+def copy_table( tbl, first : int, count : int, outdir : str, name : str, protobuf:bool ) :
+    if protobuf:
+        run2.ser_mode = run2.SerializationMode.Protobuf
+    else:
+        run2.ser_mode = run2.SerializationMode.Pickle
+
     col_names = [
         ReadDef1,
         "READ_LEN",
@@ -88,6 +93,7 @@ if __name__ == '__main__' :
     parser.add_argument( '-N', '--count', metavar='rows', help='how many reads', type=int, dest='count' )
     parser.add_argument( '-R', '--readlib', metavar='path', help='read library', type=str, dest='readlib' )
     parser.add_argument( '-O', '--output', metavar='path', help='output directory', type=str, dest='outdir', default='out' )
+    parser.add_argument( '-P', '--protobuf', help='use protobuf', dest='protobuf', default=False, action='store_true' )
     args = parser.parse_args()
 
     try :
@@ -111,7 +117,7 @@ if __name__ == '__main__' :
         if rd_tbl != None :
             name = extract_name( args.accession[ 0 ] )
             print( f"name = {name}" )
-            copy_table( rd_tbl, args.first, args.count, args.outdir, name )
+            copy_table( rd_tbl, args.first, args.count, args.outdir, name, args.protobuf )
 
     except vdb.vdb_error as e :
         print( e )

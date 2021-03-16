@@ -54,19 +54,19 @@ class group_writer:
         if self.bytes_written > self.cutoff :
             self.flush_blob( blob_map )
 
-    def serialize_column( self, name : str, data ) :
+    def serialize_column( self, name : str, data ) : # returns bytearray
         if ser_mode == SerializationMode.Pickle:
             return pickle.dumps( data )
         else:
             col = protobuf.sra_pb2.Column()
-            col.name = name
             for cell in data:
                 pb_cell = protobuf.sra_pb2.Cell()
                 if type(cell) == str:
                     pb_cell.str_value = cell
-                else:
+                else: # array of int
                     for i in cell:
                         pb_cell.int_values.i.append( i )
+                # else: a single int, float etc (TODO)
                 col.cells.append( pb_cell )
             return col.SerializeToString()
 
@@ -75,7 +75,8 @@ class group_writer:
             return pickle.dumps( data )
         else:
             pb2_blob = protobuf.sra_pb2.Group()
-            for _, v in data.items() :
+            for k, v in data.items() :
+                pb2_blob.names.append(k)
                 pb2_blob.encoded_columns.append(v)
             return pb2_blob.SerializeToString()
 
@@ -227,16 +228,29 @@ class group_reader:
         if ser_mode == SerializationMode.Pickle:
             return pickle.loads( data )
         else:
-            raise "not implemented"
+            pb2_col = protobuf.sra_pb2.Column()
+            pb2_col.ParseFromString( data )
+            ret = list()
+            for cell in pb2_col.cells:
+                if cell.WhichOneof('Data') == 'str_value':
+                    ret.append(cell.str_value)
+                else:
+                    l = list()
+                    for i in cell.int_values:
+                        l.append(i)
+                    ret.append(l)
+            return ret
 
     def deserialize_blob( self, data ) :
         if ser_mode == SerializationMode.Pickle:
             return pickle.loads( data )
         else:
-            raise "not implemented"
             pb2_blob = protobuf.sra_pb2.Group()
             pb2_blob.ParseFromString( data )
             ret = dict()
+            for i in range( len(pb2_blob.names) ):
+                ret[ pb2_blob.names[ i ] ] = pb2_blob.encoded_columns[ i ]
+            return ret
 
     def decompress( self, src, compression : str ) :
         if compression == 'zlib' :

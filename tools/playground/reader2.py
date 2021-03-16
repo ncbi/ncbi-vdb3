@@ -6,10 +6,15 @@ if __name__ == '__main__' :
     parser = argparse.ArgumentParser()
     parser.add_argument( 'addr', nargs = 1, metavar='URL or path', help='input URL or directory', type=str )
     parser.add_argument( '-U', '--url', help='read from a URL', action='store_true', dest='url', default=False )
+    parser.add_argument( '-P', '--protobuf', help='use protobuf', dest='protobuf', default=False, action='store_true' )
     args = parser.parse_args()
 
     try :
         #print( "reading from : {}".format( args.inputdir[ 0 ] ) )
+        if args.protobuf:
+            run2.ser_mode = run2.SerializationMode.Protobuf
+        else:
+            run2.ser_mode = run2.SerializationMode.Pickle
         mode = run2.AccessMode.URL if args.url else run2.AccessMode.FileSystem
         reader = run2.run_reader( args.addr[0], [ "READ", "QUALITY", "NAME" ], mode )
 
