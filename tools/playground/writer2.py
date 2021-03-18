@@ -28,25 +28,28 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str, protobu
 
     # specify compression: none(default), zlib, gzip, zstd, ... + level (with a default)
     # can compress entire blobs but saw only ~1% gain if all columns are comressed
-    #
-    # VDB2 stores reads as 2na packed, we do ASCII text, for now
-    #DefaultCutoff = 128 * 1024 * 1024
     cutoff = 16*1024*1024
+    #level=22
+    level=3
+    compression = ("zstd", level)
+    #compression = ("gzip", level) # same as zlib
+    #compression = ("bz2", level)
     tbl_schema = run2.SchemaDef(
         {  # columns
-            "READ"          : run2.ColumnDef( "zstd", 9, "g1" ),
-            "QUALITY"       : run2.ColumnDef( "zstd", 9, "g3" ),
-            "NAME"          : run2.ColumnDef( "zstd", 9, "g3" ),
+            "READ"          : run2.ColumnDef( compression[0], compression[1], "g1" ),
+            "QUALITY"       : run2.ColumnDef( compression[0], compression[1], "g2" ),
+            "NAME"          : run2.ColumnDef( compression[0], compression[1], "g3" ),
 
-            "READ_LEN"      : run2.ColumnDef( "zstd", 3, "g2" ),
-            "READ_START"    : run2.ColumnDef( "zstd", 3, "g2" ),
-            "READ_TYPE"     : run2.ColumnDef( "zstd", 3, "g2" ),
-            "SPOT_GROUP"    : run2.ColumnDef( "zstd", 3, "g2" )
+            "READ_LEN"      : run2.ColumnDef( compression[0], compression[1], "g4" ),
+            "READ_START"    : run2.ColumnDef( compression[0], compression[1], "g4" ),
+            "READ_TYPE"     : run2.ColumnDef( compression[0], compression[1], "g4" ),
+            "SPOT_GROUP"    : run2.ColumnDef( compression[0], compression[1], "g4" )
         },
         {   # column groups
-            "g1" : run2.GroupDef( "zstd", 9, cutoff, [ "READ" ] ),
-            "g2" : run2.GroupDef( "zstd", 9, cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] ),
-            "g3" : run2.GroupDef( "zstd", 9, cutoff, [ "QUALITY", "NAME" ] ),
+            "g1" : run2.GroupDef( compression[0], compression[1], cutoff, [ "READ" ] ),
+            "g2" : run2.GroupDef( compression[0], compression[1], cutoff, [ "QUALITY" ] ),
+            "g3" : run2.GroupDef( compression[0], compression[1], cutoff, [ "NAME" ] ),
+            "g4" : run2.GroupDef( compression[0], compression[1], cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] ),
         }
     )
 

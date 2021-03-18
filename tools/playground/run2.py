@@ -1,4 +1,4 @@
-import pickle, zlib, zstd, gzip
+import pickle, zlib, zstd, gzip, bz2
 import http.client, urllib
 from enum import Enum
 from collections import namedtuple
@@ -87,6 +87,8 @@ class group_writer:
             return gzip.compress( src, level )
         elif compression == 'zstd' :
             return zstd.compress( src, level )
+        elif compression == 'bz2' :
+            return bz2.compress( src, level )
         return src
 
     def flush_blob( self, blob_map : list ) : # list( ( start, count ) )
