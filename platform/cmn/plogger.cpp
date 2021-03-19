@@ -5,7 +5,7 @@
 
  */
 
-#include "plogger.hpp"
+#include <vdb3/cmn/plogger.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -65,7 +65,7 @@ namespace vdb3
 
         return o << names [ lvl ];
     }
-    
+
     /*=====================================================*
      *                     PLoggerImpl                     *
      *=====================================================*/
@@ -76,12 +76,12 @@ namespace vdb3
     {
         return hostname;
     }
-        
+
     String PLoggerImpl :: getProcname () const noexcept
     {
         return procname;
     }
-        
+
     LogQueueId PLoggerImpl :: getQueueId ( const String & name ) const
     {
         auto it = qmap . find ( name );
@@ -97,10 +97,10 @@ namespace vdb3
                 << "' does not exist"
                 );
         }
-            
+
         return it -> second;
     }
-    
+
     LogQueueId PLoggerImpl :: makeQueue ( const String & name )
     {
         auto it = qmap . find ( name );
@@ -112,7 +112,7 @@ namespace vdb3
 
         return qid;
     }
-    
+
     void PLoggerImpl :: write ( LogLevel lvl, pid_t pid,
         const Timestamp & ts, const CText & msg ) const
     {
@@ -131,7 +131,7 @@ namespace vdb3
             << '\n'
             ;
     }
-    
+
     void PLoggerImpl :: write ( const LogQueueId & qid, LogLevel lvl,
         pid_t pid, const Timestamp & ts, const CText & msg ) const
     {
@@ -169,7 +169,7 @@ namespace vdb3
 
         KTRACE ( TRACE_PRG, "constructing primordial Logger @ 0x%zx", ( size_t ) this );
     }
-    
+
     PLoggerImpl :: ~ PLoggerImpl () noexcept
     {
         KTRACE ( TRACE_PRG, "destroying primordial Logger @ 0x%zx", ( size_t ) this );

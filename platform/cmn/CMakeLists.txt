@@ -21,6 +21,7 @@ add_library(cmn STATIC
     plogger.cpp
     ptracer.cpp
     reader.cpp
+    rsrc.cpp
     rsrc-log.cpp
     rsrc-trace.cpp
     serial.cpp

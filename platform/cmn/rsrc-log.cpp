@@ -6,10 +6,10 @@
 
 #include <vdb3/cmn/rsrc-log.hpp>
 #include <vdb3/cmn/trace.hpp>
+#include <vdb3/cmn/log-impl.hpp>
+#include <vdb3/cmn/plogger.hpp>
 
 #include <unistd.h>
-#include "plogger.hpp"
-#include "log-impl.hpp"
 
 namespace vdb3
 {
@@ -35,7 +35,7 @@ namespace vdb3
 
         return String ( rsrc, buffer );
     }
-    
+
     bool RsrcLog :: operator == ( const RsrcLog & rsrc ) const noexcept
     {
         return RsrcTrace :: operator == ( rsrc )
@@ -43,7 +43,7 @@ namespace vdb3
             && log == rsrc . log
             ;
     }
-    
+
     RsrcLog & RsrcLog :: operator = ( RsrcLog && rsrc ) noexcept
     {
         RsrcTrace :: operator = ( std :: move ( rsrc ) );
@@ -51,7 +51,7 @@ namespace vdb3
         log = std :: move ( rsrc . log );
         return self;
     }
-    
+
     RsrcLog & RsrcLog :: operator = ( const RsrcLog & rsrc ) noexcept
     {
         RsrcTrace :: operator = ( rsrc );
@@ -59,21 +59,21 @@ namespace vdb3
         log = rsrc . log;
         return self;
     }
-    
+
     RsrcLog :: RsrcLog ( RsrcLog && rsrc ) noexcept
         : RsrcTrace ( std :: move ( rsrc ) )
         , logger ( std :: move ( rsrc . logger ) )
         , log ( std :: move ( rsrc . log ) )
     {
     }
-    
+
     RsrcLog :: RsrcLog ( const RsrcLog & rsrc ) noexcept
         : RsrcTrace ( rsrc )
         , logger ( rsrc . logger )
         , log ( rsrc . log )
     {
     }
-    
+
     RsrcLog :: RsrcLog ()
     {
         KTRACE ( TRACE_PRG, "creating primordial log facility" );
@@ -85,7 +85,7 @@ namespace vdb3
         log = lr;
         KTRACE ( TRACE_GEEK, "created primordial log facility" );
     }
-    
+
     RsrcLog :: ~ RsrcLog () noexcept
     {
         KTRACE ( TRACE_PRG, "releasing log manager" );

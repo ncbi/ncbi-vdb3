@@ -71,6 +71,10 @@ endif()
 
 add_definitions( -DARCHBITS=${BITS} -D${ARCH} -Wall )
 
+if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
+    add_definitions( -DDEBUG )
+endif()
+
 #message( "OS=" ${OS} " ARCH=" ${ARCH} " CXX=" ${CMAKE_CXX_COMPILER} " LMCHECK=" ${LMCHECK} "BITS=" ${BITS} )
 
 include_directories(external/googletest/googletest/include)
@@ -84,6 +88,7 @@ set(GTEST_LIBRARIES gtest )
 
 add_subdirectory(external)
 add_subdirectory(platform)
+add_subdirectory(tests)
 
 # documentation
 find_package(Doxygen)
