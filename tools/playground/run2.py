@@ -1,4 +1,4 @@
-import pickle, zlib, zstd, gzip, bz2
+import sys, pickle, zlib, zstd, gzip, bz2
 import http.client, urllib
 from enum import Enum
 from collections import namedtuple
