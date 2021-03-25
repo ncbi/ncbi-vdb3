@@ -13,6 +13,8 @@ EREPORT="errors1_$TODAY.txt"
 TIMING="t1.txt"
 STOPFILE="stop"
 CURLRESPONSE="curlresponse1.txt"
+TEMPSTDOUT="data1.txt"
+TEMPSTDERR="err1.txt"
 
 rm -rf $REPORT $EREPORT $TIMING $CURLRESPONSE
 
@@ -34,18 +36,18 @@ function fastq() {
     URL="$1"
     date >> $REPORT
     echo "$URL" >> $REPORT
-    /usr/bin/time -f %E -o $TIMING fastq-dump -+ KNS-HTTP -Z $URL > data.txt 2> data.err
+    /usr/bin/time -f %E -o $TIMING fastq-dump -+ KNS-HTTP -Z $URL > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
-    md5sum data.txt >> $REPORT
+    md5sum $TEMPSTDOUT >> $REPORT
     cat $TIMING >> $REPORT
     if [ $RET -ne 0 ]; then
         date >> $EREPORT
         echo "$URL" >> $EREPORT
         cat $TIMING >> $EREPORT
-        cat data.err >> $EREPORT
+        cat $TEMPSTDERR >> $EREPORT
         echo "." >> $EREPORT
     fi
-    rm data.err data.txt $TIMING
+    rm -f $TEMPSTDOUT $TEMPSTDERR $TIMING
     echo "return-code = $RET" >> $REPORT
     echo "." >> $REPORT
 }

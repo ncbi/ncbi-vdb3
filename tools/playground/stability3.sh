@@ -8,7 +8,10 @@ TODAY=`date +%m%d%H%M`
 
 REPORT="report3_$TODAY.txt"
 EREPORT="errors3_$TODAY.txt"
+TIMING="t3.txt"
 STOPFILE="stop"
+TEMPSTDOUT="data3.txt"
+TEMPSTDERR="err3.txt"
 
 rm -rf $REPORT $EREPORT
 
@@ -20,18 +23,18 @@ function fastq() {
     URL="$1"
     date >> $REPORT
     echo "$URL" >> $REPORT
-    /usr/bin/time -f %E -o t3.txt ./reader2.py -U $URL > data3.txt 2> data3.err
+    /usr/bin/time -f %E -o $TIMING ./reader2.py -U $URL > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
-    md5sum data3.txt >> $REPORT
-    cat t3.txt >> $REPORT
+    md5sum $TEMPSTDOUT >> $REPORT
+    cat $TIMING >> $REPORT
     if [ $RET -ne 0 ]; then
         date >> $EREPORT
         echo "$URL" >> $EREPORT
-        cat t3.txt >> $EREPORT
-        cat data3.err >> $EREPORT
+        cat $TIMING >> $EREPORT
+        cat $TEMPSTDERR >> $EREPORT
         echo "." >> $EREPORT
     fi
-    rm data3.err data3.txt t3.txt
+    rm -f $TEMPSTDERR $TEMPSTDOUT $TIMING
     echo "return-code = $RET" >> $REPORT
     echo "." >> $REPORT
 }

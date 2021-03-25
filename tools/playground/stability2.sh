@@ -8,7 +8,10 @@ TODAY=`date +%m%d%H%M`
 
 REPORT="report2_$TODAY.txt"
 EREPORT="errors2_$TODAY.txt"
+TIMING="t2.txt"
 STOPFILE="stop"
+TEMPSTDOUT="data2.txt"
+TEMPSTDERR="err2.txt"
 
 rm -rf $REPORT $EREPORT
 
@@ -20,18 +23,18 @@ function fastq() {
     URL="$1"
     date >> $REPORT
     echo "$URL" >> $REPORT
-    /usr/bin/time -f %E -o t.txt fastq-dump -+ KNS-HTTP -Z $URL > data.txt 2> data.err
+    /usr/bin/time -f %E -o $TIMING fastq-dump -+ KNS-HTTP -Z $URL > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
-    md5sum data.txt >> $REPORT
-    cat t.txt >> $REPORT
+    md5sum $TEMPSTDOUT >> $REPORT
+    cat $TIMING >> $REPORT
     if [ $RET -ne 0 ]; then
         date >> $EREPORT
         echo "$URL" >> $EREPORT
-        cat t.txt >> $EREPORT
-        cat data.err >> $EREPORT
+        cat $TIMING >> $EREPORT
+        cat $TEMPSTDERR >> $EREPORT
         echo "." >> $EREPORT
     fi
-    rm data.err data.txt t.txt
+    rm -f $TEMPSTDERR $TEMPSTDOUT $TIMING
     echo "return-code = $RET" >> $REPORT
     echo "." >> $REPORT
 }
