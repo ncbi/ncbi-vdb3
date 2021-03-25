@@ -4,7 +4,6 @@ BASE="https://sra-download.be-md.ncbi.nlm.nih.gov/sos3/vdb3testbucket/"
 
 ACCESSIONS="SRR7392459 SRR7341916 SRR7158431 SRR8001010 SRR7796424 SRR7157007 SRR7389150 SRR7584907 SRR7981406 SRR8256711"
 
-
 SDL="https://www.ncbi.nlm.nih.gov/Traces/sdl/2/retrieve"
 
 TODAY=`date +%m%d%H%M`
@@ -13,8 +12,9 @@ REPORT="report1_$TODAY.txt"
 EREPORT="errors1_$TODAY.txt"
 TIMING="t1.txt"
 STOPFILE="stop"
+CURLRESPONSE="curlresponse1.txt"
 
-rm -rf $REPORT $EREPORT $TIMING
+rm -rf $REPORT $EREPORT $TIMING $CURLRESPONSE
 
 #
 #   'touch stop' in other terminal terminates the script ( after a whole loop )
@@ -23,7 +23,11 @@ rm -rf $REPORT $EREPORT $TIMING
 function get_url() {
     ACC="$1"
     SDLURL="$SDL?acc=$ACC&location=sra-ncbi&location-type=forced"
-    result=`curl -s $SDLURL | jq -r '.result[0].files[0].locations[0].link'`
+    curl -s $SDLURL > $CURLRESPONSE
+    result=`jq -r '.result[0].files[0].locations[0].link' $CURLRESPONSE`
+    if [ "$result" == "null" ]; then
+        cat $CURLRESPONSE >> $EREPORT
+    fi
 }
 
 function fastq() {
@@ -60,7 +64,9 @@ for acc in $ACCESSIONS; do
     if [ ! -f "$STOPFILE" ]; then
         echo "running $acc"
         get_url $acc
-        fastq "$result"
+        if [ ! "$result" == "null" ]; then
+            fastq "$result"
+        fi
     fi
 done
 }

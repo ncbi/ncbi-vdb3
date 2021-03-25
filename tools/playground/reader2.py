@@ -32,6 +32,10 @@ if __name__ == '__main__' :
                 read = reader.get( row, "READ" )
                 qual = reader.get( row, "QUALITY" )
                 name = reader.get( row, "NAME" )
+                if read == None or qual == None or name == None :
+                    done = True
+                    sys.exit( 3 )
+                    break
                 print( f"@{reader.name()}.{row+1} {name} length={len(read)}")
                 print( read )
                 print( f"+{reader.name()}.{row+1} {name} length={len(qual)}")

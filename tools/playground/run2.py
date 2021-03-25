@@ -264,14 +264,21 @@ class group_reader:
         return src
 
     def load_blob( self, blob_nr : int ) -> group_blob :
-        decomp = self.decompress( self.blob_reader.read( self.name, blob_nr ), self.compression )
-        deserialized = self.deserialize_blob( decomp )
-        blob = dict()
-        for k, v in deserialized.items() :
-            compression = self.column_meta[ k ].comp
-            decomp = self.decompress( v, compression )
-            blob[ k ] = self.deserialize_column( decomp )
-        return group_blob( blob, self.row_map[ blob_nr ][ 0 ], self.row_map[ blob_nr ][ 1 ] )
+        try :
+            data = self.blob_reader.read( self.name, blob_nr )
+        except Exception as e:
+            sys.stderr.write( f"{e}\n" )
+            data = None
+        if data != None :
+            decomp = self.decompress( data, self.compression )
+            deserialized = self.deserialize_blob( decomp )
+            blob = dict()
+            for k, v in deserialized.items() :
+                compression = self.column_meta[ k ].comp
+                decomp = self.decompress( v, compression )
+                blob[ k ] = self.deserialize_column( decomp )
+            return group_blob( blob, self.row_map[ blob_nr ][ 0 ], self.row_map[ blob_nr ][ 1 ] )
+        return None
 
     #attention: row has to be zero based ( implicitly written that way by the writer )
     def row_2_blobnr( self, row : int ) -> int :
@@ -304,7 +311,10 @@ class group_reader:
 
     def get( self, row : int, col_name : str ):
         blob_nr = self.row_2_blobnr( row )
-        return self.blobs[ blob_nr ].get( row, col_name )
+        data = self.blobs[ blob_nr ]
+        if data != None :
+            return data.get( row, col_name )
+        return None
 
 class AccessMode( Enum ) :
     FileSystem = 0
