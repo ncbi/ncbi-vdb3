@@ -2,10 +2,13 @@
 
 BASE="https://sra-download.be-md.ncbi.nlm.nih.gov/sos3/vdb3testbucket/"
 
-ACCESSIONS2="SRR7392459 SRR7341916 SRR7158431 SRR8001010 SRR7796424 SRR7157007 SRR7389150 SRR7584907 SRR7981406 SRR8256711"
+ACCESSIONS="SRR7392459 SRR7341916 SRR7158431 SRR8001010 SRR7796424 SRR7157007 SRR7389150 SRR7584907 SRR7981406 SRR8256711"
 
-REPORT="report3.txt"
-EREPORT="errors3.txt"
+TODAY=`date +%m%d%H%M`
+
+REPORT="report3_$TODAY.txt"
+EREPORT="errors3_$TODAY.txt"
+STOPFILE="stop"
 
 rm -rf $REPORT $EREPORT
 
@@ -34,14 +37,16 @@ function fastq() {
 }
 
 while true; do
-    for acc in $ACCESSIONS2; do
-        echo "running $acc"
-        fastq "$BASE$acc.bits"
+    for acc in $ACCESSIONS; do
+        if [ ! -f "$STOPFILE" ]; then
+            echo "running $acc"
+            fastq "$BASE$acc.bits"
+        fi
     done
 
     sleep 20
-    if [ -f "stop" ]; then
-        rm stop
+    if [ -f "$STOPFILE" ]; then
+        rm "$STOPFILE"
         echo "we are done"
         exit 0
     fi
