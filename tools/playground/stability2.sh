@@ -8,12 +8,13 @@ TODAY=`date +%m%d%H%M`
 
 REPORT="report2_$TODAY.txt"
 EREPORT="errors2_$TODAY.txt"
+RECOVER="recover2_$TODAY.txt"
 TIMING="t2.txt"
 STOPFILE="stop"
 TEMPSTDOUT="data2.txt"
 TEMPSTDERR="err2.txt"
 
-rm -rf $REPORT $EREPORT
+rm -rf $REPORT $EREPORT $RECOVER
 
 #
 #   'touch stop' in other terminal terminates the script ( after a whole loop )
@@ -33,6 +34,16 @@ function fastq() {
         cat $TIMING >> $EREPORT
         cat $TEMPSTDERR >> $EREPORT
         echo "." >> $EREPORT
+    else
+        cat $TEMPSTDERR | grep "rcExhausted" > /dev/null
+        GRET="$?"
+        if [ $GRET -eq 0 ]; then
+            date >> $RECOVER
+            echo "$URL" >> $RECOVER
+            cat $TIMING >> $RECOVER
+            cat $TEMPSTDERR >> $RECOVER
+            echo "." >> $RECOVER
+        fi
     fi
     rm -f $TEMPSTDERR $TEMPSTDOUT $TIMING
     echo "return-code = $RET" >> $REPORT
