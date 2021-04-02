@@ -13,6 +13,7 @@ TIMING="t2.txt"
 STOPFILE="stop"
 TEMPSTDOUT="data2.txt"
 TEMPSTDERR="err2.txt"
+RELIABLE="NCBI_VDB_RELIABLE=1"
 
 rm -rf $REPORT $EREPORT $RECOVER
 
@@ -49,6 +50,9 @@ function fastq() {
     echo "return-code = $RET" >> $REPORT
     echo "." >> $REPORT
 }
+
+#make sure that computed URL's are treated the same as SDL-received ones
+export $RELIABLE
 
 while true; do
     for acc in $ACCESSIONS; do

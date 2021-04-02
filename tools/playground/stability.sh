@@ -15,6 +15,7 @@ STOPFILE="stop"
 CURLRESPONSE="curlresponse1.txt"
 TEMPSTDOUT="data1.txt"
 TEMPSTDERR="err1.txt"
+RELIABLE="NCBI_VDB_RELIABLE=1"
 
 rm -rf $REPORT $EREPORT $TIMING $CURLRESPONSE
 
@@ -72,6 +73,9 @@ for acc in $ACCESSIONS; do
     fi
 done
 }
+
+#make sure that computed URL's are treated the same as SDL-received ones
+export $RELIABLE
 
 while true; do
     loop2

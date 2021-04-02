@@ -32,6 +32,7 @@ TIMING="t_$SELECTION.txt"
 TEMPSTDOUT="data_$SELECTION.txt"
 TEMPSTDERR="err_$SELECTION.txt"
 STOPFILE="stop_$SELECTION"
+RELIABLE="NCBI_VDB_RELIABLE=1"
 
 function create_db {
     STM="CREATE TABLE IF NOT EXISTS
@@ -223,6 +224,9 @@ function endless_loop_fastq_sdl {
 
 rm -f $TEMPSTDOUT $TEMPSTDERR
 create_db
+
+#make sure that computed URL's are treated the same as SDL-received ones
+export $RELIABLE
 
 case $SELECTION in
   fastq)
