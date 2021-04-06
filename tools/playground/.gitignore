@@ -1,3 +1,6 @@
 out
 old
 new
+cert.crt
+private.key
+nginx.conf
