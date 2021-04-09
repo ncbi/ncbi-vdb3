@@ -24,7 +24,7 @@ case $SELECTION in
     ;;
 esac
 
-DATABASE="stab.db"
+DATABASE="stab2.db"
 SPECIAL_BASE="https://sra-download.be-md.ncbi.nlm.nih.gov/sos3/vdb3testbucket/"
 SDL="https://www.ncbi.nlm.nih.gov/Traces/sdl/2/retrieve"
 ACCESSIONS="SRR7392459 SRR7341916 SRR7158431 SRR8001010 SRR7796424 SRR7157007 SRR7389150 SRR7584907 SRR7981406 SRR8256711"
@@ -33,6 +33,7 @@ TEMPSTDOUT="data_$SELECTION.txt"
 TEMPSTDERR="err_$SELECTION.txt"
 STOPFILE="stop_$SELECTION"
 RELIABLE="NCBI_VDB_RELIABLE=1"
+TIME_LIMIT="100"
 
 function create_db {
     STM="CREATE TABLE IF NOT EXISTS
@@ -44,9 +45,9 @@ function create_db {
             'acc' TEXT,
             'url' TEXT,
             'md5' TEXT,
-            'runtime' TEXT,
-            'ret_code' REAL,
-            'errors' TEXT ) "
+            'runtime' REAL,
+            'ret_code' INTEGER,
+            'errors' TEXT DEFAULT '-' ) "
     sqlite3 $DATABASE "$STM"
     STM="CREATE VIEW IF NOT EXISTS
         'logview' AS SELECT id,ts,reader,source,acc,runtime,ret_code FROM log"
@@ -60,15 +61,19 @@ function create_db {
 #   $5 ... md5
 #   $6 ... runtime
 #   $7 ... ret-code
-#   $8 ... filename of errors
 function insert_event1 {
-    STM="INSERT INTO log ( reader, source, acc, url, md5, runtime, ret_code, errors ) VALUES ( '$1', '$2', '$3', '$4', '$5', '$6', '$7', readfile( '$8' ) )"
+    #give error-file a different name, to protect it from beeing overwritten in the next loop
+    #store this filename in the errors-columns
+    EDATE=`date "+%y%m%d_%H_%M_%S"`
+    ENAME="${EDATE}_$1_$2_$3.errors"
+    mv $TEMPSTDERR "${ENAME}"
+    STM="INSERT INTO log ( reader, source, acc, url, md5, runtime, ret_code, errors ) VALUES ( '$1', '$2', '$3', '$4', '$5', '$6', '$7', '${ENAME}' )"
     sqlite3 $DATABASE "$STM"
 }
 
-#   $8 ... errors as string
+#   no errors....
 function insert_event2 {
-    STM="INSERT INTO log ( reader, source, acc, url, md5, runtime, ret_code, errors ) VALUES ( '$1', '$2', '$3', '$4', '$5', '$6', '$7', '$8' )"
+    STM="INSERT INTO log ( reader, source, acc, url, md5, runtime, ret_code ) VALUES ( '$1', '$2', '$3', '$4', '$5', '$6', '$7' )"
     sqlite3 $DATABASE "$STM"
 }
 
@@ -81,6 +86,37 @@ function get_url() {
         echo "get_url( $ACC ) failed"
         insert_event2 'sdl' 'ncbi' "$ACC" "$SDLURL" "-" "-" "-" "$CURLRESPONSE"
     fi
+
+}
+
+#   $1 ... reader
+#   $2 ... source
+#   $3 ... acc
+#   $4 ... url
+#   $5 ... md5
+#   $6 ... runtime
+#   $7 ... ret-code
+function record_results() {
+    RR_READER=$1
+    RR_SOURCE=$2
+    RR_ACC=$3
+    RR_URL=$4
+    RR_MD5=$5
+    RR_RT=$6
+    RR_RET=$7
+    if [ $RR_RET -ne 0 ]; then
+        echo "fastq-dump $ACC failed"
+        insert_event1 "$RR_READER" "$RR_SOURCE" "$RR_ACC" "$RR_URL" "$RR_MD5" "$RR_RT" "$RR_RET"
+    else
+        echo "fastq-dump $ACC success"
+        RT_SEC=`printf %.0f $RR_RT`
+        if [ $RT_SEC -gt $TIME_LIMIT ]; then
+            insert_event1 "$RR_READER" "$RR_SOURCE" "$RR_ACC" "$RR_URL" "$RR_MD5" "$RR_RT" "$RR_RET"
+        else
+            insert_event2 "$RR_READER" "$RR_SOURCE" "$RR_ACC" "$RR_URL" "$RR_MD5" "$RR_RT" "$RR_RET"
+        fi
+    fi
+    rm -f $TEMPSTDOUT $TEMPSTDERR $TIMING
 }
 
 function fastq() {
@@ -93,14 +129,7 @@ function fastq() {
         RET="$?"
         MD5=`cat $TEMPSTDOUT | md5sum | awk '{ print $1 }'`
         RT=`cat $TIMING`
-        if [ $RET -ne 0 ]; then
-            echo "fastq-dump $ACC failed"
-            insert_event1 'fastq' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET" "$TEMPSTDERR"
-        else
-            echo "fastq-dump $ACC success"
-            insert_event2 'fastq' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET" "-"
-        fi
-        rm -f $TEMPSTDOUT $TEMPSTDERR $TIMING
+        record_results 'fastq' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET"
     fi
 }
 
@@ -112,14 +141,7 @@ function fastq_special() {
     RET="$?"
     MD5=`cat $TEMPSTDOUT | md5sum | awk '{ print $1 }'`
     RT=`cat $TIMING`
-    if [ $RET -ne 0 ]; then
-        echo "fastq-dump $ACC failed"
-        insert_event1 'fastq_spec' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET" "$TEMPSTDERR"
-    else
-        echo "fastq-dump $ACC success"
-        insert_event2 'fastq_spec' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET" "-"
-    fi
-    rm -f $TEMPSTDOUT $TEMPSTDERR $TIMING
+    record_results 'fastq_spec' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET"
 }
 
 function fastq_vdb3() {
@@ -130,14 +152,7 @@ function fastq_vdb3() {
     RET="$?"
     MD5=`cat $TEMPSTDOUT | md5sum | awk '{ print $1 }'`
     RT=`cat $TIMING`
-    if [ $RET -ne 0 ]; then
-        echo "reader2.py $ACC failed"
-        insert_event1 'vdb3' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET" "$TEMPSTDERR"
-    else
-        echo "reader2.py $ACC success"
-        insert_event2 'vdb3' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET" "-"
-    fi
-    rm -f $TEMPSTDOUT $TEMPSTDERR $TIMING
+    record_results 'vdb3' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET"
 }
 
 function fastq_sdl() {
@@ -148,14 +163,7 @@ function fastq_sdl() {
     RET="$?"
     MD5=`cat $TEMPSTDOUT | md5sum | awk '{ print $1 }'`
     RT=`cat $TIMING`
-    if [ $RET -ne 0 ]; then
-        echo "fastq-dump $ACC failed"
-        insert_event1 'fastq' 'sdl' "$ACC" "$URL" "$MD5" "$RT" "$RET" "$TEMPSTDERR"
-    else
-        echo "fastq-dump $ACC success"
-        insert_event2 'fastq' 'sdl' "$ACC" "$URL" "$MD5" "$RT" "$RET" "-"
-    fi
-    rm -f $TEMPSTDOUT $TEMPSTDERR $TIMING
+    record_results 'fastq' 'sdl' "$ACC" "$URL" "$MD5" "$RT" "$RET"
 }
 
 function exit_on_stopfile {
@@ -166,86 +174,37 @@ function exit_on_stopfile {
     fi
 }
 
-function fastq_loop {
-    for acc in $ACCESSIONS; do
-        exit_on_stopfile
-        fastq "$acc"
-    done
-}
-
-function fastq_special_loop {
-    for acc in $ACCESSIONS; do
-        exit_on_stopfile
-        fastq_special "$acc"
-    done
-}
-
-function fastq_vdb3_loop {
-    for acc in $ACCESSIONS; do
-        exit_on_stopfile
-        fastq_vdb3 "$acc"
-    done
-}
-
-function fastq_sdl_loop {
-    for acc in $ACCESSIONS; do
-        exit_on_stopfile
-        fastq_sdl "$acc"
-    done
-}
-
-function endless_loop_fastq {
-    while true; do
-        fastq_loop
-        sleep 20
-    done
-}
-
-function endless_loop_fastq_special {
-    while true; do
-        fastq_special_loop
-        sleep 20
-    done
-}
-
-function endless_loop_fastq_vdb3 {
-    while true; do
-        fastq_vdb3_loop
-        sleep 20
-    done
-}
-
-function endless_loop_fastq_sdl {
-    while true; do
-        fastq_sdl_loop
-        sleep 20
-    done
-}
-
 rm -f $TEMPSTDOUT $TEMPSTDERR
 create_db
 
 #make sure that computed URL's are treated the same as SDL-received ones
 export $RELIABLE
 
-case $SELECTION in
-  fastq)
-    endless_loop_fastq
-    ;;
+while true; do
+    for acc in $ACCESSIONS; do
+        exit_on_stopfile
+        case $SELECTION in
+            fastq)
+                fastq "$acc"
+                ;;
 
-  fastq_special)
-    endless_loop_fastq_special
-    ;;
+            fastq_special)
+                fastq_special "$acc"
+                ;;
 
-  fastq_vdb3)
-    endless_loop_fastq_vdb3
-    ;;
+            fastq_vdb3)
+                fastq_vdb3 "$acc"
+                ;;
 
-  fastq_sdl)
-    endless_loop_fastq_sdl
-    ;;
+            fastq_sdl)
+                fastq_sdl "$acc"
+                ;;
 
-  *)
-    echo "invalid selections"
-    ;;
-esac
+            *)
+                echo "invalid selections"
+                exit 1
+                ;;
+        esac
+    done
+    sleep 20
+done
