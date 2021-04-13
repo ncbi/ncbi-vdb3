@@ -7,6 +7,7 @@ if __name__ == '__main__' :
     parser.add_argument( 'addr', nargs = 1, metavar='URL or path', help='input URL or directory', type=str )
     parser.add_argument( '-U', '--url', help='read from a URL', action='store_true', dest='url', default=False )
     parser.add_argument( '-P', '--protobuf', help='use protobuf', dest='protobuf', default=False, action='store_true' )
+    parser.add_argument( '-p', '--parallel', help='download column groups in parallel', dest='parallel', default=False, action='store_true' )
     args = parser.parse_args()
 
     try :
@@ -23,8 +24,8 @@ if __name__ == '__main__' :
         window_size = 50000
 
         while not done :
-            loaded = reader.set_window( start_row, window_size )
-            #sys.stderr.write( f"start_row:{start_row} loaded:{loaded}\n" )
+            loaded = reader.set_window( start_row, window_size, args.parallel )
+            sys.stderr.write( f"start_row:{start_row} loaded:{loaded}\n" )
             if loaded < 1 :
                 done = True
 

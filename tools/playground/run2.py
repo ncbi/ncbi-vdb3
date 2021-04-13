@@ -4,6 +4,8 @@ from enum import Enum
 from collections import namedtuple
 import protobuf.sra_pb2
 
+from joblib import Parallel, delayed
+
 ColumnDef = namedtuple( 'ColumnDef', 'comp level group' )
 GroupDef = namedtuple( 'GroupDef', 'comp level cutoff cols' )
 SchemaDef = namedtuple( 'SchemaDef', 'columns groups' )
@@ -197,7 +199,8 @@ class blob_http_reader:
 
     def read( self, group_name : str, blob_nr : int ):
         self.conn.request("GET", f"{self.path}{group_name}.{blob_nr}")
-        return self.conn.getresponse().read()
+        ret = self.conn.getresponse().read()
+        return ret
 
 #encapsulates a list of dictionaries
 class group_blob:
@@ -291,6 +294,7 @@ class group_reader:
 
     #returns the number of available rows in the window ( count, except the last one )
     def set_window( self, start : int, count : int ) :
+        print( f"set_window({self.name}, start={start}, count={count})", file=sys.stderr )
         first_blob_nr = self.row_2_blobnr( start )
         last_blob_nr = self.row_2_blobnr( start + count - 1 )
         if first_blob_nr == None :
@@ -308,6 +312,7 @@ class group_reader:
             self.blobs.pop( blob_nr )
         for blob_nr in s_to_load :
             self.blobs[ blob_nr ] = self.load_blob( blob_nr )
+        print( f"set_window({self.name}, start={start}, count={count}) done", file=sys.stderr )
 
     def get( self, row : int, col_name : str ):
         blob_nr = self.row_2_blobnr( row )
@@ -329,7 +334,6 @@ class run_reader:
             br = blob_file_reader( addr )
         else:
             br = blob_http_reader( addr )
-
         # meta : ( name, schema, blob-map )
         self.meta = pickle.loads( br.read_meta() )
 
@@ -337,6 +341,10 @@ class run_reader:
         self.total_rows = None
         for group_name, groupdef in self.meta.schema.groups.items() :
             if self.is_group_wanted( groupdef, wanted ) :
+                if mode == AccessMode.FileSystem :
+                    br = blob_file_reader( addr )
+                else:
+                    br = blob_http_reader( addr )
                 self.groups[ group_name ] = group_reader( group_name, groupdef, br,
                     self.meta.blobmap[group_name], self.meta.schema.columns )
                 if self.total_rows == None :
@@ -360,9 +368,13 @@ class run_reader:
 
     #returns the number of available rows in the window ( count, except the last one )
     #attention: start has to be zero based ( implicitly written that way by the writer )
-    def set_window( self, start : int, count : int ) -> int :
-        for _, group in self.groups.items() :
-            group.set_window( start, count ) # ask the groups to load all these rows
+    def set_window( self, start : int, count : int, parallel : bool ) -> int :
+        if parallel :
+            Parallel(n_jobs = len(self.groups.items()), prefer="threads") ( delayed(group.set_window)( start, count ) for _, group in self.groups.items() )
+        else:
+            for _, group in self.groups.items() :
+                group.set_window( start, count ) # ask the groups to load all these rows
+
         res = self.total_rows - start
         return max( 0, min( count, res ) )
 
