@@ -18,6 +18,10 @@ case $SELECTION in
     echo "fastq_sdl selected"
     ;;
 
+  fastq_vdb3_par)
+    echo "fastq_vdb3_par selected"
+    ;;
+
   *)
     echo "invalid selections"
     exit 3
@@ -105,10 +109,10 @@ function record_results() {
     RR_RT=$6
     RR_RET=$7
     if [ $RR_RET -ne 0 ]; then
-        echo "fastq-dump $ACC failed"
+        echo "$RR_READER $RR_SOURCE $ACC failed"
         insert_event1 "$RR_READER" "$RR_SOURCE" "$RR_ACC" "$RR_URL" "$RR_MD5" "$RR_RT" "$RR_RET"
     else
-        echo "fastq-dump $ACC success"
+        echo "$RR_READER $RR_SOURCE $ACC succeeded"
         RT_SEC=`printf %.0f $RR_RT`
         if [ $RT_SEC -gt $TIME_LIMIT ]; then
             insert_event1 "$RR_READER" "$RR_SOURCE" "$RR_ACC" "$RR_URL" "$RR_MD5" "$RR_RT" "$RR_RET"
@@ -155,6 +159,17 @@ function fastq_vdb3() {
     record_results 'vdb3' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET"
 }
 
+function fastq_vdb3_par() {
+    ACC="$1"
+    URL="$SPECIAL_BASE$ACC.bits2/"
+    echo "$ACC at $URL"
+    /usr/bin/time -f %e -o $TIMING ./reader2.py -U $URL -p > $TEMPSTDOUT 2> $TEMPSTDERR
+    RET="$?"
+    MD5=`cat $TEMPSTDOUT | md5sum | awk '{ print $1 }'`
+    RT=`cat $TIMING`
+    record_results 'vdb3-par' 'cloudian' "$ACC" "$URL" "$MD5" "$RT" "$RET"
+}
+
 function fastq_sdl() {
     ACC="$1"
     URL=`srapath $ACC`
@@ -194,6 +209,10 @@ while true; do
 
             fastq_vdb3)
                 fastq_vdb3 "$acc"
+                ;;
+
+            fastq_vdb3_par)
+                fastq_vdb3_par "$acc"
                 ;;
 
             fastq_sdl)
