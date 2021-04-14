@@ -325,26 +325,27 @@ class AccessMode( Enum ) :
     FileSystem = 0
     URL = 1
 
+class ParallelMode( Enum ) :
+    Sequential = 0
+    Threads = 1
+    Process = 2
+
 class run_reader:
     def __init__( self,
                   addr : str,       # path or url
                   wanted : list,    # list of column-names to consider (empty/None: all)
-                  mode : AccessMode = AccessMode.FileSystem ) :
-        if mode == AccessMode.FileSystem :
-            br = blob_file_reader( addr )
-        else:
-            br = blob_http_reader( addr )
+                  access_mode : AccessMode = AccessMode.FileSystem,
+				  parallel_mode : ParallelMode = ParallelMode.Sequential
+				   ) :
         # meta : ( name, schema, blob-map )
+        br = self.make_reader( addr, access_mode )
         self.meta = pickle.loads( br.read_meta() )
 
         self.groups = dict() # group name -> group_reader
         self.total_rows = None
         for group_name, groupdef in self.meta.schema.groups.items() :
             if self.is_group_wanted( groupdef, wanted ) :
-                if mode == AccessMode.FileSystem :
-                    br = blob_file_reader( addr )
-                else:
-                    br = blob_http_reader( addr )
+                br = self.make_reader( addr, access_mode )
                 self.groups[ group_name ] = group_reader( group_name, groupdef, br,
                     self.meta.blobmap[group_name], self.meta.schema.columns )
                 if self.total_rows == None :
@@ -353,6 +354,18 @@ class run_reader:
                     if not self.total_rows == self.groups[ group_name ].total_rows() :
                         raise Exception( "inconsistent total_rows across column groups" )
         self.cur_row = 0
+
+        #setup the parallel-mode...
+        self.pc = None
+        if parallel_mode == ParallelMode.Threads :
+            self.pc = Parallel( n_jobs = len(self.groups.items()), prefer="threads")
+        elif parallel_mode == ParallelMode.Process :
+            self.pc = Parallel( n_jobs = len(self.groups.items()), prefer="processes")
+
+    def make_reader( self, addr : str, access_mode : AccessMode ) :
+        if access_mode == AccessMode.FileSystem :
+            return blob_file_reader( addr )
+        return blob_http_reader( addr )
 
     def is_group_wanted( self, groupdef : GroupDef, wanted : list ) -> bool :
         if wanted == None :
@@ -368,10 +381,10 @@ class run_reader:
 
     #returns the number of available rows in the window ( count, except the last one )
     #attention: start has to be zero based ( implicitly written that way by the writer )
-    def set_window( self, start : int, count : int, parallel : bool ) -> int :
-        if parallel :
-            Parallel(n_jobs = len(self.groups.items()), prefer="threads") ( delayed(group.set_window)( start, count ) for _, group in self.groups.items() )
-        else:
+    def set_window( self, start : int, count : int ) -> int :
+        if self.pc != None :
+            self.pc( delayed( group.set_window )( start, count ) for _, group in self.groups.items() )
+        else :
             for _, group in self.groups.items() :
                 group.set_window( start, count ) # ask the groups to load all these rows
 
@@ -394,3 +407,4 @@ class run_reader:
     def get( self, row : int, name : str ) :
         # another dragon: group throws eventually a out of range
         return self.group_of_column( name ).get( row, name )
+

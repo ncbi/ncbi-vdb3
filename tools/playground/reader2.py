@@ -8,6 +8,8 @@ if __name__ == '__main__' :
     parser.add_argument( '-U', '--url', help='read from a URL', action='store_true', dest='url', default=False )
     parser.add_argument( '-P', '--protobuf', help='use protobuf', dest='protobuf', default=False, action='store_true' )
     parser.add_argument( '-p', '--parallel', help='download column groups in parallel', dest='parallel', default=False, action='store_true' )
+    parser.add_argument( '-t', '--threads', help='parallel using threads', dest='threads', default=True, action='store_false' )
+    parser.add_argument( '-W', '--window', metavar='window', help='window-size in bytes', type=int, dest='window', default=50000 )
     args = parser.parse_args()
 
     try :
@@ -16,15 +18,19 @@ if __name__ == '__main__' :
             run2.ser_mode = run2.SerializationMode.Protobuf
         else:
             run2.ser_mode = run2.SerializationMode.Pickle
-        mode = run2.AccessMode.URL if args.url else run2.AccessMode.FileSystem
-        reader = run2.run_reader( args.addr[0], [ "READ", "QUALITY", "NAME" ], mode )
+        access_mode = run2.AccessMode.URL if args.url else run2.AccessMode.FileSystem
+
+        parallel_mode = run2.ParallelMode.Sequential
+        if args.parallel :
+            parallel_mode = run2.ParallelMode.Threads if args.threads else run2.ParallelMode.Process
+
+        reader = run2.run_reader( args.addr[0], [ "READ", "QUALITY", "NAME" ], access_mode, parallel_mode )
 
         done = False
         start_row = 0
-        window_size = 50000
 
         while not done :
-            loaded = reader.set_window( start_row, window_size, args.parallel )
+            loaded = reader.set_window( start_row, args.window )
             sys.stderr.write( f"start_row:{start_row} loaded:{loaded}\n" )
             if loaded < 1 :
                 done = True
