@@ -28,7 +28,7 @@ case $SELECTION in
     ;;
 esac
 
-DATABASE="stab2.db"
+DATABASE="stab3.db"
 SPECIAL_BASE="https://sra-download.be-md.ncbi.nlm.nih.gov/sos3/vdb3testbucket/"
 SDL="https://www.ncbi.nlm.nih.gov/Traces/sdl/2/retrieve"
 ACCESSIONS="SRR7392459 SRR7341916 SRR7158431 SRR8001010 SRR7796424 SRR7157007 SRR7389150 SRR7584907 SRR7981406 SRR8256711"

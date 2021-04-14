@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import http.client, urllib, argparse, random
+
 files = [
 ( 5248534, "g1.0" ),
 ( 5247719, "g1.1" ),
@@ -63,7 +65,87 @@ files = [
 
 SPECIAL_BASE="https://sra-download.be-md.ncbi.nlm.nih.gov/sos3/access-comp/"
 
+ACC="https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR4156255/SRR4156255"
+
+WHOLE_FILE=( 361647833 , "single_file" )
+
+def make_connection( url ) :
+    if url.scheme == "https" :
+        return http.client.HTTPSConnection( url.netloc )
+    return http.client.HTTPConnection( url.netloc )
+    
+def dnld_full_files( lst ) :
+    url = urllib.parse.urlparse( SPECIAL_BASE + lst[0][1] )
+    conn = make_connection( url )
+    for count, filename in lst :
+        url = urllib.parse.urlparse( SPECIAL_BASE +filename )
+        conn.request( "GET", url.path )
+        data = conn.getresponse().read()
+        print( f"{filename}: filesize = {count}, downloaded = { len(data) }" )
+
+def partial_request( conn, url, start, end ) :
+    hdrs = { "Range" : f"bytes={start}-{end}" }
+    conn.request( "GET", url.path, headers=hdrs )
+    return conn.getresponse().read()    
+
+def dnld_partials( full_url : str, lst ) -> bool :
+    url = urllib.parse.urlparse( full_url )
+    conn = make_connection( url )
+    start = 0
+    for count, _ in lst :
+        end = start + count - 1
+        data = partial_request( conn, url, start, end )
+        print( f"start={start}, count={count}, dnld={len(data)}" )
+        start += count
+
+def dnld_partials2( full_url : str, lst ) -> bool :
+    url = urllib.parse.urlparse( full_url )
+    conn = make_connection( url )
+    for start, count in lst :
+        end = start + count - 1
+        data = partial_request( conn, url, start, end )
+        print( f"start={start}, count={count}, dnld={len(data)}" )
+
 if __name__ == '__main__' :
-    for t in files:
-        acc = SPECIAL_BASE + t[1]
-        print(acc)
+    parser = argparse.ArgumentParser()
+    parser.add_argument( '-p', '--partial', help='partial reads from a single file',
+        dest='partial', default=False, action='store_true' )
+    parser.add_argument( '-r', '--random', help='random order reads',
+        dest='random', default=False, action='store_true' )
+    parser.add_argument( '-a', '--amazon', help='read from amazon',
+        dest='amazon', default=False, action='store_true' )
+
+    args = parser.parse_args()
+
+    try :
+        if args.partial :
+            start = 0
+            l = list()
+            for count,_ in files :
+                l.append( ( start, count ) )
+                start += count
+
+            if args.random :
+                print( "random partial requests from single file" )
+                random.seed()
+                random.shuffle( l )
+            else :
+                print( "sequential partial requests from single file" )
+
+            if args.amazon :
+                full_url = ACC 
+            else :
+                full_url = SPECIAL_BASE + WHOLE_FILE[ 1 ]
+            print( f"downloading from {full_url}" )
+            dnld_partials2( full_url, l )                
+        else :
+            if args.random :
+                print( "downloading full files in random order" )
+                random.seed()
+                random.shuffle( files )            
+            else :
+                print( "downloading full files" )
+            dnld_full_files( files )
+            
+    except KeyboardInterrupt :
+        print( "^C" )
