@@ -294,7 +294,7 @@ class group_reader:
 
     #returns the number of available rows in the window ( count, except the last one )
     def set_window( self, start : int, count : int ) :
-        print( f"set_window({self.name}, start={start}, count={count})", file=sys.stderr )
+        #print( f"set_window({self.name}, start={start}, count={count})", file=sys.stderr )
         first_blob_nr = self.row_2_blobnr( start )
         last_blob_nr = self.row_2_blobnr( start + count - 1 )
         if first_blob_nr == None :
@@ -312,7 +312,7 @@ class group_reader:
             self.blobs.pop( blob_nr )
         for blob_nr in s_to_load :
             self.blobs[ blob_nr ] = self.load_blob( blob_nr )
-        print( f"set_window({self.name}, start={start}, count={count}) done", file=sys.stderr )
+        #print( f"set_window({self.name}, start={start}, count={count}) done", file=sys.stderr )
 
     def get( self, row : int, col_name : str ):
         blob_nr = self.row_2_blobnr( row )

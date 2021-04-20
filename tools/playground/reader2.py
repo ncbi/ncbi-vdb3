@@ -31,7 +31,7 @@ if __name__ == '__main__' :
 
         while not done :
             loaded = reader.set_window( start_row, args.window )
-            sys.stderr.write( f"start_row:{start_row} loaded:{loaded}\n" )
+            #sys.stderr.write( f"start_row:{start_row} loaded:{loaded}\n" )
             if loaded < 1 :
                 done = True
 
