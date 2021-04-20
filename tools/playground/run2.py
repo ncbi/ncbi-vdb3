@@ -188,16 +188,20 @@ class blob_http_reader:
         self.path = self.url.path
         if self.path == "" or self.path[-1] != '/':
             self.path += "/"
+
+    def read_meta( self ):
         if self.url.scheme == "https" :
             self.conn = http.client.HTTPSConnection( self.url.netloc )
         else :
             self.conn = http.client.HTTPConnection( self.url.netloc )
-
-    def read_meta( self ):
         self.conn.request("GET", f"{self.path}meta")
         return self.conn.getresponse().read()
 
     def read( self, group_name : str, blob_nr : int ):
+        if self.url.scheme == "https" :
+            self.conn = http.client.HTTPSConnection( self.url.netloc )
+        else :
+            self.conn = http.client.HTTPConnection( self.url.netloc )
         self.conn.request("GET", f"{self.path}{group_name}.{blob_nr}")
         ret = self.conn.getresponse().read()
         return ret
