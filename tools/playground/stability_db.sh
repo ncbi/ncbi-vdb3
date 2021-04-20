@@ -14,6 +14,10 @@ case $SELECTION in
     echo "fastq_vdb3 selected"
     ;;
 
+  fastq_vdb3_aws)
+    echo "fastq_vdb3_aws selected"
+    ;;
+
   fastq_vdb3_par)
     echo "fastq_vdb3_par selected"
     ;;
@@ -31,6 +35,7 @@ esac
 DATABASE="stab5.db"
 
 SPECIAL_BASE="https://sra-download.be-md.ncbi.nlm.nih.gov/sos3/vdb3testbucket/"
+AWS_BASE="https://vdb3.s3.amazonaws.com/"
 SDL="https://www.ncbi.nlm.nih.gov/Traces/sdl/2/retrieve"
 
 ACC1="SRR7392459 SRR7341916 SRR7158431 SRR8001010 SRR7796424"
@@ -40,7 +45,8 @@ ACC3="SRR1155823 SRR1156826 SRR1157391 SRR1157964 SRR1157987"
 ACC4="SRR1158069 SRR1158126 SRR1158196 SRR768882 SRR768866"
 
 #ACCESSIONS="$ACC1 $ACC2 $ACC3 $ACC4"
-ACCESSIONS="$ACC1 $ACC2"
+#ACCESSIONS="$ACC1 $ACC2"
+ACCESSIONS="$ACC3 $ACC4"
 
 TIMING="t_$SELECTION.txt"
 TEMPSTDOUT="data_$SELECTION.txt"
@@ -50,7 +56,7 @@ RELIABLE="NCBI_VDB_RELIABLE=1"
 
 function create_db {
     STM="CREATE TABLE IF NOT EXISTS
-        'log' ( 
+        'log' (
             'id' INTEGER PRIMARY KEY,
             'ts' DATETIME NOT NULL DEFAULT ( datetime( 'now', 'localtime' ) ) ,
             'reader' TEXT,
@@ -79,7 +85,7 @@ function insert_event1 {
     EDATE=`date "+%y%m%d_%H_%M_%S"`
     ENAME="${EDATE}_$1_$2.errors"
     mv $TEMPSTDERR "${ENAME}"
-    STM="INSERT INTO log ( reader, acc, runtime, ret_code, ressize, errors ) VALUES ( '$1', '$2', '$3', '$4', '$5', ${ENAME}' )"
+    STM="INSERT INTO log ( reader, acc, runtime, ret_code, ressize, errors ) VALUES ( '$1', '$2', '$3', '$4', '$5', '${ENAME}' )"
     sqlite3 $DATABASE "$STM"
 }
 
@@ -151,6 +157,16 @@ function fastq_vdb3() {
     RET="$?"
     RT=`cat $TIMING`
     record_results 'vdb3-cloudian' "$ACC" "$RT" "$RET"
+}
+
+function fastq_vdb3_aws() {
+    ACC="$1"
+    URL="$AWS_BASE$ACC.bits/"
+    echo "$ACC at $URL"
+    /usr/bin/time -f %e -o $TIMING ./reader2.py -U $URL > $TEMPSTDOUT 2> $TEMPSTDERR
+    RET="$?"
+    RT=`cat $TIMING`
+    record_results 'vdb3-aws' "$ACC" "$RT" "$RET"
 }
 
 function fastq_vdb3_par() {
