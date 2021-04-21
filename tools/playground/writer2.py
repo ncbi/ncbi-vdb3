@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, vdb, argparse, pickle, shutil, run2, pickle
+import os, vdb, argparse, pickle, shutil, write_lib, pickle
 
 def extract_name( full_path : str ) -> str :
     ret = os.path.basename( full_path.strip('/') )
@@ -10,12 +10,7 @@ def extract_name( full_path : str ) -> str :
 ReadDef1="READ"
 ReadDef2="(INSDC:2na:packed)READ"
 
-def copy_table( tbl, first : int, count : int, outdir : str, name : str, protobuf:bool ) :
-    if protobuf:
-        run2.ser_mode = run2.SerializationMode.Protobuf
-    else:
-        run2.ser_mode = run2.SerializationMode.Pickle
-
+def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     col_names = [
         ReadDef1,
         "READ_LEN",
@@ -34,22 +29,22 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str, protobu
     compression = ("zstd", level)
     #compression = ("gzip", level) # same as zlib
     #compression = ("bz2", level)
-    tbl_schema = run2.SchemaDef(
+    tbl_schema = write_lib.SchemaDef(
         {  # columns
-            "READ"          : run2.ColumnDef( compression[0], compression[1], "g1" ),
-            "QUALITY"       : run2.ColumnDef( compression[0], compression[1], "g2" ),
-            "NAME"          : run2.ColumnDef( compression[0], compression[1], "g3" ),
+            "READ"          : write_lib.ColumnDef( compression[0], compression[1], "g1" ),
+            "QUALITY"       : write_lib.ColumnDef( compression[0], compression[1], "g2" ),
+            "NAME"          : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
 
-            "READ_LEN"      : run2.ColumnDef( compression[0], compression[1], "g4" ),
-            "READ_START"    : run2.ColumnDef( compression[0], compression[1], "g4" ),
-            "READ_TYPE"     : run2.ColumnDef( compression[0], compression[1], "g4" ),
-            "SPOT_GROUP"    : run2.ColumnDef( compression[0], compression[1], "g4" )
+            "READ_LEN"      : write_lib.ColumnDef( compression[0], compression[1], "g4" ),
+            "READ_START"    : write_lib.ColumnDef( compression[0], compression[1], "g4" ),
+            "READ_TYPE"     : write_lib.ColumnDef( compression[0], compression[1], "g4" ),
+            "SPOT_GROUP"    : write_lib.ColumnDef( compression[0], compression[1], "g4" )
         },
         {   # column groups
-            "g1" : run2.GroupDef( compression[0], compression[1], cutoff, [ "READ" ] ),
-            "g2" : run2.GroupDef( compression[0], compression[1], cutoff, [ "QUALITY" ] ),
-            "g3" : run2.GroupDef( compression[0], compression[1], cutoff, [ "NAME" ] ),
-            "g4" : run2.GroupDef( compression[0], compression[1], cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] ),
+            "g1" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "READ" ] ),
+            "g2" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "QUALITY" ] ),
+            "g3" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "NAME" ] ),
+            "g4" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "READ_LEN", "READ_START", "READ_TYPE", "SPOT_GROUP" ] ),
         }
     )
 
@@ -59,7 +54,7 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str, protobu
     if first != None : first_row = first
     if count != None : row_count = count
 
-    writer = run2.run_writer( outdir, name, tbl_schema )
+    writer = write_lib.table_writer( outdir, name, tbl_schema )
     for row in vdb.xrange( first_row, first_row + row_count ) :
         r = cols[ ReadDef1 ].Read( row )
         #in case we are reading packed data ( ReadDef2 ):
@@ -96,7 +91,6 @@ if __name__ == '__main__' :
     parser.add_argument( '-N', '--count', metavar='rows', help='how many reads', type=int, dest='count' )
     parser.add_argument( '-R', '--readlib', metavar='path', help='read library', type=str, dest='readlib' )
     parser.add_argument( '-O', '--output', metavar='path', help='output directory', type=str, dest='outdir', default='out' )
-    parser.add_argument( '-P', '--protobuf', help='use protobuf', dest='protobuf', default=False, action='store_true' )
     args = parser.parse_args()
 
     try :
@@ -111,7 +105,7 @@ if __name__ == '__main__' :
         elif pt == vdb.PathType.Table :
             rd_tbl = mgr.OpenTable( args.accession[ 0 ] ) #object is a table
         else :
-            print( "%s is not an SRA-object"%( args.accession[ 0 ] ) )
+            print( f"{args.accession[ 0 ]} is not an SRA-object ( {pt} )" )
 
         #eventually create the output-dir and clear its content
         shutil.rmtree( args.outdir, ignore_errors=True )
@@ -120,7 +114,7 @@ if __name__ == '__main__' :
         if rd_tbl != None :
             name = extract_name( args.accession[ 0 ] )
             print( f"name = {name}" )
-            copy_table( rd_tbl, args.first, args.count, args.outdir, name, args.protobuf )
+            copy_table( rd_tbl, args.first, args.count, args.outdir, name )
 
     except vdb.vdb_error as e :
         print( e )
