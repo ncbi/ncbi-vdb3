@@ -8,9 +8,10 @@ from joblib import Parallel, delayed
 
 ColumnDef = namedtuple( 'ColumnDef', 'comp level group' )
 GroupDef = namedtuple( 'GroupDef', 'comp level cutoff cols' )
-SchemaDef = namedtuple( 'SchemaDef', 'columns groups' )
+TableDef = namedtuple( 'TableDef', 'columns groups' )
+DatabaseDef = namedtuple( 'DatabaseDef', 'name tables' )
 
-MetaDef = namedtuple( 'MetaDef', 'name schema blobmap' )
+TableMetaDef = namedtuple( 'TableMetaDef', 'name schema blobmap' )
 
 class group_writer:
     def __init__( self, name : str, groupdef : GroupDef, col_defs, outdir : str ) :
@@ -114,16 +115,15 @@ blobs :
     ..          ..          ..
 """
 """
-    outdir ... path to write pickeld data-files ( caller created it )
-    name ..... name of the run aka accession ( ie SRR000001 )
-    cutoff ... max bytes in a group-blob ( pre compression, sum of all cells )
-    schema ... flat list of column-names ( ide ['READ','QUALITY','NAME'] )
+    outdir ... path to write serialized data-files ( caller created it )
+    accession ..... name of the run ( ie SRR000001 )
+    schema ... dictionaly of columns, and dictionay of groups
 """
 
 class table_writer:
-    def __init__( self, outdir : str, name : str, schema : SchemaDef ) :
+    def __init__( self, outdir : str, accession : str, schema : TableDef ) :
         self.outdir = outdir
-        self.name = name
+        self.accession = accession
         self.schema = schema
         self.initialize()
 
@@ -135,7 +135,7 @@ class table_writer:
         #   )
         #
         #blob-map is a dictionary: row_group -> list( (start, count) )
-        self.meta = MetaDef( self.name, self.schema, dict() )
+        self.meta = TableMetaDef( self.accession, self.schema, dict() )
 
         self.groups = dict() # group name -> group_writer
         for k, v in self.schema.groups.items() :
@@ -159,3 +159,19 @@ class table_writer:
             v.flush_blob( self.meta.blobmap[k] )
         pickle.dump( self.meta, open( f"{self.outdir}/meta", "wb" ) )
 
+"""
+    outdir ... path to write tables ( caller created it, but not the subdirs )
+    name ..... name of the run aka accession ( ie SRR000001 )
+"""
+class db_writer:
+    def __init__( self, outdir : str, accession : str ) :
+        self.outdir = outdir
+        self.accession = accession
+        self.schema = []
+
+    def make_table_writer( self, table_name : str, schema : TableDef ) :
+        #create a directory for the table
+        sub_path = f"{self.outdir}/{table_name}/"
+        shutil.rmtree( sub_path, ignore_errors=True )
+        os.mkdir( sub_path )
+        return table_writer( sub_path, self.accession, schema )

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, vdb, argparse, pickle, shutil, write_lib, pickle
+import os, sys, vdb, argparse, pickle, shutil, write_lib, pickle
 
 def extract_name( full_path : str ) -> str :
     ret = os.path.basename( full_path.strip('/') )
@@ -10,7 +10,7 @@ def extract_name( full_path : str ) -> str :
 ReadDef1="READ"
 ReadDef2="(INSDC:2na:packed)READ"
 
-def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
+def copy_table( tbl, first : int, count : int, outdir : str, accession : str ) -> bool :
     col_names = [
         ReadDef1,
         "READ_LEN",
@@ -29,7 +29,7 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     compression = ("zstd", level)
     #compression = ("gzip", level) # same as zlib
     #compression = ("bz2", level)
-    tbl_schema = write_lib.SchemaDef(
+    tbl_schema = write_lib.TableDef(
         {  # columns
             "READ"          : write_lib.ColumnDef( compression[0], compression[1], "g1" ),
             "QUALITY"       : write_lib.ColumnDef( compression[0], compression[1], "g2" ),
@@ -54,7 +54,7 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
     if first != None : first_row = first
     if count != None : row_count = count
 
-    writer = write_lib.table_writer( outdir, name, tbl_schema )
+    writer = write_lib.table_writer( outdir, accession, tbl_schema )
     for row in vdb.xrange( first_row, first_row + row_count ) :
         r = cols[ ReadDef1 ].Read( row )
         #in case we are reading packed data ( ReadDef2 ):
@@ -83,6 +83,35 @@ def copy_table( tbl, first : int, count : int, outdir : str, name : str ) :
         writer.close_row()
 
     writer.finish()
+    return True
+
+def copy_database( db, outdir : str, accession : str ) -> bool :
+    return False
+
+def process_table( args, mgr ) -> bool :
+    tbl = mgr.OpenTable( args.accession[ 0 ] )
+    if tbl != None :
+        #create the output-dir and clear its content
+        shutil.rmtree( args.outdir, ignore_errors=True )
+        os.mkdir( args.outdir )
+        accession = extract_name( args.accession[ 0 ] )
+        return copy_table( tbl, args.first, args.count, args.outdir, accession )
+    return False
+
+def process_database( args, mgr ) -> int :
+    db = mgr.OpenDB( args.accession[ 0 ] )
+    if db != None :
+        tablelist = db.ListTbl()
+        if 'SEQUENCE' in tablelist and 'PRIMARY_ALIGNMENT' in tablelist :
+            shutil.rmtree( args.outdir, ignore_errors=True )
+            os.mkdir( args.outdir )
+            accession = extract_name( args.accession[ 0 ] )
+            return copy_database( db, args.outdir, accession )
+        else:
+            print( "this db cannot be processed" )
+            return False
+    return False
+
 
 if __name__ == '__main__' :
     parser = argparse.ArgumentParser()
@@ -93,30 +122,26 @@ if __name__ == '__main__' :
     parser.add_argument( '-O', '--output', metavar='path', help='output directory', type=str, dest='outdir', default='out' )
     args = parser.parse_args()
 
+    success = False
     try :
         print( "making a copy of : {}".format( args.accession[ 0 ] ) )
 
         mgr = vdb.manager( vdb.OpenMode.Read,  args.readlib )
-
-        rd_tbl = None
         pt = mgr.PathType( args.accession[ 0 ] )
         if pt == vdb.PathType.Database :
-            rd_tbl = mgr.OpenDB( args.accession[ 0 ] ).OpenTable( "SEQUENCE" ) #object is a database
+            success = process_database( args, mgr )
         elif pt == vdb.PathType.Table :
-            rd_tbl = mgr.OpenTable( args.accession[ 0 ] ) #object is a table
+            success = process_table( args, mgr )
         else :
             print( f"{args.accession[ 0 ]} is not an SRA-object ( {pt} )" )
 
-        #eventually create the output-dir and clear its content
-        shutil.rmtree( args.outdir, ignore_errors=True )
-        os.mkdir( args.outdir )
-
-        if rd_tbl != None :
-            name = extract_name( args.accession[ 0 ] )
-            print( f"name = {name}" )
-            copy_table( rd_tbl, args.first, args.count, args.outdir, name )
-
     except vdb.vdb_error as e :
         print( e )
+        sys.exit( 2 )
     except KeyboardInterrupt :
         print( "^C" )
+        sys.exit( 3 )
+
+    if success :
+        sys.exit( 0 )
+    sys.exit( 1 )
