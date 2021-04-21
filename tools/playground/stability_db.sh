@@ -10,6 +10,10 @@ case $SELECTION in
     echo "fastq_special selected"
     ;;
 
+  fastq_aws)
+    echo "fastq_aws selected"
+    ;;
+
   fastq_vdb3)
     echo "fastq_vdb3 selected"
     ;;
@@ -44,9 +48,9 @@ ACC2="SRR7157007 SRR7389150 SRR7584907 SRR7981406 SRR8256711"
 ACC3="SRR1155823 SRR1156826 SRR1157391 SRR1157964 SRR1157987"
 ACC4="SRR1158069 SRR1158126 SRR1158196 SRR768882 SRR768866"
 
-#ACCESSIONS="$ACC1 $ACC2 $ACC3 $ACC4"
+ACCESSIONS="$ACC1 $ACC2 $ACC3 $ACC4"
 #ACCESSIONS="$ACC1 $ACC2"
-ACCESSIONS="$ACC3 $ACC4"
+#ACCESSIONS="$ACC3 $ACC4"
 
 TIMING="t_$SELECTION.txt"
 TEMPSTDOUT="data_$SELECTION.txt"
@@ -147,6 +151,16 @@ function fastq_special() {
     RET="$?"
     RT=`cat $TIMING`
     record_results 'fastq-spec-cloudian' "$ACC" "$RT" "$RET"
+}
+
+function fastq_aws() {
+    ACC="$1"
+    URL="$AWS_BASE$ACC.bits/$ACC"
+    echo "$ACC at $URL"
+    /usr/bin/time -f %e -o $TIMING fastq-dump -Z $URL > $TEMPSTDOUT 2> $TEMPSTDERR
+    RET="$?"
+    RT=`cat $TIMING`
+    record_results 'fastq-aws' "$ACC" "$RT" "$RET"
 }
 
 function fastq_vdb3() {
