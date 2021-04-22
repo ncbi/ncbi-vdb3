@@ -9,6 +9,25 @@ def extract_name( full_path : str ) -> str :
 
 ReadDef1="READ"
 ReadDef2="(INSDC:2na:packed)READ"
+QualDef="(INSDC:quality:text:phred_33)QUALITY"
+
+cutoff = 16*1024*1024
+
+# specify compression: none(default), zlib, gzip, zstd, ... + level (with a default)
+# can compress entire blobs but saw only ~1% gain if all columns are comressed
+level = 3
+compression = ( "zstd", level )
+
+def copy_cell( src, dst, row, src_name, dst_name ) :
+    data = src[ src_name ].Read( row )
+    dst.write_cell( dst_name, data, len( data ) )
+
+def copy_bool_cell( src, dst, row, src_name, dst_name ) :
+    b = src[ src_name ].Read( row )
+    if b[ 0 ] :
+        dst.write_cell( dst_name, [1], 1 )
+    else :
+        dst.write_cell( dst_name, [0], 1 )
 
 def copy_table( tbl, first : int, count : int, outdir : str, accession : str ) -> bool :
     col_names = [
@@ -17,18 +36,10 @@ def copy_table( tbl, first : int, count : int, outdir : str, accession : str ) -
         "READ_START",
         "READ_TYPE",
         "SPOT_GROUP",
-        "(INSDC:quality:text:phred_33)QUALITY",
+        QualDef,
         "NAME"
     ]
 
-    # specify compression: none(default), zlib, gzip, zstd, ... + level (with a default)
-    # can compress entire blobs but saw only ~1% gain if all columns are comressed
-    cutoff = 16*1024*1024
-    #level=22
-    level=3
-    compression = ("zstd", level)
-    #compression = ("gzip", level) # same as zlib
-    #compression = ("bz2", level)
     tbl_schema = write_lib.TableDef(
         {  # columns
             "READ"          : write_lib.ColumnDef( compression[0], compression[1], "g1" ),
@@ -56,36 +67,54 @@ def copy_table( tbl, first : int, count : int, outdir : str, accession : str ) -
 
     writer = write_lib.table_writer( outdir, accession, tbl_schema )
     for row in vdb.xrange( first_row, first_row + row_count ) :
-        r = cols[ ReadDef1 ].Read( row )
-        #in case we are reading packed data ( ReadDef2 ):
-        #rp = cols[ ReadDef2 ].Read_bin( row )[ 2 ]
-        #writer.write_cell( 'READ', rp, len( rp ) )
-        writer.write_cell( 'READ', r, len( r ) )
-
-        rl = cols[ 'READ_LEN' ].Read( row )
-        writer.write_cell( 'READ_LEN', rl, len( rl ) )
-
-        rs = cols[ 'READ_START' ].Read( row )
-        writer.write_cell( 'READ_START', rs, len( rs ) )
-
-        rt = cols[ 'READ_TYPE' ].Read( row )
-        writer.write_cell( 'READ_TYPE', rt, len( rt ) )
-
-        sg = cols[ 'SPOT_GROUP' ].Read( row )
-        writer.write_cell( 'SPOT_GROUP', sg, len( sg ) )
-
-        q = cols[ '(INSDC:quality:text:phred_33)QUALITY' ].Read( row )
-        writer.write_cell( 'QUALITY', q, len( q ) )
-
-        n = cols[ 'NAME' ].Read( row )
-        writer.write_cell( 'NAME', n, len( n ) )
-
+        copy_cell( cols, writer, row, ReadDef1, 'READ' )
+        copy_cell( cols, writer, row, 'READ_LEN', 'READ_LEN' )
+        copy_cell( cols, writer, row, 'READ_START', 'READ_START' )
+        copy_cell( cols, writer, row, 'READ_TYPE', 'READ_TYPE' )
+        copy_cell( cols, writer, row, 'SPOT_GROUP', 'SPOT_GROUP' )
+        copy_cell( cols, writer, row, QualDef, 'QUALITY' )
+        copy_cell( cols, writer, row, 'NAME', 'NAME' )
         writer.close_row()
 
     writer.finish()
     return True
 
 def copy_database( db, outdir : str, accession : str ) -> bool :
+    # 1.step copy the alignment-table ( READ, QUALITY, SEQ_ID, READ_ID )
+    col_names = [ ReadDef1, QualDef, "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ]
+    tbl_schema = write_lib.TableDef(
+        {  # columns
+            "READ"          :    write_lib.ColumnDef( compression[0], compression[1], "g1" ),
+            "QUALITY"           : write_lib.ColumnDef( compression[0], compression[1], "g2" ),
+            "SEQ_SPOT_ID"       : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
+            "SEQ_READ_ID"       : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
+            "REF_ORIENTATION"   : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
+        },
+        {   # column groups
+            "g1" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "READ" ] ),
+            "g2" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "QUALITY" ] ),
+            "g3" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ] )
+        }
+    )
+    tbl = db.OpenTable( "PRIMARY_ALIGNMENT" )
+    cols = tbl.CreateCursor().OpenColumns( col_names )
+    first_row, row_count = cols[ col_names[ 0 ] ].row_range()
+
+    db_writer = write_lib.db_writer( outdir, accession )
+    if db_writer != None :
+        tbl_writer = db_writer.make_table_writer( "ALIGN", tbl_schema )
+        if tbl_writer != None :
+            for row in vdb.xrange( first_row, first_row + row_count ) :
+                copy_cell( cols, tbl_writer, row, ReadDef1, 'READ' )
+                copy_cell( cols, tbl_writer, row, QualDef, 'QUALITY' )
+                copy_cell( cols, tbl_writer, row, 'SEQ_SPOT_ID', 'SEQ_SPOT_ID' )
+                copy_cell( cols, tbl_writer, row, 'SEQ_READ_ID', 'SEQ_READ_ID' )
+                copy_bool_cell( cols, tbl_writer, row, 'REF_ORIENTATION', 'REF_ORIENTATION' )
+                tbl_writer.close_row()
+
+            tbl_writer.finish()
+            return True
+        db_writer.finish()
     return False
 
 def process_table( args, mgr ) -> bool :

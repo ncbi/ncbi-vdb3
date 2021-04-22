@@ -1,4 +1,4 @@
-import sys, pickle, zlib, zstd, gzip, bz2
+import os, sys, pickle, zlib, zstd, gzip, bz2, shutil
 import http.client, urllib
 from enum import Enum
 from collections import namedtuple
@@ -54,7 +54,7 @@ class group_writer:
     def serialize_column( self, name : str, data ) : # returns bytearray
         col = protobuf.sra_pb2.Column()
         # we handle only strings and arrays of int!
-        # no other data-type( single int / float / etc )!
+        # no other data-type( float / etc )!
         for cell in data:
             pb_cell = protobuf.sra_pb2.Cell()
             if type( cell ) == str:
@@ -88,9 +88,10 @@ class group_writer:
         #compress each column in the blob seperately
         compressed = dict()
         for c in self.column_names :
+            serialized = self.serialize_column( c, self.blob[ c ] )
+
             compression = self.col_defs[ c ].comp
             level = self.col_defs[ c ].level
-            serialized = self.serialize_column( c, self.blob[ c ] )
             compressed[c] = self.compress( serialized, compression, level )
 
         serialized = self.serialize_blob( compressed )
@@ -174,4 +175,8 @@ class db_writer:
         sub_path = f"{self.outdir}/{table_name}/"
         shutil.rmtree( sub_path, ignore_errors=True )
         os.mkdir( sub_path )
+        self.schema.append( table_name )
         return table_writer( sub_path, self.accession, schema )
+
+    def finish( self ) :
+        pickle.dump( self.schema, open( f"{self.outdir}/meta", "wb" ) )

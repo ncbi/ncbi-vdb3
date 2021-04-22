@@ -77,11 +77,14 @@ class group_reader:
         pb2_col.ParseFromString( data )
         ret = list()
         for cell in pb2_col.cells:
-            if cell.WhichOneof('Data') == 'str_value':
-                ret.append(cell.str_value)
+            celltype = cell.WhichOneof('Data')
+            if celltype == 'str_value' :
+                ret.append( cell.str_value )
             else:
                 l = list()
-                for i in cell.int_values:
+                #t = type( cell.int_values )
+                #print( f"{self.name} : {t}" )
+                for i in cell.int_values.i:
                     l.append(i)
                 ret.append(l)
         return ret
@@ -231,3 +234,18 @@ class table_reader:
     def get( self, row : int, name : str ) :
         # another dragon: group throws eventually a out of range
         return self.group_of_column( name ).get( row, name )
+
+class database_reader:
+    def __init__( self,
+                  addr : str,       # path or url
+                  access_mode : AccessMode = AccessMode.FileSystem,
+                  parallel_mode : ParallelMode = ParallelMode.Sequential
+                ) :
+        self.addr = addr
+        self.access_mode = access_mode
+        self.parallel_mode = parallel_mode
+
+    def make_table_reader( self, table_name : str, wanted : list ) :
+        sub_addr = f"{self.addr}/{table_name}/"
+        #here we could read the meta-file and verify that the requested table-name is in it
+        return table_reader( sub_addr, wanted, self.access_mode, self.parallel_mode )

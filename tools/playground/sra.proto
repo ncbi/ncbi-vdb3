@@ -3,7 +3,7 @@ syntax = "proto3";
 package sra;
 
 message IntArray {
-    repeated int32 i = 1;
+    repeated int64 i = 1;
 }
 message Cell {
     oneof Data {
@@ -20,4 +20,3 @@ message Group {
     repeated string names = 1;
     repeated bytes encoded_columns = 2;
 }
-

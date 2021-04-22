@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='sra.proto',
   package='sra',
   syntax='proto3',
-  serialized_pb=_b('\n\tsra.proto\x12\x03sra\"\x15\n\x08IntArray\x12\t\n\x01i\x18\x01 \x03(\x05\"H\n\x04\x43\x65ll\x12\x13\n\tstr_value\x18\x01 \x01(\tH\x00\x12#\n\nint_values\x18\x02 \x01(\x0b\x32\r.sra.IntArrayH\x00\x42\x06\n\x04\x44\x61ta\"\"\n\x06\x43olumn\x12\x18\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\t.sra.Cell\"/\n\x05Group\x12\r\n\x05names\x18\x01 \x03(\t\x12\x17\n\x0f\x65ncoded_columns\x18\x02 \x03(\x0c\x62\x06proto3')
+  serialized_pb=_b('\n\tsra.proto\x12\x03sra\"\x15\n\x08IntArray\x12\t\n\x01i\x18\x01 \x03(\x03\"H\n\x04\x43\x65ll\x12\x13\n\tstr_value\x18\x01 \x01(\tH\x00\x12#\n\nint_values\x18\x02 \x01(\x0b\x32\r.sra.IntArrayH\x00\x42\x06\n\x04\x44\x61ta\"\"\n\x06\x43olumn\x12\x18\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\t.sra.Cell\"/\n\x05Group\x12\r\n\x05names\x18\x01 \x03(\t\x12\x17\n\x0f\x65ncoded_columns\x18\x02 \x03(\x0c\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -35,7 +35,7 @@ _INTARRAY = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='i', full_name='sra.IntArray.i', index=0,
-      number=1, type=5, cpp_type=1, label=3,
+      number=1, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
