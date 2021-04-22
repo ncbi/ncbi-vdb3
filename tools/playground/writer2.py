@@ -79,9 +79,8 @@ def copy_table( tbl, first : int, count : int, outdir : str, accession : str ) -
     writer.finish()
     return True
 
-def copy_database( db, outdir : str, accession : str ) -> bool :
-    # 1.step copy the alignment-table ( READ, QUALITY, SEQ_ID, READ_ID )
-    col_names = [ ReadDef1, QualDef, "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ]
+def copy_aligned( db, db_writer ) -> bool :
+    # copy the alignment-table ( READ, QUALITY, SEQ_ID, READ_ID, ORIENTATION )
     tbl_schema = write_lib.TableDef(
         {  # columns
             "READ"          :    write_lib.ColumnDef( compression[0], compression[1], "g1" ),
@@ -96,25 +95,90 @@ def copy_database( db, outdir : str, accession : str ) -> bool :
             "g3" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ] )
         }
     )
+
     tbl = db.OpenTable( "PRIMARY_ALIGNMENT" )
+    col_names = [ ReadDef1, QualDef, "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ]
     cols = tbl.CreateCursor().OpenColumns( col_names )
     first_row, row_count = cols[ col_names[ 0 ] ].row_range()
 
+    tbl_writer = db_writer.make_table_writer( "ALIGN", tbl_schema )
+    if tbl_writer != None :
+        for row in vdb.xrange( first_row, first_row + row_count ) :
+            copy_cell( cols, tbl_writer, row, ReadDef1, 'READ' )
+            copy_cell( cols, tbl_writer, row, QualDef, 'QUALITY' )
+            copy_cell( cols, tbl_writer, row, 'SEQ_SPOT_ID', 'SEQ_SPOT_ID' )
+            copy_cell( cols, tbl_writer, row, 'SEQ_READ_ID', 'SEQ_READ_ID' )
+            copy_bool_cell( cols, tbl_writer, row, 'REF_ORIENTATION', 'REF_ORIENTATION' )
+            tbl_writer.close_row()
+
+        tbl_writer.finish()
+        return True
+    return False
+
+def copy_unaligned( db, db_writer ) -> bool :
+    # copy the unaligned reads from the sequence-table ( READ, QUALITY, SEQ_ID, READ_ID )
+    tbl_schema = write_lib.TableDef(
+        {  # columns
+            "READ"              : write_lib.ColumnDef( compression[0], compression[1], "g1" ),
+            "QUALITY"           : write_lib.ColumnDef( compression[0], compression[1], "g2" ),
+            "SEQ_SPOT_ID"       : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
+            "SEQ_READ_ID"       : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
+        },
+        {   # column groups
+            "g1" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "READ" ] ),
+            "g2" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "QUALITY" ] ),
+            "g3" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "SEQ_SPOT_ID", "SEQ_READ_ID" ] )
+        }
+    )
+    tbl = db.OpenTable( "SEQUENCE" )
+    col_names = [ ReadDef1, QualDef, "PRIMARY_ALIGNMENT_ID", "READ_LEN", "READ_START" ]
+    cols = tbl.CreateCursor().OpenColumns( col_names )
+    first_row, row_count = cols[ col_names[ 0 ] ].row_range()
+
+    tbl_writer = db_writer.make_table_writer( "UNALIGN", tbl_schema )
+    if tbl_writer != None :
+        for row in vdb.xrange( first_row, first_row + row_count ) :
+            prim_al_ids = cols["PRIMARY_ALIGNMENT_ID" ].Read( row )
+            if len( prim_al_ids ) == 2 and ( prim_al_ids[ 0 ] == 0 or prim_al_ids[ 1 ] == 0 ) :
+                #if either of the prim-align-ids is zero, we have unaligned reads in this row
+                read = cols[ ReadDef1 ].Read( row )
+                qual = cols[ QualDef ].Read( row )
+                read_start = cols[ "READ_START" ].Read( row )
+                read_len = cols[ "READ_LEN" ].Read( row )
+                if prim_al_ids[ 0 ] == 0 :
+                    #the first read is unaligned
+                    start = read_start[ 0 ]
+                    end = start + read_len[ 0 ]
+                    read_0 = read[ start : end ]
+                    qual_0 = qual[ start : end ]
+                    tbl_writer.write_cell( "READ", read_0, len( read_0 ) )
+                    tbl_writer.write_cell( "QUALITY", qual_0, len( qual_0 ) )
+                    tbl_writer.write_cell( "SEQ_SPOT_ID", [ row ], 1 )
+                    tbl_writer.write_cell( "SEQ_READ_ID", [ 1 ], 1 )
+                    tbl_writer.close_row()
+                if prim_al_ids[ 1 ] == 0 :
+                    #the second read is unaligned
+                    start = read_start[ 1 ]
+                    end = start + read_len[ 1 ]
+                    read_1 = read[ start : end ]
+                    qual_1 = qual[ start : end ]
+                    tbl_writer.write_cell( "READ", read_1, len( read_1 ) )
+                    tbl_writer.write_cell( "QUALITY", qual_1, len( qual_1 ) )
+                    tbl_writer.write_cell( "SEQ_SPOT_ID", [ row ], 1 )
+                    tbl_writer.write_cell( "SEQ_READ_ID", [ 2 ], 1 )
+                    tbl_writer.close_row()
+        tbl_writer.finish()
+        return True
+    return False
+
+def copy_database( db, outdir : str, accession : str ) -> bool :
     db_writer = write_lib.db_writer( outdir, accession )
     if db_writer != None :
-        tbl_writer = db_writer.make_table_writer( "ALIGN", tbl_schema )
-        if tbl_writer != None :
-            for row in vdb.xrange( first_row, first_row + row_count ) :
-                copy_cell( cols, tbl_writer, row, ReadDef1, 'READ' )
-                copy_cell( cols, tbl_writer, row, QualDef, 'QUALITY' )
-                copy_cell( cols, tbl_writer, row, 'SEQ_SPOT_ID', 'SEQ_SPOT_ID' )
-                copy_cell( cols, tbl_writer, row, 'SEQ_READ_ID', 'SEQ_READ_ID' )
-                copy_bool_cell( cols, tbl_writer, row, 'REF_ORIENTATION', 'REF_ORIENTATION' )
-                tbl_writer.close_row()
-
-            tbl_writer.finish()
+        if not copy_aligned( db, db_writer ) :
+            return False
+        if copy_unaligned( db, db_writer ) :
+            db_writer.finish()
             return True
-        db_writer.finish()
     return False
 
 def process_table( args, mgr ) -> bool :

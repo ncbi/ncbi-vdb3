@@ -4,25 +4,20 @@ import sys, os, argparse, shutil, read_lib
 
 complement = str.maketrans( "ACGT", "TGCA", "" )
 
-def read_database( path, access_mode, parallel_mode, window ) :
-    db_reader = read_lib.database_reader( path, access_mode, parallel_mode )
-    tbl_reader = db_reader.make_table_reader( 'ALIGN', [ 'READ','QUALITY','SEQ_SPOT_ID','SEQ_READ_ID' ] )
-
+def read_aligned( db_reader, window ) :
+    tbl_reader = db_reader.make_table_reader( 'ALIGN', [ 'READ','QUALITY','SEQ_SPOT_ID','SEQ_READ_ID','REF_ORIENTATION' ] )
     done = False
     start_row = 0
-
     while not done :
         loaded = tbl_reader.set_window( start_row, window )
         if loaded < 1 :
             done = True
-
         accession = tbl_reader.name() # gets it from meta
-
         for row in range( start_row, start_row + loaded ) :
             read = tbl_reader.get( row, "READ" )
             qual = tbl_reader.get( row, "QUALITY" )
             spot_id = tbl_reader.get( row, "SEQ_SPOT_ID" )[0]
-            read_id = tbl_reader.get( row, "SEQ_READ_ID" )[0]
+            #read_id = tbl_reader.get( row, "SEQ_READ_ID" )[0]
             orient = tbl_reader.get( row, "REF_ORIENTATION" )[0]
             if read == None or qual == None :
                 done = True
@@ -38,9 +33,36 @@ def read_database( path, access_mode, parallel_mode, window ) :
             print( read )
             print( f"+{accession}.{spot_id} {spot_id} length={len(qual)}")
             print( qual )
-
         start_row += loaded
 
+def read_unaligned( db_reader, window ) :
+    tbl_reader = db_reader.make_table_reader( 'UNALIGN', [ 'READ','QUALITY','SEQ_SPOT_ID','SEQ_READ_ID' ] )
+    done = False
+    start_row = 0
+    while not done :
+        loaded = tbl_reader.set_window( start_row, window )
+        if loaded < 1 :
+            done = True
+        accession = tbl_reader.name() # gets it from meta
+        for row in range( start_row, start_row + loaded ) :
+            read = tbl_reader.get( row, "READ" )
+            qual = tbl_reader.get( row, "QUALITY" )
+            spot_id = tbl_reader.get( row, "SEQ_SPOT_ID" )[0]
+            #read_id = tbl_reader.get( row, "SEQ_READ_ID" )[0]
+            if read == None or qual == None :
+                done = True
+                sys.exit( 3 )
+                break
+            print( f"@{accession}.{spot_id} {spot_id} length={len(read)}")
+            print( read )
+            print( f"+{accession}.{spot_id} {spot_id} length={len(qual)}")
+            print( qual )
+        start_row += loaded
+
+def read_database( path, access_mode, parallel_mode, window ) :
+    db_reader = read_lib.database_reader( path, access_mode, parallel_mode )
+    read_aligned( db_reader, window )
+    read_unaligned( db_reader, window )
 
 #--------------------------------------------------------------------------------------------------------
 
