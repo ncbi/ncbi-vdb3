@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys, os, argparse, shutil, read_lib
+import threading, subprocess
 
 complement = str.maketrans( "ACGT", "TGCA", "" )
 
@@ -59,10 +60,29 @@ def read_unaligned( db_reader, window ) :
             print( qual )
         start_row += loaded
 
+def read_reference( db_reader, window ) :
+    tbl_reader = db_reader.make_table_reader( 'REFERENCE', [ "READ", "SEQ_ID", "SEQ_START" ] )
+    done = False
+    start_row = 0
+    total = 0
+    while not done :
+        loaded = tbl_reader.set_window( start_row, window )
+        if loaded < 1 :
+            done = True
+        for row in range( start_row, start_row + loaded ) :
+            total += len( tbl_reader.get( row, "READ" ) )
+            tbl_reader.get( row, "SEQ_ID" )
+            tbl_reader.get( row, "SEQ_START" )
+        start_row += loaded
+
 def read_database( path, access_mode, parallel_mode, window ) :
     db_reader = read_lib.database_reader( path, access_mode, parallel_mode )
     read_aligned( db_reader, window )
     read_unaligned( db_reader, window )
+
+def read_database_ref( path, access_mode, parallel_mode, window ) :
+    db_reader = read_lib.database_reader( path, access_mode, parallel_mode )
+    read_reference( db_reader, window )
 
 #--------------------------------------------------------------------------------------------------------
 
@@ -102,7 +122,8 @@ if __name__ == '__main__' :
     parser.add_argument( '-U', '--url', help='read from a URL', action='store_true', dest='url', default=False )
     parser.add_argument( '-p', '--parallel', help='download column groups in parallel', dest='parallel', default=False, action='store_true' )
     parser.add_argument( '-W', '--window', metavar='window', help='window-size in bytes', type=int, dest='window', default=50000 )
-    parser.add_argument( '-D', '--database', help='read a database', dest='db', default=False, action='store_true' )    
+    parser.add_argument( '-D', '--database', help='read a database', dest='db', default=False, action='store_true' )
+    parser.add_argument( '-R', '--reference', help='read reference table in a thread', dest='ref', default=False, action='store_true' )
     args = parser.parse_args()
 
     try :
@@ -114,6 +135,8 @@ if __name__ == '__main__' :
 
         if args.db :
             read_database( args.addr[ 0 ], access_mode, parallel_mode, args.window )
+        elif args.ref :
+            read_database_ref( args.addr[ 0 ], access_mode, parallel_mode, args.window )
         else :
             read_table( args.addr[ 0 ], access_mode, parallel_mode, args.window )
 

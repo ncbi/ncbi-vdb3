@@ -88,16 +88,19 @@ def copy_aligned( db, db_writer ) -> bool :
             "SEQ_SPOT_ID"       : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
             "SEQ_READ_ID"       : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
             "REF_ORIENTATION"   : write_lib.ColumnDef( compression[0], compression[1], "g3" ),
+            "SEQ_NAME"   : write_lib.ColumnDef( compression[0], compression[1], "g4" ),
+            "REF_POS"   : write_lib.ColumnDef( compression[0], compression[1], "g4" ),
         },
         {   # column groups
             "g1" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "READ" ] ),
             "g2" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "QUALITY" ] ),
-            "g3" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ] )
+            "g3" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ] ),
+            "g4" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "SEQ_NAME", "REF_POS" ] ),
         }
     )
 
     tbl = db.OpenTable( "PRIMARY_ALIGNMENT" )
-    col_names = [ ReadDef1, QualDef, "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION" ]
+    col_names = [ ReadDef1, QualDef, "SEQ_SPOT_ID", "SEQ_READ_ID", "REF_ORIENTATION", "SEQ_NAME", "REF_POS" ]
     cols = tbl.CreateCursor().OpenColumns( col_names )
     first_row, row_count = cols[ col_names[ 0 ] ].row_range()
 
@@ -109,6 +112,8 @@ def copy_aligned( db, db_writer ) -> bool :
             copy_cell( cols, tbl_writer, row, 'SEQ_SPOT_ID', 'SEQ_SPOT_ID' )
             copy_cell( cols, tbl_writer, row, 'SEQ_READ_ID', 'SEQ_READ_ID' )
             copy_bool_cell( cols, tbl_writer, row, 'REF_ORIENTATION', 'REF_ORIENTATION' )
+            copy_cell( cols, tbl_writer, row, 'SEQ_NAME', 'SEQ_NAME' )
+            copy_cell( cols, tbl_writer, row, 'REF_POS', 'REF_POS' )
             tbl_writer.close_row()
 
         tbl_writer.finish()
@@ -171,15 +176,50 @@ def copy_unaligned( db, db_writer ) -> bool :
         return True
     return False
 
+def copy_ref( db, db_writer ) -> bool :
+    # copy reference table ( READ, SEQ_ID, SEQ_START )
+    # TODO: optionally include PRIMARY_ALIGNMENT_IDS / SECONDARY_ALIGNMENT_IDS
+    tbl_schema = write_lib.TableDef(
+        {  # columns
+            "READ"              : write_lib.ColumnDef( compression[0], compression[1], "g1" ),
+            "SEQ_ID"            : write_lib.ColumnDef( compression[0], compression[1], "g2" ),
+            "SEQ_START"            : write_lib.ColumnDef( compression[0], compression[1], "g2" ),
+        },
+        {   # column groups
+            "g1" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "READ" ] ),
+            "g2" : write_lib.GroupDef( compression[0], compression[1], cutoff, [ "SEQ_ID", "SEQ_START" ] ),
+        }
+    )
+
+    tbl = db.OpenTable( "REFERENCE" )
+    col_names = [ "READ", "SEQ_ID", "SEQ_START" ]
+    cols = tbl.CreateCursor().OpenColumns( col_names )
+    first_row, row_count = cols[ col_names[ 0 ] ].row_range()
+
+    tbl_writer = db_writer.make_table_writer( "REFERENCE", tbl_schema )
+    if tbl_writer != None :
+        for row in vdb.xrange( first_row, first_row + row_count ) :
+            copy_cell( cols, tbl_writer, row, 'READ', 'READ' )
+            copy_cell( cols, tbl_writer, row, 'SEQ_ID', 'SEQ_ID' )
+            copy_cell( cols, tbl_writer, row, 'SEQ_START', 'SEQ_START' )
+            tbl_writer.close_row()
+        tbl_writer.finish()
+        return True
+    return False
+
 def copy_database( db, outdir : str, accession : str ) -> bool :
     db_writer = write_lib.db_writer( outdir, accession )
-    if db_writer != None :
-        if not copy_aligned( db, db_writer ) :
-            return False
-        if copy_unaligned( db, db_writer ) :
-            db_writer.finish()
-            return True
-    return False
+    if db_writer == None :
+        return False
+    if not copy_aligned( db, db_writer ) :
+        return False
+    if not copy_unaligned( db, db_writer ) :
+        return False
+    if not copy_ref( db, db_writer ) :
+        return False
+
+    db_writer.finish()
+    return True
 
 def process_table( args, mgr ) -> bool :
     tbl = mgr.OpenTable( args.accession[ 0 ] )
