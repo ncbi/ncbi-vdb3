@@ -5,8 +5,11 @@ import threading, subprocess
 
 complement = str.maketrans( "ACGT", "TGCA", "" )
 
-def read_aligned( db_reader, window ) :
+def read_aligned( db_reader, window : int, rows : int, timing : bool ) :
     tbl_reader = db_reader.make_table_reader( 'ALIGN', [ 'READ','QUALITY','SEQ_SPOT_ID','SEQ_READ_ID','REF_ORIENTATION' ] )
+    if tbl_reader == None :
+        print( "error: read_aligned().make_table_reader() failed", file=sys.stderr, flush=True )
+        sys.exit( 3 )
     done = False
     start_row = 0
     while not done :
@@ -15,15 +18,39 @@ def read_aligned( db_reader, window ) :
             done = True
         accession = tbl_reader.name() # gets it from meta
         for row in range( start_row, start_row + loaded ) :
+            if row > rows :
+                done = True
+                break
             read = tbl_reader.get( row, "READ" )
             qual = tbl_reader.get( row, "QUALITY" )
-            spot_id = tbl_reader.get( row, "SEQ_SPOT_ID" )[0]
+            spot_id = tbl_reader.get( row, "SEQ_SPOT_ID" )
             #read_id = tbl_reader.get( row, "SEQ_READ_ID" )[0]
-            orient = tbl_reader.get( row, "REF_ORIENTATION" )[0]
-            if read == None or qual == None :
+            orient = tbl_reader.get( row, "REF_ORIENTATION" )
+            if read == None :
+                print( f"error: read_aligned().get(READ) failed in row #{row}", file=sys.stderr, flush=True )
                 done = True
                 sys.exit( 3 )
                 break
+            if qual == None :
+                print( f"error: read_aligned().get(QUALITY) failed in row #{row}", file=sys.stderr, flush=True )
+                done = True
+                sys.exit( 3 )
+                break
+            if spot_id == None :
+                print( f"error: read_aligned().get(SEQ_SPOT_ID) failed in row #{row}", file=sys.stderr, flush=True )
+                done = True
+                sys.exit( 3 )
+                break
+            else :
+                spot_id = spot_id[ 0 ]
+            if orient == None :
+                print( f"error: read_aligned().get(REF_ORIENTATION) failed in row #{row}", file=sys.stderr, flush=True )
+                done = True
+                sys.exit( 3 )
+                break
+            else :
+                orient = orient[ 0 ]
+
             if orient > 0 :
                 #reverse-compliment READ
                 read = read[::-1]
@@ -35,9 +62,13 @@ def read_aligned( db_reader, window ) :
             print( f"+{accession}.{spot_id} {spot_id} length={len(qual)}")
             print( qual )
         start_row += loaded
+    if timing :
+        tbl_reader.report_times( True )
 
-def read_unaligned( db_reader, window ) :
+def read_unaligned( db_reader, window : int, rows : int, timing : bool ) :
     tbl_reader = db_reader.make_table_reader( 'UNALIGN', [ 'READ','QUALITY','SEQ_SPOT_ID','SEQ_READ_ID' ] )
+    if tbl_reader == None :
+        print( "error: read_aligned().make_table_reader() failed", file=sys.stderr, flush=True )
     done = False
     start_row = 0
     while not done :
@@ -46,6 +77,9 @@ def read_unaligned( db_reader, window ) :
             done = True
         accession = tbl_reader.name() # gets it from meta
         for row in range( start_row, start_row + loaded ) :
+            if row > rows :
+                done = True
+                break
             read = tbl_reader.get( row, "READ" )
             qual = tbl_reader.get( row, "QUALITY" )
             spot_id = tbl_reader.get( row, "SEQ_SPOT_ID" )[0]
@@ -59,9 +93,13 @@ def read_unaligned( db_reader, window ) :
             print( f"+{accession}.{spot_id} {spot_id} length={len(qual)}")
             print( qual )
         start_row += loaded
+    if timing :
+        tbl_reader.report_times( True )
 
-def read_reference( db_reader, window ) :
+def read_reference( db_reader, window : int, rows : int, timing : bool ) :
     tbl_reader = db_reader.make_table_reader( 'REFERENCE', [ "READ", "SEQ_ID", "SEQ_START" ] )
+    if tbl_reader == None :
+        print( "error: read_aligned().make_table_reader() failed", file=sys.stderr, flush=True )
     done = False
     start_row = 0
     total = 0
@@ -70,23 +108,28 @@ def read_reference( db_reader, window ) :
         if loaded < 1 :
             done = True
         for row in range( start_row, start_row + loaded ) :
+            if row > rows :
+                done = True
+                break
             total += len( tbl_reader.get( row, "READ" ) )
             tbl_reader.get( row, "SEQ_ID" )
             tbl_reader.get( row, "SEQ_START" )
         start_row += loaded
+    if timing :
+        tbl_reader.report_times( True )
 
-def read_database( path, access_mode, parallel_mode, window ) :
+def read_database( path, access_mode, parallel_mode, window : int, rows : int, timing : bool ) :
     db_reader = read_lib.database_reader( path, access_mode, parallel_mode )
-    read_aligned( db_reader, window )
-    read_unaligned( db_reader, window )
+    read_aligned( db_reader, window, rows, timing )
+    read_unaligned( db_reader, window, rows, timing )
 
-def read_database_ref( path, access_mode, parallel_mode, window ) :
+def read_database_ref( path, access_mode, parallel_mode, window : int, rows : int, timing : bool ) :
     db_reader = read_lib.database_reader( path, access_mode, parallel_mode )
-    read_reference( db_reader, window )
+    read_reference( db_reader, window, rows, timing )
 
 #--------------------------------------------------------------------------------------------------------
 
-def read_table( path, access_mode, parallel_mode, window ) :
+def read_table( path, access_mode, parallel_mode, window : int, rows : int, timing : bool ) :
     reader = read_lib.table_reader( path, [ "READ", "QUALITY", "NAME" ], access_mode, parallel_mode )
 
     done = False
@@ -100,6 +143,9 @@ def read_table( path, access_mode, parallel_mode, window ) :
         accession = reader.name() # gets it from meta
 
         for row in range( start_row, start_row + loaded ) :
+            if row > rows :
+                done = True
+                break
             read = reader.get( row, "READ" )
             qual = reader.get( row, "QUALITY" )
             name = reader.get( row, "NAME" )
@@ -113,6 +159,7 @@ def read_table( path, access_mode, parallel_mode, window ) :
             print( qual )
 
         start_row += loaded
+    tbl_reader.report_times( True )
 
 #--------------------------------------------------------------------------------------------------------
 
@@ -122,8 +169,11 @@ if __name__ == '__main__' :
     parser.add_argument( '-U', '--url', help='read from a URL', action='store_true', dest='url', default=False )
     parser.add_argument( '-p', '--parallel', help='download column groups in parallel', dest='parallel', default=False, action='store_true' )
     parser.add_argument( '-W', '--window', metavar='window', help='window-size in bytes', type=int, dest='window', default=50000 )
+    parser.add_argument( '-N', '--rows', metavar='rows', help='stop after x rows', type=int, dest='rows', default=sys.maxsize )
     parser.add_argument( '-D', '--database', help='read a database', dest='db', default=False, action='store_true' )
     parser.add_argument( '-R', '--reference', help='read reference table in a thread', dest='ref', default=False, action='store_true' )
+    parser.add_argument( '-T', '--timing', help='report timing', dest='timing', default=False, action='store_true' )
+
     args = parser.parse_args()
 
     try :
@@ -134,11 +184,11 @@ if __name__ == '__main__' :
             parallel_mode = read_lib.ParallelMode.Threads
 
         if args.db :
-            read_database( args.addr[ 0 ], access_mode, parallel_mode, args.window )
+            read_database( args.addr[ 0 ], access_mode, parallel_mode, args.window, args.rows, args.timing )
         elif args.ref :
-            read_database_ref( args.addr[ 0 ], access_mode, parallel_mode, args.window )
+            read_database_ref( args.addr[ 0 ], access_mode, parallel_mode, args.window, args.rows, args.timing )
         else :
-            read_table( args.addr[ 0 ], access_mode, parallel_mode, args.window )
+            read_table( args.addr[ 0 ], access_mode, parallel_mode, args.window, args.rows, args.timing )
 
     except KeyboardInterrupt :
         print( "^C" )

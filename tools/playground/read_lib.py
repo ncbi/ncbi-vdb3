@@ -2,11 +2,15 @@ import sys, pickle, zlib, zstd, gzip, bz2
 import http.client, urllib
 from enum import Enum
 from collections import namedtuple
+from recordtype import recordtype
 import protobuf.sra_pb2
 
 from joblib import Parallel, delayed
+from time import perf_counter
 
 GroupDef = namedtuple( 'GroupDef', 'comp level cutoff cols' )
+
+ReadTimes = recordtype( 'ReadTimes', 'dnld, decomp, deser' )
 
 class blob_file_reader:
     def __init__( self, indir : str ) :
@@ -67,12 +71,15 @@ class group_reader:
         self.column_meta = column_meta
         self.compression = self.groupdef.comp
         self.blobs = dict()     # here are the blob-groups, keyed by blob_nr
+        self.t_col = ReadTimes( 0.0, 0.0, 0.0 )   # ( dnld, decomp, deser )
+        self.t_blob = ReadTimes( 0.0, 0.0, 0.0 )
 
     def total_rows( self ) :
         last = self.row_map[-1]
         return last[0]+last[1]
 
     def deserialize_column( self, data ) :
+        t_start = perf_counter() 
         pb2_col = protobuf.sra_pb2.Column()
         pb2_col.ParseFromString( data )
         ret = list()
@@ -82,19 +89,20 @@ class group_reader:
                 ret.append( cell.str_value )
             else:
                 l = list()
-                #t = type( cell.int_values )
-                #print( f"{self.name} : {t}" )
                 for i in cell.int_values.i:
-                    l.append(i)
-                ret.append(l)
+                    l.append( i )
+                ret.append( l )
+        self.t_col.deser = self.t_col.deser + ( perf_counter() - t_start )
         return ret
 
     def deserialize_blob( self, data ) :
+        t_start = perf_counter() 
         pb2_blob = protobuf.sra_pb2.Group()
         pb2_blob.ParseFromString( data )
         ret = dict()
         for i in range( len(pb2_blob.names) ):
             ret[ pb2_blob.names[ i ] ] = pb2_blob.encoded_columns[ i ]
+        self.t_blob.deser += ( perf_counter() - t_start )
         return ret
 
     def decompress( self, src, compression : str ) :
@@ -108,17 +116,23 @@ class group_reader:
 
     def load_blob( self, blob_nr : int ) -> group_blob :
         try :
+            t_start = perf_counter()
             data = self.blob_reader.read( self.name, blob_nr )
+            self.t_blob.dnld += ( perf_counter() - t_start )
         except Exception as e:
             sys.stderr.write( f"{e}\n" )
             data = None
         if data != None :
+            t_start = perf_counter()
             decomp = self.decompress( data, self.compression )
+            self.t_blob.decomp += ( perf_counter() - t_start )
             deserialized = self.deserialize_blob( decomp )
             blob = dict()
             for k, v in deserialized.items() :
                 compression = self.column_meta[ k ].comp
+                t_start = perf_counter()
                 decomp = self.decompress( v, compression )
+                self.t_col.decomp += ( perf_counter() - t_start )
                 blob[ k ] = self.deserialize_column( decomp )
             return group_blob( blob, self.row_map[ blob_nr ][ 0 ], self.row_map[ blob_nr ][ 1 ] )
         return None
@@ -172,8 +186,8 @@ class table_reader:
                   addr : str,       # path or url
                   wanted : list,    # list of column-names to consider (empty/None: all)
                   access_mode : AccessMode = AccessMode.FileSystem,
-				  parallel_mode : ParallelMode = ParallelMode.Sequential
-				   ) :
+                  parallel_mode : ParallelMode = ParallelMode.Sequential  ) :
+
         # meta : ( name, schema, blob-map )
         br = self.make_reader( addr, access_mode )
         self.meta = pickle.loads( br.read_meta() )
@@ -196,6 +210,25 @@ class table_reader:
         self.pc = None
         if parallel_mode == ParallelMode.Threads :
             self.pc = Parallel( n_jobs = len( self.groups.items()), prefer="threads" )
+
+    def report_times( self, detailed : bool ) :
+        if detailed :
+            for name, group in self.groups.items() :
+                print( f"for group: {name}", file=sys.stderr )
+                print( f"\tcolum-times: {group.t_col}", file=sys.stderr )
+                print( f"\tblob-times : {group.t_blob}", file=sys.stderr, flush=True )
+        else :
+            c  = read_lib.ReadTimes( 0.0, 0.0, 0.0 )
+            b = read_lib.ReadTimes( 0.0, 0.0, 0.0 )
+            for _, group in self.groups.items() :
+                c.dnld += group.t_col.dnld
+                c.decomp += group.t_col.decomp
+                c.deser += group.t_col.deser
+                b.dnld += group.t_blob.dnld
+                b.decomp += group.t_blob.decomp
+                b.deser += group.t_blob.deser
+            print( f"colum-times: {c}", file=sys.stderr )
+            print( f"blob-times : {b}", file=sys.stderr, flush=True )
 
     def make_reader( self, addr : str, access_mode : AccessMode ) :
         if access_mode == AccessMode.FileSystem :
