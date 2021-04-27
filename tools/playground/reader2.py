@@ -159,7 +159,7 @@ def read_table( path, access_mode, parallel_mode, window : int, rows : int, timi
             print( qual )
 
         start_row += loaded
-    tbl_reader.report_times( True )
+    reader.report_times( True )
 
 #--------------------------------------------------------------------------------------------------------
 

@@ -5,10 +5,18 @@ package sra;
 message IntArray {
     repeated int64 i = 1 [packed=true];
 }
+
+message TwoInts {
+    int64 one = 1;
+    int64 two = 2;
+}
+
 message Cell {
     oneof Data {
         string str_value = 1;
         IntArray int_values = 2;
+        int64 one_int = 3;
+        TwoInts two_ints = 4;
     }
 }
 

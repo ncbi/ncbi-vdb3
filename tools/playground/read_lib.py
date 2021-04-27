@@ -79,7 +79,7 @@ class group_reader:
         return last[0]+last[1]
 
     def deserialize_column( self, data ) :
-        t_start = perf_counter() 
+        t_start = perf_counter()
         pb2_col = protobuf.sra_pb2.Column()
         pb2_col.ParseFromString( data )
         ret = list()
@@ -87,6 +87,10 @@ class group_reader:
             celltype = cell.WhichOneof('Data')
             if celltype == 'str_value' :
                 ret.append( cell.str_value )
+            elif celltype == 'one_int':
+                ret.append( [ cell.one_int ] )
+            elif celltype == 'two_ints':
+                ret.append( [ cell.two_ints.one, cell.two_ints.two ] )
             else:
                 l = list()
                 for i in cell.int_values.i:
@@ -96,7 +100,7 @@ class group_reader:
         return ret
 
     def deserialize_blob( self, data ) :
-        t_start = perf_counter() 
+        t_start = perf_counter()
         pb2_blob = protobuf.sra_pb2.Group()
         pb2_blob.ParseFromString( data )
         ret = dict()

@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='sra',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\tsra.proto\x12\x03sra\"\x19\n\x08IntArray\x12\r\n\x01i\x18\x01 \x03(\x03\x42\x02\x10\x01\"H\n\x04\x43\x65ll\x12\x13\n\tstr_value\x18\x01 \x01(\tH\x00\x12#\n\nint_values\x18\x02 \x01(\x0b\x32\r.sra.IntArrayH\x00\x42\x06\n\x04\x44\x61ta\"\"\n\x06\x43olumn\x12\x18\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\t.sra.Cell\"/\n\x05Group\x12\r\n\x05names\x18\x01 \x03(\t\x12\x17\n\x0f\x65ncoded_columns\x18\x02 \x03(\x0c\x62\x06proto3')
+  serialized_pb=_b('\n\tsra.proto\x12\x03sra\"\x19\n\x08IntArray\x12\r\n\x01i\x18\x01 \x03(\x03\x42\x02\x10\x01\"#\n\x07TwoInts\x12\x0b\n\x03one\x18\x01 \x01(\x03\x12\x0b\n\x03two\x18\x02 \x01(\x03\"}\n\x04\x43\x65ll\x12\x13\n\tstr_value\x18\x01 \x01(\tH\x00\x12#\n\nint_values\x18\x02 \x01(\x0b\x32\r.sra.IntArrayH\x00\x12\x11\n\x07one_int\x18\x03 \x01(\x03H\x00\x12 \n\x08two_ints\x18\x04 \x01(\x0b\x32\x0c.sra.TwoIntsH\x00\x42\x06\n\x04\x44\x61ta\"\"\n\x06\x43olumn\x12\x18\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\t.sra.Cell\"/\n\x05Group\x12\r\n\x05names\x18\x01 \x03(\t\x12\x17\n\x0f\x65ncoded_columns\x18\x02 \x03(\x0c\x62\x06proto3')
 )
 
 
@@ -56,6 +56,44 @@ _INTARRAY = _descriptor.Descriptor(
 )
 
 
+_TWOINTS = _descriptor.Descriptor(
+  name='TwoInts',
+  full_name='sra.TwoInts',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='one', full_name='sra.TwoInts.one', index=0,
+      number=1, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='two', full_name='sra.TwoInts.two', index=1,
+      number=2, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=45,
+  serialized_end=80,
+)
+
+
 _CELL = _descriptor.Descriptor(
   name='Cell',
   full_name='sra.Cell',
@@ -77,6 +115,20 @@ _CELL = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='one_int', full_name='sra.Cell.one_int', index=2,
+      number=3, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='two_ints', full_name='sra.Cell.two_ints', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -92,8 +144,8 @@ _CELL = _descriptor.Descriptor(
       name='Data', full_name='sra.Cell.Data',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=45,
-  serialized_end=117,
+  serialized_start=82,
+  serialized_end=207,
 )
 
 
@@ -123,8 +175,8 @@ _COLUMN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=119,
-  serialized_end=153,
+  serialized_start=209,
+  serialized_end=243,
 )
 
 
@@ -161,19 +213,27 @@ _GROUP = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=155,
-  serialized_end=202,
+  serialized_start=245,
+  serialized_end=292,
 )
 
 _CELL.fields_by_name['int_values'].message_type = _INTARRAY
+_CELL.fields_by_name['two_ints'].message_type = _TWOINTS
 _CELL.oneofs_by_name['Data'].fields.append(
   _CELL.fields_by_name['str_value'])
 _CELL.fields_by_name['str_value'].containing_oneof = _CELL.oneofs_by_name['Data']
 _CELL.oneofs_by_name['Data'].fields.append(
   _CELL.fields_by_name['int_values'])
 _CELL.fields_by_name['int_values'].containing_oneof = _CELL.oneofs_by_name['Data']
+_CELL.oneofs_by_name['Data'].fields.append(
+  _CELL.fields_by_name['one_int'])
+_CELL.fields_by_name['one_int'].containing_oneof = _CELL.oneofs_by_name['Data']
+_CELL.oneofs_by_name['Data'].fields.append(
+  _CELL.fields_by_name['two_ints'])
+_CELL.fields_by_name['two_ints'].containing_oneof = _CELL.oneofs_by_name['Data']
 _COLUMN.fields_by_name['cells'].message_type = _CELL
 DESCRIPTOR.message_types_by_name['IntArray'] = _INTARRAY
+DESCRIPTOR.message_types_by_name['TwoInts'] = _TWOINTS
 DESCRIPTOR.message_types_by_name['Cell'] = _CELL
 DESCRIPTOR.message_types_by_name['Column'] = _COLUMN
 DESCRIPTOR.message_types_by_name['Group'] = _GROUP
@@ -185,6 +245,13 @@ IntArray = _reflection.GeneratedProtocolMessageType('IntArray', (_message.Messag
   # @@protoc_insertion_point(class_scope:sra.IntArray)
   ))
 _sym_db.RegisterMessage(IntArray)
+
+TwoInts = _reflection.GeneratedProtocolMessageType('TwoInts', (_message.Message,), dict(
+  DESCRIPTOR = _TWOINTS,
+  __module__ = 'sra_pb2'
+  # @@protoc_insertion_point(class_scope:sra.TwoInts)
+  ))
+_sym_db.RegisterMessage(TwoInts)
 
 Cell = _reflection.GeneratedProtocolMessageType('Cell', (_message.Message,), dict(
   DESCRIPTOR = _CELL,

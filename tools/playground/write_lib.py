@@ -60,8 +60,15 @@ class group_writer:
             if type( cell ) == str:
                 pb_cell.str_value = cell
             else: # array of int
-                for i in cell:
-                    pb_cell.int_values.i.append( i )
+                l = len(cell)
+                if l == 1:
+                    pb_cell.one_int = cell[0]
+                elif l == 2:
+                    pb_cell.two_ints.one = cell[0]
+                    pb_cell.two_ints.two = cell[1]
+                else:
+                    for i in cell:
+                        pb_cell.int_values.i.append( i )
             col.cells.append( pb_cell )
         return col.SerializeToString()
 
