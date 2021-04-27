@@ -3,7 +3,7 @@ syntax = "proto3";
 package sra;
 
 message IntArray {
-    repeated int64 i = 1;
+    repeated int64 i = 1 [packed=true];
 }
 message Cell {
     oneof Data {

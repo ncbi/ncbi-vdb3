@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -19,9 +18,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='sra.proto',
   package='sra',
   syntax='proto3',
-  serialized_pb=_b('\n\tsra.proto\x12\x03sra\"\x15\n\x08IntArray\x12\t\n\x01i\x18\x01 \x03(\x03\"H\n\x04\x43\x65ll\x12\x13\n\tstr_value\x18\x01 \x01(\tH\x00\x12#\n\nint_values\x18\x02 \x01(\x0b\x32\r.sra.IntArrayH\x00\x42\x06\n\x04\x44\x61ta\"\"\n\x06\x43olumn\x12\x18\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\t.sra.Cell\"/\n\x05Group\x12\r\n\x05names\x18\x01 \x03(\t\x12\x17\n\x0f\x65ncoded_columns\x18\x02 \x03(\x0c\x62\x06proto3')
+  serialized_options=None,
+  serialized_pb=_b('\n\tsra.proto\x12\x03sra\"\x19\n\x08IntArray\x12\r\n\x01i\x18\x01 \x03(\x03\x42\x02\x10\x01\"H\n\x04\x43\x65ll\x12\x13\n\tstr_value\x18\x01 \x01(\tH\x00\x12#\n\nint_values\x18\x02 \x01(\x0b\x32\r.sra.IntArrayH\x00\x42\x06\n\x04\x44\x61ta\"\"\n\x06\x43olumn\x12\x18\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\t.sra.Cell\"/\n\x05Group\x12\r\n\x05names\x18\x01 \x03(\t\x12\x17\n\x0f\x65ncoded_columns\x18\x02 \x03(\x0c\x62\x06proto3')
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -39,21 +38,21 @@ _INTARRAY = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=_b('\020\001'), file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=18,
-  serialized_end=39,
+  serialized_end=43,
 )
 
 
@@ -70,21 +69,21 @@ _CELL = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='int_values', full_name='sra.Cell.int_values', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -93,8 +92,8 @@ _CELL = _descriptor.Descriptor(
       name='Data', full_name='sra.Cell.Data',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=41,
-  serialized_end=113,
+  serialized_start=45,
+  serialized_end=117,
 )
 
 
@@ -111,21 +110,21 @@ _COLUMN = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=115,
-  serialized_end=149,
+  serialized_start=119,
+  serialized_end=153,
 )
 
 
@@ -142,28 +141,28 @@ _GROUP = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='encoded_columns', full_name='sra.Group.encoded_columns', index=1,
       number=2, type=12, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=151,
-  serialized_end=198,
+  serialized_start=155,
+  serialized_end=202,
 )
 
 _CELL.fields_by_name['int_values'].message_type = _INTARRAY
@@ -178,6 +177,7 @@ DESCRIPTOR.message_types_by_name['IntArray'] = _INTARRAY
 DESCRIPTOR.message_types_by_name['Cell'] = _CELL
 DESCRIPTOR.message_types_by_name['Column'] = _COLUMN
 DESCRIPTOR.message_types_by_name['Group'] = _GROUP
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 IntArray = _reflection.GeneratedProtocolMessageType('IntArray', (_message.Message,), dict(
   DESCRIPTOR = _INTARRAY,
@@ -208,4 +208,5 @@ Group = _reflection.GeneratedProtocolMessageType('Group', (_message.Message,), d
 _sym_db.RegisterMessage(Group)
 
 
+_INTARRAY.fields_by_name['i']._options = None
 # @@protoc_insertion_point(module_scope)
