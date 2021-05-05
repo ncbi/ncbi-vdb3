@@ -36,7 +36,7 @@ case $SELECTION in
     ;;
 esac
 
-DATABASE="stab5.db"
+DATABASE="stab6.db"
 
 SPECIAL_BASE="https://sra-download.be-md.ncbi.nlm.nih.gov/sos3/vdb3testbucket/"
 AWS_BASE="https://vdb3.s3.amazonaws.com/"
@@ -68,6 +68,7 @@ function create_db {
             'reader' TEXT,
             'acc' TEXT,
             'runtime' REAL,
+            'dnldtime' REAL,
             'ret_code' INTEGER,
             'ressize' INTEGER,
             'pergb' REAL,
@@ -83,21 +84,22 @@ function create_db {
 #   $1 ... reader
 #   $2 ... acc
 #   $3 ... runtime
-#   $4 ... ret-code
-#   $5 ... res-size
+#   $4 ... dnldtime
+#   $5 ... ret-code
+#   $6 ... res-size
 function insert_event1 {
     #give error-file a different name, to protect it from beeing overwritten in the next loop
     #store this filename in the errors-columns
     EDATE=`date "+%y%m%d_%H_%M_%S"`
     ENAME="${EDATE}_$1_$2.errors"
     mv $TEMPSTDERR "${ENAME}"
-    STM="INSERT INTO log ( reader, acc, runtime, ret_code, ressize, errors ) VALUES ( '$1', '$2', '$3', '$4', '$5', '${ENAME}' )"
+    STM="INSERT INTO log ( reader, acc, runtime, dnldtime, ret_code, ressize, errors ) VALUES ( '$1', '$2', '$3', '$4', '$5', '$6', '${ENAME}' )"
     sqlite3 $DATABASE "$STM"
 }
 
 #   no errors....
 function insert_event2 {
-    STM="INSERT INTO log ( reader, acc, runtime, ret_code, ressize ) VALUES ( '$1', '$2', '$3', '$4', '$5' )"
+    STM="INSERT INTO log ( reader, acc, runtime, dnldtime, ret_code, ressize ) VALUES ( '$1', '$2', '$3', '$4', '$5', '$6' )"
     sqlite3 $DATABASE "$STM"
 }
 
@@ -108,26 +110,28 @@ function get_url() {
     result=`echo $CURLRESPONSE | jq -r '.result[0].files[0].locations[0].link'`
     if [ "$result" == "null" ]; then
         echo "get_url( $ACC ) failed"
-        insert_event2 'sdl' "$ACC" "-" "-" "1"
+        insert_event2 'sdl' "$ACC" "-" "-" "-" "1"
     fi
 }
 
 #   $1 ... reader
 #   $2 ... acc
 #   $3 ... runtime
-#   $4 ... ret-code
+#   $4 ... dnldtime
+#   $5 ... ret-code
 function record_results() {
     RR_READER=$1
     RR_ACC=$2
     RR_RT=$3
-    RR_RET=$4
+    RR_DL=$4
+    RR_RET=$5
     RR_SIZE=`ls -l $TEMPSTDOUT | awk '{ print $5 }'`
     if [ $RR_RET -ne 0 ]; then
         echo "$RR_READER $ACC failed"
-        insert_event1 "$RR_READER" "$RR_ACC" "$RR_RT" "$RR_RET" "$RR_SIZE"
+        insert_event1 "$RR_READER" "$RR_ACC" "$RR_RT" "$RR_DL" "$RR_RET" "$RR_SIZE"
     else
         echo "$RR_READER $ACC succeeded"
-        insert_event2 "$RR_READER" "$RR_ACC" "$RR_RT" "$RR_RET" "$RR_SIZE"
+        insert_event2 "$RR_READER" "$RR_ACC" "$RR_RT" "$RR_DL" "$RR_RET" "$RR_SIZE"
     fi
     rm -f $TEMPSTDOUT $TEMPSTDERR $TIMING
 }
@@ -141,7 +145,8 @@ function fastq() {
         /usr/bin/time -f %e -o $TIMING fastq-dump -Z $URL > $TEMPSTDOUT 2> $TEMPSTDERR
         RET="$?"
         RT=`cat $TIMING`
-        record_results 'fastq-cloudian' "$ACC" "$RT" "$RET"
+        DL=$(tail $TEMPSTDERR -n 1 | awk '{ print $2 }')
+        record_results 'fastq-cloudian' "$ACC" "$RT" "$DL" "$RET"
     fi
 }
 
@@ -152,7 +157,9 @@ function fastq_special() {
     /usr/bin/time -f %e -o $TIMING fastq-dump --split-spot -Z $URL > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
     RT=`cat $TIMING`
-    record_results 'fastq-spec-cloudian' "$ACC" "$RT" "$RET"
+    DL=$(tail $TEMPSTDERR -n 1 | awk '{ print $2 }')
+    tail $TEMPSTDERR -n 1
+    record_results 'fastq-spec-cloudian' "$ACC" "$RT" "$DL" "$RET"
 }
 
 function fastq_aws() {
@@ -162,17 +169,19 @@ function fastq_aws() {
     /usr/bin/time -f %e -o $TIMING fastq-dump -Z $URL > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
     RT=`cat $TIMING`
-    record_results 'fastq-aws' "$ACC" "$RT" "$RET"
+    DL="0"
+    record_results 'fastq-aws' "$ACC" "$RT" "$DL" "$RET"
 }
 
 function fastq_vdb3() {
     ACC="$1"
     URL="$SPECIAL_BASE$ACC.bits/"
     echo "$ACC at $URL"
-    /usr/bin/time -f %e -o $TIMING ./reader2.py -U -D $URL > $TEMPSTDOUT 2> $TEMPSTDERR
+    /usr/bin/time -f %e -o $TIMING ./reader2.py -U -D -T -J $URL > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
     RT=`cat $TIMING`
-    record_results 'vdb3-cloudian' "$ACC" "$RT" "$RET"
+    DL=$(tail $TEMPSTDERR -n 1 | awk '{ print $2 }')
+    record_results 'vdb3-cloudian' "$ACC" "$RT" "$DL" "$RET"
 }
 
 function fastq_vdb3_aws() {
@@ -182,7 +191,8 @@ function fastq_vdb3_aws() {
     /usr/bin/time -f %e -o $TIMING ./reader2.py -U $URL > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
     RT=`cat $TIMING`
-    record_results 'vdb3-aws' "$ACC" "$RT" "$RET"
+    DL="0"
+    record_results 'vdb3-aws' "$ACC" "$RT" "$DL" "$RET"
 }
 
 function fastq_vdb3_par() {
@@ -192,7 +202,8 @@ function fastq_vdb3_par() {
     /usr/bin/time -f %e -o $TIMING ./reader2.py -U $URL -p > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
     RT=`cat $TIMING`
-    record_results 'vdb3-cloudina-par' "$ACC" "$RT" "$RET"
+    DL="0"
+    record_results 'vdb3-cloudina-par' "$ACC" "$RT" "$DL" "$RET"
 }
 
 function fastq_sdl() {
@@ -202,7 +213,8 @@ function fastq_sdl() {
     /usr/bin/time -f %e -o $TIMING fastq-dump -Z $ACC > $TEMPSTDOUT 2> $TEMPSTDERR
     RET="$?"
     RT=`cat $TIMING`
-    record_results 'fastq-sdl' "$ACC" "$RT" "$RET"
+    DL="0"
+    record_results 'fastq-sdl' "$ACC" "$RT" "$DL" "$RET"
 }
 
 function exit_on_stopfile {

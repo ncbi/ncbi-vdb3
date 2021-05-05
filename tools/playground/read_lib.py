@@ -45,9 +45,13 @@ class blob_http_reader:
             self.conn = http.client.HTTPSConnection( self.url.netloc )
         else :
             self.conn = http.client.HTTPConnection( self.url.netloc )
+
+        t_start = perf_counter()
         self.conn.request("GET", f"{self.path}{group_name}.{blob_nr}")
         ret = self.conn.getresponse().read()
-        return ret
+        t_elapsed = ( perf_counter() - t_start )
+
+        return (ret, t_elapsed)
 
 #encapsulates a list of dictionaries
 class group_blob:
@@ -63,7 +67,7 @@ class group_blob:
         return self.blob[ column_name ][ row - self.first ] #another dragon...
 
 class group_reader:
-    def __init__( self, name : str, groupdef : GroupDef, blob_reader, row_map, column_meta ) : # list( (start, count) )
+    def __init__( self, name : str, groupdef : GroupDef, blob_reader, row_map, column_meta, just_download : bool ) : # list( (start, count) )
         self.name = name
         self.groupdef = groupdef
         self.blob_reader = blob_reader
@@ -73,6 +77,7 @@ class group_reader:
         self.blobs = dict()     # here are the blob-groups, keyed by blob_nr
         self.t_col = ReadTimes( 0.0, 0.0, 0.0 )   # ( dnld, decomp, deser )
         self.t_blob = ReadTimes( 0.0, 0.0, 0.0 )
+        self.just_download = just_download
 
     def total_rows( self ) :
         last = self.row_map[-1]
@@ -120,13 +125,12 @@ class group_reader:
 
     def load_blob( self, blob_nr : int ) -> group_blob :
         try :
-            t_start = perf_counter()
-            data = self.blob_reader.read( self.name, blob_nr )
-            self.t_blob.dnld += ( perf_counter() - t_start )
+            (data, t_elapsed) = self.blob_reader.read( self.name, blob_nr )
+            self.t_blob.dnld += t_elapsed
         except Exception as e:
             sys.stderr.write( f"{e}\n" )
             data = None
-        if data != None :
+        if data != None and not self.just_download:
             t_start = perf_counter()
             decomp = self.decompress( data, self.compression )
             self.t_blob.decomp += ( perf_counter() - t_start )
@@ -190,7 +194,8 @@ class table_reader:
                   addr : str,       # path or url
                   wanted : list,    # list of column-names to consider (empty/None: all)
                   access_mode : AccessMode = AccessMode.FileSystem,
-                  parallel_mode : ParallelMode = ParallelMode.Sequential  ) :
+                  parallel_mode : ParallelMode = ParallelMode.Sequential,
+                  just_download : bool = False ) :
 
         # meta : ( name, schema, blob-map )
         br = self.make_reader( addr, access_mode )
@@ -202,7 +207,7 @@ class table_reader:
             if self.is_group_wanted( groupdef, wanted ) :
                 br = self.make_reader( addr, access_mode )
                 self.groups[ group_name ] = group_reader( group_name, groupdef, br,
-                    self.meta.blobmap[group_name], self.meta.schema.columns )
+                    self.meta.blobmap[group_name], self.meta.schema.columns, just_download )
                 if self.total_rows == None :
                     self.total_rows = self.groups[ group_name ].total_rows()
                 else:
@@ -216,11 +221,13 @@ class table_reader:
             self.pc = Parallel( n_jobs = len( self.groups.items()), prefer="threads" )
 
     def report_times( self, detailed : bool ) :
+        total_dlnd = 0
         if detailed :
             for name, group in self.groups.items() :
                 print( f"for group: {name}", file=sys.stderr )
                 print( f"\tcolum-times: {group.t_col}", file=sys.stderr )
                 print( f"\tblob-times : {group.t_blob}", file=sys.stderr, flush=True )
+                total_dlnd += group.t_blob.dnld
         else :
             c  = read_lib.ReadTimes( 0.0, 0.0, 0.0 )
             b = read_lib.ReadTimes( 0.0, 0.0, 0.0 )
@@ -231,8 +238,10 @@ class table_reader:
                 b.dnld += group.t_blob.dnld
                 b.decomp += group.t_blob.decomp
                 b.deser += group.t_blob.deser
+                total_dlnd += group.t_blob.dnld
             print( f"colum-times: {c}", file=sys.stderr )
             print( f"blob-times : {b}", file=sys.stderr, flush=True )
+        return total_dlnd
 
     def make_reader( self, addr : str, access_mode : AccessMode ) :
         if access_mode == AccessMode.FileSystem :
@@ -282,7 +291,7 @@ class database_reader:
         self.access_mode = access_mode
         self.parallel_mode = parallel_mode
 
-    def make_table_reader( self, table_name : str, wanted : list ) :
+    def make_table_reader( self, table_name : str, wanted : list, just_download : bool ) :
         sub_addr = f"{self.addr}/{table_name}/"
         #here we could read the meta-file and verify that the requested table-name is in it
-        return table_reader( sub_addr, wanted, self.access_mode, self.parallel_mode )
+        return table_reader( sub_addr, wanted, self.access_mode, self.parallel_mode, just_download )
