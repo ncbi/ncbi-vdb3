@@ -123,7 +123,9 @@ namespace vdb3
     TEST ( Z128Test, simple_constructor_destructor )
     {
         Z128 z128;
+        (void)z128;
         N128 n128;
+        (void)n128;
     }
 
     TEST ( Z128Test, simple_object_size )

@@ -71,6 +71,10 @@ endif()
 
 add_definitions( -DARCHBITS=${BITS} -D${ARCH} -Wall )
 
+if ( "${CMAKE_BUILD_TYPE}" STREQUAL "" )
+    set ( CMAKE_BUILD_TYPE "Debug" )
+endif()
+
 if ( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
     add_definitions( -DDEBUG )
 endif()
